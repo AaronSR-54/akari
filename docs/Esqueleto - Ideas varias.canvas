@@ -1,0 +1,15 @@
+{
+	"nodes":[
+		{"id":"24c95cc2d58c6130","type":"group","x":-640,"y":-140,"width":980,"height":1180,"label":"Funcionalidades"},
+		{"id":"f329405ccc2a14ea","type":"text","text":"Gestion de gastos grupales\n- Gastos proporcionales en cuentas conjuntas en base a ingresos\n\t- Poder editar el porcentaje/proporción/cantidad fija\n- Definir gastos (periodicos/unicos)\n- Indicar que pago tiene que hacer cada uno, y donde (a que cuenta)\n- No tiene por qué haber una cuenta asociada (por ej. comida grupal)\n\t- Añadir conversión de divisas","x":-620,"y":380,"width":380,"height":360},
+		{"id":"f7e2e894cb3b967d","type":"text","text":"Agregar cuentas (contenedor)\n- Personales / conjuntas\n- Pueden haber cuentas deposito\n\t- añadir %TAE y calcular ingresos estimados\n- Añadir movimientos\n- Añadir suscripciones (pagos periodicos)\n- Añadir ingresos periódicos (por ej. nomina)\n- Añadir saldo (obligatorio)\n- Balance saldo/gastos mensual\n- Añadir pagos a plazos(saber cuantos pagos quedan, cuanto pagado, etc)\n- Saldo total entre todas las cuentas\n- Diferenciacion entre saldo/ingresos estimados y reales ","x":-620,"y":-118,"width":380,"height":438},
+		{"id":"471a08c6e38c1ef6","type":"text","text":"Otras funcionalidades\n\n- Dashboard -> Accesos directos (shortQuestions): La app ofrece algunos botones que lanzan un evento de utilidades. Por ejemplo, \"cual ha sido el mayor gasto del mes\", \"que gastos se podrían haber evitado\".\n- Bento\n- Notificaciones próximos pagos (periódicos)\n- MobileFirst\n\t- widgets android e ios\n\t- accesos rápidos desde panel notificaciones (para añadir gastos a una cuenta)","x":-620,"y":760,"width":930,"height":260},
+		{"id":"1d2754f7546e645d","type":"text","text":"Compartición de cuentas (conjuntas)\n- Varios usuarios pueden modificar estas cuentas\n- Red de amigos (social)","x":-155,"y":-118,"width":460,"height":118},
+		{"id":"a4cd88d2ec6ae927","type":"text","text":"Datos\n- Cifrados\n- Sincronización en tiempo real opcional y en SQL: \n\t- Obligatorio para cuentas conjuntas compartidas.\n\t- La DB vive en nuestro servidor\n- Sincronización local:\n\t- Alojar archivo .db cifrado en cualquier ubicación. Se descifra mediante contraseña. (GDrive, OneDrive, Local, Syncthing). Nuestra app apunta a una ubicación de tus archivos, y la usa. Si tiene una nube sincronizada, como onedrive, icloud, tienes un bucket en tus archivos y puedes tenerlo ahi alojado.","x":-155,"y":20,"width":460,"height":380},
+		{"id":"8b0685048d517f4c","x":-155,"y":420,"width":460,"height":320,"type":"text","text":"Stack tecnológico\n\n- NextJS (Front y back con vercel)\n- React Native para mobile\n- Tailwind\n- Tokens de espaciado, tamaños, colores. nada harcodeado\n- componentes reutilizables, nada de codigo duplicado\n- arquitectura hexagonal\n- React layered architecture with headless hook"}
+	],
+	"edges":[
+		{"id":"41aed591bcfdedb2","fromNode":"f7e2e894cb3b967d","fromSide":"right","toNode":"1d2754f7546e645d","toSide":"left"},
+		{"id":"99d5611aef2b1ac0","fromNode":"f7e2e894cb3b967d","fromSide":"bottom","toNode":"f329405ccc2a14ea","toSide":"top","fromEnd":"arrow","label":"asociar gastos e ingresos"}
+	]
+}
