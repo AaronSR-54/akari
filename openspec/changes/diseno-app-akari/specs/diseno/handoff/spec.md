@@ -8,17 +8,17 @@ Define cómo se organiza, documenta y entrega el design file de akari para que e
 
 ### Requirement: Organización del archivo
 
-El design file SHALL organizarse en páginas separadas para portada, fundamentos, componentes, móvil, web, prototipos y archivo histórico, con el contenido de cada página acotado a su propósito.
+El design file SHALL organizarse en tres páginas —`00-Portada`, `01-Diseño` y `02-Pantallas`— y usar secciones internas para fundamentos, componentes, prototipos, móvil, web y archivo, manteniendo cada bloque acotado a su propósito.
 
 #### Scenario: Navegación del archivo
 
 - **WHEN** una persona abre el design file
-- **THEN** encuentra las páginas de fundamentos, componentes, móvil y web claramente separadas y en ese orden
+- **THEN** encuentra la portada, la página de diseño con fundamentos, componentes y prototipos, y la página de pantallas con móvil, web y archivo claramente separadas
 
 #### Scenario: Contenido fuera de lugar
 
-- **WHEN** se revisa una página del archivo
-- **THEN** no contiene pantallas ni componentes que pertenezcan a otra página
+- **WHEN** se revisa una página o sección del archivo
+- **THEN** no contiene pantallas ni componentes que pertenezcan a otra página o sección
 
 ### Requirement: Convención de nombres
 

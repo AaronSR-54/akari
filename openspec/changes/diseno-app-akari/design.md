@@ -31,7 +31,7 @@ Restricciones que condicionan el enfoque:
 
 ### 1. Un único archivo Figma con el design system dentro
 
-El design system, las pantallas y los prototipos viven en el design file de akari, separados por páginas. Se evita un archivo de librería independiente porque añade publicación, versionado y sincronización que hoy no aportan valor con un solo producto. Si en el futuro otro producto consume el sistema, se extrae a librería sin rehacer tokens ni componentes.
+El design system, las pantallas y los prototipos viven en el design file de akari, organizados en tres páginas (`00-Portada`, `01-Diseño`, `02-Pantallas`) con secciones internas para fundamentos, componentes, prototipos, móvil, web y archivo. Se evita un archivo de librería independiente porque añade publicación, versionado y sincronización que hoy no aportan valor con un solo producto. Si en el futuro otro producto consume el sistema, se extrae a librería sin rehacer tokens ni componentes. La estructura de tres páginas responde al límite del plan Starter de Figma.
 
 **Alternativa descartada:** archivo `akari-design-system` separado desde el inicio; más correcto a escala, pero prematuro.
 
@@ -123,7 +123,7 @@ No hay migración de producción. El “despliegue” es la aprobación por fase
 5. Adaptar F3 y aprobar paridad web.
 6. Cerrar F4 y marcar los flujos como aprobados.
 
-Rollback: antes de una reestructuración grande se duplica la página afectada en `05-Archivo` y se anota en el changelog. Los cambios de tokens se hacen en la capa primitiva o semántica, nunca pantalla a pantalla.
+Rollback: antes de una reestructuración grande se duplica la sección afectada en la sección Archivo de `02-Pantallas` y se anota en el changelog. Los cambios de tokens se hacen en la capa primitiva o semántica, nunca pantalla a pantalla.
 
 ## Open Questions
 
