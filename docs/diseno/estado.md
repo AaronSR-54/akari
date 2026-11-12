@@ -95,7 +95,7 @@ Aprobada la F4, se añadió una iteración de navegación web registrada como v1
 ## Iteración v1.2 · Marca
 
 - Nuevo componente `Logo` en `01-Diseño → Componentes → Panel/Marca`.
-- `Formato=Expandido`: wordmark «akari» con el círculo ámbar como punto de la «i». `Formato=Reducido`: círculo ámbar con la «a» dentro.
+- `Formato=Expandido`: wordmark «akari» con i sin punto y el círculo ámbar como **punto final**. `Formato=Reducido`: círculo ámbar con la «a» dentro.
 - Tamaños XL (92 px), M (40 px) y S (20 px) para el expandido; L (96 px) y S (32 px) para el monograma.
 - Aplicado en portada, M01, M03, M16, `Header/Desktop`, `TopBar`, `Sidebar` expandida y sidebar compacta.
 - El monograma L tiene exportación PNG 512/32 y SVG para app icon y favicon.
