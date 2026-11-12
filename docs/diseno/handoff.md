@@ -5,7 +5,7 @@
 - **Archivo Figma:** `akari` · https://www.figma.com/design/npwsfgd0s4n4UWszvg28wv/akari
 - **fileKey:** `npwsfgd0s4n4UWszvg28wv`
 - **Archivo FigCraft:** sesión online `akari` (documento `local`), copia nativa en `design/akari.figcraft`
-- **Estado global:** F0 aprobada; F1, F2, F3 y F4 en revisión (v1.0).
+- **Estado global:** F0–F4 aprobadas (12 nov 2026); v1.0 entregada.
 
 ## 1. Estructura del archivo
 
@@ -74,12 +74,12 @@ Para presentar: selecciona una pantalla y usa **Shift + Space** (o `proto.presen
 | Fase | Estado | Evidencia |
 | --- | --- | --- |
 | F0 · Fundamentos | Aprobada (11 nov 2026) | Changelog v0.3 y `fundamentos.md`. |
-| F1 · Componentes | En revisión | Changelog v0.5–v0.7, `componentes.md`; pendiente confirmación del usuario (tarea 3.8). |
-| F2 · Móvil | En revisión | 19 pantallas, anotaciones y flujos A–D; pendiente confirmación (tarea 4.13). |
-| F3 · Web | En revisión | 7 pantallas, accesibilidad y flujos E–F; pendiente confirmación (tarea 5.10). |
-| F4 · Handoff | En revisión | Prototipos, anotaciones, matriz, auditoría y este documento; pendiente aprobación final (tarea 6.8). |
+| F1 · Componentes | Aprobada (12 nov 2026) | Changelog v0.5–v0.7, `componentes.md` y auditoría sin hallazgos bloqueantes (tarea 3.8). |
+| F2 · Móvil | Aprobada (12 nov 2026) | 19 pantallas, anotaciones y flujos 0–D (tarea 4.13). |
+| F3 · Web | Aprobada (12 nov 2026) | 7 pantallas, accesibilidad y flujos E–F (tarea 5.10). |
+| F4 · Handoff | Aprobada (12 nov 2026) | Prototipos, anotaciones, matriz, auditoría y este documento (tarea 6.8). |
 
-No se marca ninguna sección como *Ready for dev* hasta que el usuario apruebe las puertas F1–F3 y F4. Cuando se apruebe, `devStatus` se aplica a las secciones `Móvil` y `Web` y se anota la fecha en el changelog.
+Las secciones `Componentes`, `Móvil` y `Web` están marcadas como *Ready for dev* desde el 12 nov 2026; el changelog v1.0 registra la aprobación final de F1–F4.
 
 ## 7. Auditoría aplicada en F4
 
@@ -95,7 +95,7 @@ No se marca ninguna sección como *Ready for dev* hasta que el usuario apruebe l
 | Sin anotaciones | 108 anotaciones en 26 pantallas (interacción, desarrollo, accesibilidad, contenido). |
 | Sin prototipos navegables | Sección `Prototipos` con 7 flujos y botones de entrada. |
 
-Pendiente conocido: la red de amistades no se dibuja (exclusión justificada en la matriz) y la conversión de divisas se documenta como regla en M11/W04.
+Alcance conocido: la red de amistades no se dibuja (exclusión justificada en la matriz) y la conversión de divisas se documenta como regla en M11/W04. En M06, el botón disabled navega en el prototipo para demostrar el retorno; en producción permanece deshabilitado.
 
 ## 8. Qué necesita una persona nueva para trabajar
 

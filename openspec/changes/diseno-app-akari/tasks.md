@@ -26,7 +26,7 @@
 - [x] 3.5 Crear feedback y overlays (modal, bottom sheet, toast, banner, skeleton, vacío, error, sin conexión, éxito) con variantes móvil y web; verificar que cada estado cubre acción principal y recuperación.
 - [x] 3.6 Documentar cada componente publicado con propósito, cuándo usarlo, cuándo no y variantes; verificar que la descripción es visible desde las propiedades del componente y que no quedan instancias separadas.
 - [x] 3.7 Escribir `docs/diseno/componentes.md` con el inventario y la API de props/variantes; verificar que coincide con los componentes publicados en Figma.
-- [ ] 3.8 Presentar F1 al usuario y registrar la aprobación; verificar que la auditoría de variables y componentes separados queda sin hallazgos bloqueantes.
+- [x] 3.8 Presentar F1 al usuario y registrar la aprobación; verificar que la auditoría de variables y componentes separados queda sin hallazgos bloqueantes.
 
 ## 4. F2 — Pantallas móvil
 
@@ -42,7 +42,7 @@
 - [x] 4.10 Añadir estados de carga, vacío, error, sin conexión, éxito y datos parciales a cada pantalla que aplique, con anotaciones de comportamiento; verificar que ninguna pantalla queda solo en estado feliz.
 - [x] 4.11 Conectar el prototipo móvil de alta de cuenta, registro de movimiento, gasto grupal y dashboard; verificar que los cuatro flujos se completan de principio a fin.
 - [x] 4.12 Escribir `docs/diseno/flujos-movil.md` con inventario de pantallas, estados y enlaces al prototipo; verificar que cada funcionalidad del canvas tiene al menos una pantalla asociada.
-- [ ] 4.13 Presentar F2 al usuario y registrar la aprobación de los flujos móviles antes de adaptar web; verificar que los cambios solicitados quedan aplicados y anotados.
+- [x] 4.13 Presentar F2 al usuario y registrar la aprobación de los flujos móviles antes de adaptar web; verificar que los cambios solicitados quedan aplicados y anotados.
 
 ## 5. F3 — Pantallas web
 
@@ -55,7 +55,7 @@
 - [x] 5.7 Verificar accesibilidad web: recorrido solo con teclado, orden de foco, foco visible, jerarquía de encabezados y contraste; registrar hallazgos y corregirlos.
 - [x] 5.8 Escribir `docs/diseno/flujos-web.md` con diferencias de layout, navegación, densidad y capacidades respecto a móvil; verificar que cada diferencia está anotada también en la pantalla correspondiente.
 - [x] 5.9 Conectar el prototipo web de alta de cuenta, registro de movimiento, gasto grupal y dashboard; verificar el recorrido en escritorio y en una resolución responsive.
-- [ ] 5.10 Presentar F3 al usuario y registrar la aprobación de la paridad web; verificar que no quedan pantallas web con estilos locales ni componentes duplicados.
+- [x] 5.10 Presentar F3 al usuario y registrar la aprobación de la paridad web; verificar que no quedan pantallas web con estilos locales ni componentes duplicados.
 
 ## 6. F4 — Prototipos y handoff
 
@@ -66,7 +66,7 @@
 - [x] 6.5 Auditar accesibilidad final: contraste AA, objetivos de 44 px en móvil, foco visible, etiquetas y segundo canal en gráficos; registrar y corregir hallazgos.
 - [x] 6.6 Escribir `docs/diseno/handoff.md` con `fileKey`, estructura de páginas y secciones, convención de nombres, cómo usar Dev Mode y enlaces a prototipos y matriz; verificar que una persona nueva puede localizar un componente y una pantalla siguiendo solo el documento.
 - [x] 6.7 Verificación integral: recorrer los prototipos móvil y web completos, comprobar la matriz de cobertura contra el canvas y confirmar que tokens, componentes y pantallas están sincronizados; registrar el resultado.
-- [ ] 6.8 Presentar F4 al usuario y obtener la aprobación final del diseño; verificar que todos los flujos quedan marcados como aprobados y que el changelog refleja la versión entregada.
+- [x] 6.8 Presentar F4 al usuario y obtener la aprobación final del diseño; verificar que todos los flujos quedan marcados como aprobados y que el changelog refleja la versión entregada.
 
 ## Workflow follow-up
 

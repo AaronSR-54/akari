@@ -61,9 +61,9 @@ Alcance: `01-Diseño ▸ Componentes` y `02-Pantallas` (móvil y web). La portad
 | Etiquetas y jerarquía | Campos con etiqueta visible, ayuda y error; títulos de pantalla y secciones con jerarquía en las anotaciones. |
 | Segundo canal | Badges con texto, plazos con «2 de 12», gráficos con etiqueta y valor, estados con palabra además del color. |
 
-### Hallazgos abiertos
+### Cierre
 
-- `devStatus` no se aplica todavía: las secciones `Móvil` y `Web` se marcarán como *Ready for dev* cuando el usuario apruebe F1–F4 (tareas 3.8, 4.13, 5.10 y 6.8).
+- `devStatus = readyForDev` aplicado el 12 nov 2026 a las secciones `Componentes`, `Móvil` y `Web`; F1–F4 aprobadas (tareas 3.8, 4.13, 5.10 y 6.8).
 - La red de amistades no se dibuja; queda justificada en `cobertura.md` como cambio posterior.
 - La conversión de divisas se documenta como regla en M11/W04, no como pantalla propia.
 

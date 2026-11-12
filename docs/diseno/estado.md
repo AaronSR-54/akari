@@ -2,7 +2,7 @@
 
 - **Cambio:** `diseno-app-akari`
 - **Fecha:** 2026-11-12
-- **Fase actual:** F4 · Prototipos y handoff (en revisión)
+- **Fase actual:** F4 · Prototipos y handoff (aprobada el 12 nov 2026; cambio listo para archivar)
 - **Archivo Figma original:** https://www.figma.com/design/npwsfgd0s4n4UWszvg28wv/akari
 - **fileKey Figma:** `npwsfgd0s4n4UWszvg28wv`
 - **Archivo FigCraft local:** `design/akari.figcraft`
@@ -36,11 +36,11 @@ La estructura de componentes sigue **Aurex Living · Real Estate Dashboard** (Or
 | 3.5 Feedback y overlays | Completada |
 | 3.6 Descripciones de componentes | Completada |
 | 3.7 `docs/diseno/componentes.md` | Completada |
-| 3.8 Aprobación de F1 | **Pendiente de confirmación del usuario** |
+| 3.8 Aprobación de F1 | Completada (aprobada el 12 nov 2026) |
 | 4.1–4.12 Pantallas móviles, estados y prototipos | Completadas: 19 pantallas `M01`–`M19` |
-| 4.13 Aprobación de F2 | **Pendiente de confirmación del usuario** |
+| 4.13 Aprobación de F2 | Completada (aprobada el 12 nov 2026) |
 | 5.1–5.9 Pantallas web, accesibilidad y prototipos | Completadas: 7 pantallas `W01`–`W07` |
-| 5.10 Aprobación de F3 | **Pendiente de confirmación del usuario** |
+| 5.10 Aprobación de F3 | Completada (aprobada el 12 nov 2026) |
 | 6.1 Matriz de cobertura | Completada: `docs/diseno/cobertura.md` |
 | 6.2 Anotaciones de comportamiento | Completada: 108 anotaciones en 26 pantallas |
 | 6.3 Portada, changelog y estado por flujo | Completada: v0.8–v1.0, prototipos con versión y estado |
@@ -48,11 +48,11 @@ La estructura de componentes sigue **Aurex Living · Real Estate Dashboard** (Or
 | 6.5 Auditoría de accesibilidad | Completada y registrada en `auditoria.md` |
 | 6.6 `docs/diseno/handoff.md` | Completada |
 | 6.7 Verificación integral | Completada: 26 pantallas, 7 flujos, matriz sin huérfanos |
-| 6.8 Aprobación final de F4 | **Pendiente de confirmación del usuario** |
+| 6.8 Aprobación final de F4 | Completada (aprobada el 12 nov 2026); `readyForDev` aplicado a Componentes, Móvil y Web |
 
 ## Estado en FigCraft
 
-- `00-Portada`: portada, estado de revisión (F0 «Aprobada»; F1–F4 «En revisión»), changelog v0.1–v1.0 y páginas del archivo.
+- `00-Portada`: portada, estado de revisión (F0–F4 «Aprobada»), changelog v0.1–v1.0 y páginas del archivo.
 - `01-Diseño ▸ Fundamentos`: dirección visual, paletas, contraste AA, theme sample, tipografía, tokens, iconografía y gráficos.
 - `01-Diseño ▸ Componentes`: navegación, acciones, formularios, datos, feedback y estados, más pruebas de composición.
 - `01-Diseño ▸ Prototipos`: siete flujos conectados con recorrido, versión, estado y botón «Abrir prototipo».
@@ -84,9 +84,9 @@ La estructura de componentes sigue **Aurex Living · Real Estate Dashboard** (Or
 
 ## Siguiente paso
 
-1. Revisar F1, F2, F3 y F4 en la sesión y confirmar las puertas 3.8, 4.13, 5.10 y 6.8.
-2. Al aprobar, aplicar `devStatus = readyForDev` a las secciones `Móvil` y `Web` y anotar la fecha en el changelog.
-3. Sincronizar las specs principales y archivar el cambio; dejar constancia del `fileKey` y de los enlaces de prototipo.
+1. Sincronizar las specs principales con los deltas del cambio (`openspec/specs/diseno/*`).
+2. Archivar el cambio `diseno-app-akari` y dejar constancia del `fileKey`, la versión v1.0 y los prototipos.
+3. Abrir el cambio de implementación (Next.js/React Native) usando `handoff.md` y `cobertura.md` como contrato.
 
 ## Nota sobre Figma
 

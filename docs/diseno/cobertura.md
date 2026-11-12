@@ -82,3 +82,4 @@ La matriz se revisa contra el canvas, no contra la implementación: una fila sin
 - **Todas las pantallas** tienen al menos una anotación de interacción, una de desarrollo y una de accesibilidad (108 anotaciones en total).
 - **Ninguna pantalla queda solo en estado feliz**: M02, M03, M06, M10, M17, M18, M19 y W03/W06 dibujan error, vacío, sin conexión o conflicto; el resto los documenta en anotaciones.
 - **Sin pantallas huérfanas**: cada frame se puede rastrear a una fila de esta matriz y cada fila del canvas tiene pantalla o justificación.
+- **Estado:** matriz aprobada con F4 el 12 nov 2026; `Componentes`, `Móvil` y `Web` marcados como *Ready for dev*.
