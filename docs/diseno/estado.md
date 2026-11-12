@@ -52,7 +52,7 @@ La estructura de componentes sigue **Aurex Living · Real Estate Dashboard** (Or
 
 ## Estado en FigCraft
 
-- `00-Portada`: portada, estado de revisión (F0–F4 «Aprobada»), changelog v0.1–v1.2 y páginas del archivo.
+- `00-Portada`: portada, estado de revisión (F0–F4 «Aprobada»), changelog v0.1–v1.3 y páginas del archivo.
 - `01-Diseño ▸ Fundamentos`: dirección visual, paletas, contraste AA, theme sample, tipografía, tokens, iconografía y gráficos.
 - `01-Diseño ▸ Componentes`: navegación, acciones, formularios, datos, feedback y estados, más pruebas de composición.
 - `01-Diseño ▸ Prototipos`: siete flujos conectados con recorrido, versión, estado y botón «Abrir prototipo».
@@ -100,6 +100,12 @@ Aprobada la F4, se añadió una iteración de navegación web registrada como v1
 - Aplicado en portada, M01, M03, M16, `Header/Desktop`, `TopBar`, `Sidebar` expandida y sidebar compacta.
 - El monograma L tiene exportación PNG 512/32 y SVG para app icon y favicon.
 - Changelog v1.2.
+
+## Iteración v1.3 · Botón de colapsar
+
+- El botón de colapsar de la sidebar expandida pasa de un chevron suelto a un círculo de 32 px con `surface/sunken`, chevron de 16 px `text/secondary` y sin sombra.
+- Se aplica a las cuatro variantes `Activo=...` en `Vista=Expandida`.
+- Changelog v1.3.
 
 ## Siguiente paso
 
