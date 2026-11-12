@@ -19,6 +19,7 @@ Convenciones:
 
 Reglas:
 
+- El wordmark expandido usa la «ı» sin punto (U+0131): el círculo ámbar es el único punto de la «i». No se tapa el punto con el círculo.
 - El círculo es siempre `accent/default`; en el monograma la «a» va en `accent/ink`.
 - No se separa el círculo del wordmark a mano: se usa una instancia de `Logo` y se cambia `Formato`/`Tamaño`.
 - Espacio libre mínimo alrededor del logo: la altura del círculo. Tamaño mínimo del wordmark: 20 px; del monograma: 24 px.
