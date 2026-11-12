@@ -67,3 +67,9 @@ Alcance: `01-Diseño ▸ Componentes` y `02-Pantallas` (móvil y web). La portad
 - La red de amistades no se dibuja; queda justificada en `cobertura.md` como cambio posterior.
 - La conversión de divisas se documenta como regla en M11/W04, no como pantalla propia.
 
+### Iteración v1.1 (12 nov 2026)
+
+- `Sidebar` con `Vista=Compacta/Expandida` (76/240 px), hover/chevron y `Elevation/1`; inset de 16 px en el shell.
+- `W08` con `Header/Desktop` transparente.
+- 27 pantallas y 119 anotaciones; las nuevas variantes y la pantalla W08 reutilizan variables y estilos existentes (0 colores literales, 0 textos sin estilo).
+

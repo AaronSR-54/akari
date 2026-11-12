@@ -1,16 +1,18 @@
 # Flujos web · akari
 
-Pantallas de escritorio dibujadas en `02-Pantallas → Web`. Todas miden **1440 × 900** salvo la hoja responsive de 768 px, y reutilizan la `Sidebar` como navegación principal.
+Pantallas de escritorio dibujadas en `02-Pantallas → Web`. Todas miden **1440 × 900** salvo la hoja responsive de 768 px, y usan la `Sidebar` compacta como navegación principal; `W08` demuestra la alternativa con header superior transparente.
 
 ## 1. Shell responsive
 
 | Ancho | Navegación | Contenido | Densidad |
 | --- | --- | --- | --- |
-| ≥ 1024 px | `Sidebar` fija de 240 px con destino activo en píldora de tinta | 1200 px útiles con 32 px de margen | Cómoda; 3 columnas de tarjetas |
-| 768–1023 px | `Header/Desktop` o barra superior; sin sidebar | 720 px útiles en 2 columnas | Media; tablas con scroll horizontal |
+| ≥ 1024 px | `Sidebar` compacta de 76 px con inset de 16 px; hover o chevron la expande a 240 px | 1316 px útiles con 32 px de margen | Cómoda; 3 columnas de tarjetas |
+| 768–1023 px | `Header/Desktop` transparente o barra superior; sin sidebar | 720 px útiles en 2 columnas | Media; tablas con scroll horizontal |
 | < 768 px | `TopBar` + `TabBar` móvil | 100 % con 20 px | Compacta; una columna |
 
-El `Header/Desktop` es una **alternativa** a la sidebar, no un reemplazo: se usa cuando el producto se embebe o cuando la navegación lateral no cabe. La sidebar sigue siendo la opción principal.
+La sidebar arranca **compacta** (solo iconos) y se expande con hover o con el chevron; el wordmark o el chevron del panel expandido la colapsan. Usa `Elevation/1` (sombra suave) y nunca toca los bordes de la pantalla: el shell reserva 16 px arriba, abajo e izquierda. En producción, el panel expandido flota sobre el contenido.
+
+El `Header/Desktop` es una **alternativa** a la sidebar, no un reemplazo: se usa cuando el producto se embebe o cuando la navegación lateral no cabe. Es transparente (sin relleno propio) y se apoya en `surface/canvas`; `W08` muestra esta variante.
 
 ## 2. Inventario de pantallas
 
@@ -23,10 +25,11 @@ El `Header/Desktop` es una **alternativa** a la sidebar, no un reemplazo: se usa
 | W05 | Preguntas rápidas | Bento de preguntas con respuesta y contexto | chips, `Chart/Bars`, tarjetas bento | Con datos, sin datos suficientes |
 | W06 | Datos y sincronización | Ubicación, nube, contraseña, conflictos y copia | filas de ajuste, `Banner`, `Button/Primary` | Sin conexión, conflicto |
 | W07 | Tablet 768 | Demostración del shell responsive | barra superior, KPIs 2 × 2, cuentas | Responsive |
+| W08 | Resumen con header superior | Alternativa de shell con navegación centrada y header transparente | `Header/Desktop`, mismas tarjetas que W01 | Normal |
 
 ## 3. Diferencias respecto a móvil
 
-- **Navegación:** sidebar persistente; en móvil, tab bar. El destino activo se marca igual (tinta + papel).
+- **Navegación:** sidebar compacta que se expande (hover/chevron); en móvil, tab bar. El destino activo se marca igual (tinta + papel). `W08` demuestra la alternativa de header superior.
 - **Densidad:** tablas y tres columnas en escritorio; en móvil, listas y una columna. Los mismos componentes cambian de densidad, no de lenguaje.
 - **Acciones:** en web la acción principal vive en la cabecera de la página; en móvil, en la parte inferior al alcance del pulgar.
 - **Edición:** la tabla de movimientos permite edición en línea y ordenación; en móvil se entra al detalle.
@@ -51,7 +54,7 @@ La sección `01-Diseño → Prototipos` incluye dos tarjetas web con botón «Ab
 
 | Flujo | Recorrido | Versión / estado |
 | --- | --- | --- |
-| E · Resumen y cuentas | `W01 → W02 → W03` | v1.0 · En revisión |
-| F · Grupos y ajustes | `W04 → W05 → W06` | v1.0 · En revisión |
+| E · Resumen y cuentas | `W01 → W02 → W03` | v1.0 · Aprobado |
+| F · Grupos y ajustes | `W04 → W05 → W06` | v1.0 · Aprobado |
 
 Los recorridos web completos son: resumen → detalle de cuenta → movimientos → gasto grupal → preguntas. Las interacciones están en `01-Diseño → Prototipos` y se documentan en `docs/diseno/handoff.md`.

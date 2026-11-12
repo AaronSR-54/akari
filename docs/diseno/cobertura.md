@@ -77,12 +77,12 @@ La matriz se revisa contra el canvas, no contra la implementación: una fila sin
 
 ## 8. Verificación
 
-- **26 pantallas** dibujadas: 19 móviles (`M01`–`M19`) y 7 web (`W01`–`W07`).
+- **27 pantallas** dibujadas: 19 móviles (`M01`–`M19`) y 8 web (`W01`–`W08`; W08 es la alternativa con header superior).
 - **7 flujos conectados** en `01-Diseño ▸ Prototipos`: onboarding, alta de cuenta, registro de movimiento, gasto grupal, preguntas/detalle, resumen/cuentas web y grupos/ajustes web.
-- **Todas las pantallas** tienen al menos una anotación de interacción, una de desarrollo y una de accesibilidad (108 anotaciones en total).
+- **Todas las pantallas** tienen al menos una anotación de interacción, una de desarrollo y una de accesibilidad (119 anotaciones en total).
 - **Ninguna pantalla queda solo en estado feliz**: M02, M03, M06, M10, M17, M18, M19 y W03/W06 dibujan error, vacío, sin conexión o conflicto; el resto los documenta en anotaciones.
 - **Sin pantallas huérfanas**: cada frame se puede rastrear a una fila de esta matriz y cada fila del canvas tiene pantalla o justificación.
-- **Estado:** matriz aprobada con F4 el 12 nov 2026; `Componentes`, `Móvil` y `Web` marcados como *Ready for dev*.
+- **Estado:** matriz aprobada con F4 el 12 nov 2026; `Componentes`, `Móvil` y `Web` marcados como *Ready for dev*. La iteración v1.1 añade el sidebar compacto/expandido y `W08` con header transparente.
 
 ## 9. Prototipos por flujo
 

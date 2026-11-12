@@ -42,17 +42,17 @@ La estructura de componentes sigue **Aurex Living · Real Estate Dashboard** (Or
 | 5.1–5.9 Pantallas web, accesibilidad y prototipos | Completadas: 7 pantallas `W01`–`W07` |
 | 5.10 Aprobación de F3 | Completada (aprobada el 12 nov 2026) |
 | 6.1 Matriz de cobertura | Completada: `docs/diseno/cobertura.md` |
-| 6.2 Anotaciones de comportamiento | Completada: 108 anotaciones en 26 pantallas |
+| 6.2 Anotaciones de comportamiento | Completada: 119 anotaciones en 27 pantallas |
 | 6.3 Portada, changelog y estado por flujo | Completada: v0.8–v1.0, prototipos con versión y estado |
 | 6.4 Auditoría Dev Mode | Completada: 1.568 vinculaciones de color, 1.269 textos con estilo, 0 detached, iconos SVG |
 | 6.5 Auditoría de accesibilidad | Completada y registrada en `auditoria.md` |
 | 6.6 `docs/diseno/handoff.md` | Completada |
-| 6.7 Verificación integral | Completada: 26 pantallas, 7 flujos, matriz sin huérfanos |
+| 6.7 Verificación integral | Completada: 27 pantallas, 7 flujos, matriz sin huérfanos |
 | 6.8 Aprobación final de F4 | Completada (aprobada el 12 nov 2026); `readyForDev` aplicado a Componentes, Móvil y Web |
 
 ## Estado en FigCraft
 
-- `00-Portada`: portada, estado de revisión (F0–F4 «Aprobada»), changelog v0.1–v1.0 y páginas del archivo.
+- `00-Portada`: portada, estado de revisión (F0–F4 «Aprobada»), changelog v0.1–v1.1 y páginas del archivo.
 - `01-Diseño ▸ Fundamentos`: dirección visual, paletas, contraste AA, theme sample, tipografía, tokens, iconografía y gráficos.
 - `01-Diseño ▸ Componentes`: navegación, acciones, formularios, datos, feedback y estados, más pruebas de composición.
 - `01-Diseño ▸ Prototipos`: siete flujos conectados con recorrido, versión, estado y botón «Abrir prototipo».
@@ -67,7 +67,7 @@ La estructura de componentes sigue **Aurex Living · Real Estate Dashboard** (Or
   - `akari/semantic`: 36 colores con modos `Light` y `Dark` (incluye `text/tertiary` añadido en F4).
 - **Estilos:** 49 de texto (17 editoriales + 32 `UI/*`), 3 de elevación y 2 de grid.
 - **Componentes:** 8 iconos base, 5 sets de navegación, 6 sets de acciones, 8 sets de formulario, 6 sets de datos y 6 sets de feedback.
-- **Pantallas:** 26 (19 móvil + 7 web) con 108 anotaciones.
+- **Pantallas:** 27 (19 móvil + 8 web) con 119 anotaciones.
 - **Prototipos:** 7 flujos navegables (0–F).
 - **Documentación:** `fundamentos.md`, `componentes.md`, `flujos-movil.md`, `flujos-web.md`, `cobertura.md`, `handoff.md` y `auditoria.md`.
 
@@ -78,9 +78,19 @@ La estructura de componentes sigue **Aurex Living · Real Estate Dashboard** (Or
 3. **Tokens:** `text/tertiary` añadido; `#B3261E` y `#E9DFCE` sustituidos por tokens semánticos.
 4. **Vinculación:** 1.568 rellenos y trazos de producto vinculados a variables; 0 colores literales fuera del chrome de los component sets.
 5. **Tipografía:** escala `UI/*` de 32 estilos aplicada a 1.269 textos; 0 textos sin estilo.
-6. **Nombres:** 26 pantallas renombradas a `[Plataforma]/[Flujo]/[Código] [Pantalla]`; `Frame 1` renombrado.
+6. **Nombres:** 27 pantallas renombradas a `[Plataforma]/[Flujo]/[Código] [Pantalla]`; `Frame 1` renombrado.
 7. **Assets:** exportación SVG 1× en los 8 iconos.
-8. **Portada y changelog:** v0.8 (F2), v0.9 (F3) y v1.0 (F4); fecha 12 nov 2026; enlaces a los prototipos desde la sección.
+8. **Portada y changelog:** v0.8 (F2), v0.9 (F3), v1.0 (F4) y v1.1 (iteración de sidebar/shell); fecha 12 nov 2026; enlaces a los prototipos desde la sección.
+
+## Iteración v1.1 · sidebar compacto y shell alternativo
+
+Aprobada la F4, se añadió una iteración de navegación web registrada como v1.1:
+
+1. `Sidebar` pasa a tener dos propiedades: `Activo` (Resumen/Movimientos/Grupos/Ajustes) y `Vista` (Compacta 76 px / Expandida 240 px).
+2. La sidebar arranca compacta, se expande con hover o con el chevron y se colapsa con el wordmark o el chevron del panel expandido.
+3. Sombra reducida a `Elevation/1`; inset de 16 px en los cuatro bordes del shell.
+4. Nueva `W08 · Resumen con header superior`: alternativa transparente con `Header/Desktop` y tabs navegables.
+5. 27 pantallas y 119 anotaciones; changelog v1.1 en la portada.
 
 ## Siguiente paso
 

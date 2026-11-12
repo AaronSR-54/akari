@@ -17,13 +17,14 @@ Convenciones:
 | --- | --- | --- | --- |
 | `TabBar` | `Activo` = Inicio · Movimientos · Grupos · Ajustes | 390 × 64 | Navegación principal móvil. Solo el destino activo va en píldora de tinta. |
 | `TopBar` | `Tipo` = Principal · Detalle | 390 × 56 | Cabecera móvil. Detalle añade volver y título de pantalla. |
-| `Sidebar` | `Activo` = Resumen · Movimientos · Ajustes | 240 × 640 | Navegación principal de escritorio (≥ 1024 px). |
-| `Header/Desktop` | `Activo` = Resumen · Movimientos · Grupos · Ajustes | 1200 × 72 | Cabecera web **alternativa** a la Sidebar: navegación centrada, solo el destino activo pintado, buscador y avisos sin fondo. No sustituye a la Sidebar. |
+| `Sidebar` | `Activo` = Resumen · Movimientos · Grupos · Ajustes; `Vista` = Compacta · Expandida | 76 × 868 / 240 × 868 | Navegación principal de escritorio (≥ 1024 px). Arranca **compacta** (solo iconos) y se expande con hover o con el chevron; el wordmark o el chevron del panel expandido la colapsan. Sombra `Elevation/1` e inset de 16 px en el shell. |
+| `Header/Desktop` | `Activo` = Resumen · Movimientos · Grupos · Ajustes | 1200 × 72 | Cabecera web **alternativa** a la Sidebar: navegación centrada, solo el destino activo pintado, buscador y avisos sin fondo. Es transparente (sin relleno propio) y se usa en la variante W08. No sustituye a la Sidebar. |
 | `Breadcrumbs` | `Nivel` = 2 · 3 | variable | Jerarquía web. El último nivel no es enlace. |
 
 Reglas:
 
 - Nunca dos navegaciones principales visibles a la vez (Sidebar + Header/Desktop son excluyentes; TabBar y Sidebar también).
+- La Sidebar nunca toca los bordes: el shell reserva 16 px arriba, abajo e izquierda. Va compacta por defecto y el panel expandido flota sobre el contenido en implementación.
 - En móvil, una pantalla interna usa `TopBar` con volver y **no** muestra TabBar.
 - El estado activo es siempre tinta + texto papel; el resto, transparente.
 

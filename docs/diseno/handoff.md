@@ -5,7 +5,7 @@
 - **Archivo Figma:** `akari` · https://www.figma.com/design/npwsfgd0s4n4UWszvg28wv/akari
 - **fileKey:** `npwsfgd0s4n4UWszvg28wv`
 - **Archivo FigCraft:** sesión online `akari` (documento `local`), copia nativa en `design/akari.figcraft`
-- **Estado global:** F0–F4 aprobadas (12 nov 2026); v1.0 entregada.
+- **Estado global:** F0–F4 aprobadas (12 nov 2026); v1.1 entregada con sidebar compacto y shell alternativo.
 
 ## 1. Estructura del archivo
 
@@ -16,7 +16,7 @@
 | `01-Diseño` | `Componentes` | Navegación, acciones, formularios, datos, feedback y estados, más pruebas de composición. |
 | `01-Diseño` | `Prototipos` | Siete flujos conectados con botón «Abrir prototipo», recorrido y estado por flujo. |
 | `02-Pantallas` | `Móvil` | 19 pantallas `M01`–`M19` a 390 × 844. |
-| `02-Pantallas` | `Web` | 7 pantallas `W01`–`W07` a 1440 × 900 (W07 es la prueba responsive de 768). |
+| `02-Pantallas` | `Web` | 8 pantallas `W01`–`W08` a 1440 × 900 (W07 es la prueba responsive de 768; W08 es la alternativa con header). |
 | `02-Pantallas` | `Archivo` | Reservado para versiones descartadas y snapshots. |
 
 Todo lo que se implementa vive en `01-Diseño ▸ Fundamentos` (tokens) y `Componentes` (piezas). Las pantallas no contienen estilos locales: consumen variables, estilos de texto e instancias.
@@ -51,13 +51,13 @@ En `01-Diseño ▸ Prototipos` hay siete tarjetas. El botón «Abrir prototipo»
 
 | Flujo | Recorrido | Estado | Versión |
 | --- | --- | --- | --- |
-| 0 · Onboarding | `M01 → M02 → M04 → M05` | En revisión | v1.0 |
-| A · Alta de cuenta | `M06 → M05` | En revisión | v1.0 |
-| B · Registro de movimiento | `M05 → M09 → M08` | En revisión | v1.0 |
-| C · Gasto grupal | `M11 → M12 → M14` | En revisión | v1.0 |
-| D · Preguntas y detalle | `M13 → M08` | En revisión | v1.0 |
-| E · Resumen y cuentas (web) | `W01 → W02 → W03` | En revisión | v1.0 |
-| F · Grupos y ajustes (web) | `W04 → W05 → W06` | En revisión | v1.0 |
+| 0 · Onboarding | `M01 → M02 → M04 → M05` | Aprobado | v1.0 |
+| A · Alta de cuenta | `M06 → M05` | Aprobado | v1.0 |
+| B · Registro de movimiento | `M05 → M09 → M08` | Aprobado | v1.0 |
+| C · Gasto grupal | `M11 → M12 → M14` | Aprobado | v1.0 |
+| D · Preguntas y detalle | `M13 → M08` | Aprobado | v1.0 |
+| E · Resumen y cuentas (web) | `W01 → W02 → W03` | Aprobado | v1.0 |
+| F · Grupos y ajustes (web) | `W04 → W05 → W06` | Aprobado | v1.0 |
 
 Para presentar: selecciona una pantalla y usa **Shift + Space** (o `proto.present`). El prototipo arranca en la pantalla indicada; el resto de transiciones son `onClick` con transición instantánea o dissolve de 200 ms. La tab bar móvil y la sidebar web navegan entre raíces (Inicio/Movimientos/Grupos/Ajustes y Resumen/Movimientos/Grupos/Ajustes), así que cualquier flujo se puede recorrer sin volver al índice. El estado de revisión de cada flujo se actualiza en la tarjeta y en el changelog de la portada.
 
@@ -79,7 +79,13 @@ Para presentar: selecciona una pantalla y usa **Shift + Space** (o `proto.presen
 | F3 · Web | Aprobada (12 nov 2026) | 7 pantallas, accesibilidad y flujos E–F (tarea 5.10). |
 | F4 · Handoff | Aprobada (12 nov 2026) | Prototipos, anotaciones, matriz, auditoría y este documento (tarea 6.8). |
 
-Las secciones `Componentes`, `Móvil` y `Web` están marcadas como *Ready for dev* desde el 12 nov 2026; el changelog v1.0 registra la aprobación final de F1–F4. Las specs principales viven en `openspec/specs/diseno/*` y el cambio quedó archivado en `openspec/changes/archive/2026-11-12-diseno-app-akari`.
+Las secciones `Componentes`, `Móvil` y `Web` están marcadas como *Ready for dev* desde el 12 nov 2026; el changelog v1.0 registra la aprobación final de F1–F4 y v1.1 la iteración de sidebar y shell. Las specs principales viven en `openspec/specs/diseno/*` y el cambio quedó archivado en `openspec/changes/archive/2026-11-12-diseno-app-akari`.
+
+### Iteración v1.1 · sidebar compacto y shell alternativo
+
+- `Sidebar` añade la propiedad `Vista` (`Compacta` 76 px / `Expandida` 240 px) para los cuatro destinos. Arranca compacta, se expande con hover o chevron y se colapsa con el wordmark o el chevron del panel expandido.
+- Sombra reducida a `Elevation/1` y inset de 16 px en los cuatro bordes del shell.
+- `W08` demuestra el shell alternativo con `Header/Desktop` transparente en lugar de sidebar; los tabs navegan a W01/W03/W04/W06.
 
 ## 7. Auditoría aplicada en F4
 
@@ -87,12 +93,12 @@ Las secciones `Componentes`, `Móvil` y `Web` están marcadas como *Ready for de
 | --- | --- |
 | Colores literales en pantallas y componentes | 1.568 rellenos/trazos vinculados a variables semánticas; quedan solo los trazos de sistema de los component sets (`#9747FF`). |
 | Texto sin estilo | 1.269 capas de texto vinculadas a la escala `UI/*`; 0 textos sin estilo en producto. |
-| Nombres de pantalla fuera de convención | 26 frames renombrados a `[Plataforma]/[Flujo]/[Código] [Pantalla]`. |
+| Nombres de pantalla fuera de convención | 27 frames renombrados a `[Plataforma]/[Flujo]/[Código] [Pantalla]`. |
 | `Frame 1` genérico | Renombrado a `Prueba/Web · reuso de componentes`. |
 | Falta de `text/tertiary` | Token semántico añadido (ink-700 / dark-muted) y documentado. |
 | Literales `#B3261E` y `#E9DFCE` | Sustituidos por `status/danger-text` y `surface/sunken`. |
 | Iconos sin exportación | SVG 1× añadido a los 8 `Icon/*`. |
-| Sin anotaciones | 108 anotaciones en 26 pantallas (interacción, desarrollo, accesibilidad, contenido). |
+| Sin anotaciones | 119 anotaciones en 27 pantallas (interacción, desarrollo, accesibilidad, contenido). |
 | Sin prototipos navegables | Sección `Prototipos` con 7 flujos y botones de entrada. |
 
 Alcance conocido: la red de amistades no se dibuja (exclusión justificada en la matriz) y la conversión de divisas se documenta como regla en M11/W04. En M06, el botón disabled navega en el prototipo para demostrar el retorno; en producción permanece deshabilitado.
