@@ -52,7 +52,7 @@ La estructura de componentes sigue **Aurex Living · Real Estate Dashboard** (Or
 
 ## Estado en FigCraft
 
-- `00-Portada`: portada, estado de revisión (F0–F4 «Aprobada»), changelog v0.1–v1.1 y páginas del archivo.
+- `00-Portada`: portada, estado de revisión (F0–F4 «Aprobada»), changelog v0.1–v1.2 y páginas del archivo.
 - `01-Diseño ▸ Fundamentos`: dirección visual, paletas, contraste AA, theme sample, tipografía, tokens, iconografía y gráficos.
 - `01-Diseño ▸ Componentes`: navegación, acciones, formularios, datos, feedback y estados, más pruebas de composición.
 - `01-Diseño ▸ Prototipos`: siete flujos conectados con recorrido, versión, estado y botón «Abrir prototipo».
@@ -66,7 +66,7 @@ La estructura de componentes sigue **Aurex Living · Real Estate Dashboard** (Or
   - `akari/primitives`: 44 colores + 31 números (`space/*`, `radius/*`, `size/*`, `border/*`, `motion/*`).
   - `akari/semantic`: 36 colores con modos `Light` y `Dark` (incluye `text/tertiary` añadido en F4).
 - **Estilos:** 49 de texto (17 editoriales + 32 `UI/*`), 3 de elevación y 2 de grid.
-- **Componentes:** 8 iconos base, 5 sets de navegación, 6 sets de acciones, 8 sets de formulario, 6 sets de datos y 6 sets de feedback.
+- **Componentes:** 8 iconos base, 5 sets de navegación, 6 sets de acciones, 8 sets de formulario, 6 sets de datos, 6 sets de feedback y 1 set `Logo` (5 variantes).
 - **Pantallas:** 27 (19 móvil + 8 web) con 119 anotaciones.
 - **Prototipos:** 7 flujos navegables (0–F).
 - **Documentación:** `fundamentos.md`, `componentes.md`, `flujos-movil.md`, `flujos-web.md`, `cobertura.md`, `handoff.md` y `auditoria.md`.
@@ -91,6 +91,15 @@ Aprobada la F4, se añadió una iteración de navegación web registrada como v1
 3. Sombra reducida a `Elevation/1`; inset de 16 px en los cuatro bordes del shell.
 4. Nueva `W08 · Resumen con header superior`: alternativa transparente con `Header/Desktop` y tabs navegables.
 5. 27 pantallas y 119 anotaciones; changelog v1.1 en la portada.
+
+## Iteración v1.2 · Marca
+
+- Nuevo componente `Logo` en `01-Diseño → Componentes → Panel/Marca`.
+- `Formato=Expandido`: wordmark «akari» con el círculo ámbar como punto de la «i». `Formato=Reducido`: círculo ámbar con la «a» dentro.
+- Tamaños XL (92 px), M (40 px) y S (20 px) para el expandido; L (96 px) y S (32 px) para el monograma.
+- Aplicado en portada, M01, M03, M16, `Header/Desktop`, `TopBar`, `Sidebar` expandida y sidebar compacta.
+- El monograma L tiene exportación PNG 512/32 y SVG para app icon y favicon.
+- Changelog v1.2.
 
 ## Siguiente paso
 

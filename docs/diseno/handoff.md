@@ -19,7 +19,7 @@
 | `02-Pantallas` | `Web` | 8 pantallas `W01`–`W08` a 1440 × 900 (W07 es la prueba responsive de 768; W08 es la alternativa con header). |
 | `02-Pantallas` | `Archivo` | Reservado para versiones descartadas y snapshots. |
 
-Todo lo que se implementa vive en `01-Diseño ▸ Fundamentos` (tokens) y `Componentes` (piezas). Las pantallas no contienen estilos locales: consumen variables, estilos de texto e instancias.
+Todo lo que se implementa vive en `01-Diseño ▸ Fundamentos` (tokens) y `Componentes` (piezas). Las pantallas no contienen estilos locales: consumen variables, estilos de texto e instancias. El set `Logo` (marca) está en `Componentes ▸ Panel/Marca` con formatos expandido/reducido y tamaños XL/M/S.
 
 ## 2. Convención de nombres
 

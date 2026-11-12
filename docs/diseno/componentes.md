@@ -11,6 +11,22 @@ Convenciones:
 
 ---
 
+## 0. Marca
+
+| Componente | Props | Tamaño | Uso |
+| --- | --- | --- | --- |
+| `Logo` | `Formato` = Expandido · Reducido; `Tamaño` = XL · M · L · S | 340×120 · 150×60 · 96×96 · 80×32 · 32×32 | Logotipo de akari. **Expandido** usa el círculo ámbar como punto de la «i»; **Reducido** es el monograma «a» dentro del círculo. XL/M para portada y bienvenida, S para cabeceras y top bars, Reducido L/S para app icon, favicon y sidebar compacta. |
+
+Reglas:
+
+- El círculo es siempre `accent/default`; en el monograma la «a» va en `accent/ink`.
+- No se separa el círculo del wordmark a mano: se usa una instancia de `Logo` y se cambia `Formato`/`Tamaño`.
+- Espacio libre mínimo alrededor del logo: la altura del círculo. Tamaño mínimo del wordmark: 20 px; del monograma: 24 px.
+- El monograma reducido tiene exportación PNG 512/32 y SVG para iconos de app y favicon.
+- En fondos oscuros se usa la misma composición con `text/inverse`; el círculo mantiene `accent/default`.
+
+---
+
 ## 1. Navegación
 
 | Componente | Props | Tamaño | Uso |
