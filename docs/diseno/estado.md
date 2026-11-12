@@ -103,7 +103,7 @@ Aprobada la F4, se añadió una iteración de navegación web registrada como v1
 
 ## Iteración v1.3 · Botón de colapsar
 
-- El botón de colapsar de la sidebar expandida pasa de un chevron suelto a un círculo de 32 px con `surface/sunken`, chevron de 16 px `text/secondary` y sin sombra.
+- El botón de colapsar de la sidebar expandida pasa de un chevron suelto a un círculo de 32 px con `surface/sunken` y un **doble chevron** de 12 × 10 px `text/secondary`, sin sombra.
 - Se aplica a las cuatro variantes `Activo=...` en `Vista=Expandida`.
 - Changelog v1.3.
 
