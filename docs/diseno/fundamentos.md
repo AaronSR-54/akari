@@ -38,7 +38,7 @@ Lo que **no** se copia: la paleta fría y las fotos de inmuebles. Akari mantiene
 | Colección | Modos | Contenido | Uso |
 | --- | --- | --- | --- |
 | `akari/primitives` | `Value` | 44 colores + 31 números | Solo para construir la capa semántica y documentar. |
-| `akari/semantic` | `Light`, `Dark` | 34 colores con alias por modo | Todo lo que usan componentes y pantallas. |
+| `akari/semantic` | `Light`, `Dark` | 35 colores con alias por modo | Todo lo que usan componentes y pantallas. |
 
 Regla: **la UI de producto solo consume `akari/semantic` y los estilos**. Los primitivos no se vinculan a capas de pantalla.
 
@@ -116,6 +116,7 @@ La escala de espaciado es de 4 px. Las pantallas no usan valores fuera de esta t
 | `surface/inverse` | #1F1B16 | #FFFDF8 |
 | `text/primary` | #1F1B16 | #F7F2E9 |
 | `text/secondary` | #6B6257 | #C9BFAF |
+| `text/tertiary` | #4A4239 | #C9BFAF |
 | `text/disabled` | #9A9083 | #7A6F60 |
 | `text/placeholder` | #9A9083 | #7A6F60 |
 | `text/inverse` | #FFFDF8 | #1F1B16 |
@@ -150,6 +151,7 @@ Notas de uso:
 - `overlay/scrim` se aplica con opacidad 40–60 % en la implementación; el token guarda el color base.
 - `text/disabled` no se usa para texto que deba leerse; si el contenido importa, no está deshabilitado.
 - `text/placeholder` comparte valor con `text/disabled` en ambos modos, pero se aplica al texto de ejemplo de un campo vacío; nunca sustituye a una etiqueta.
+- `text/tertiary` se usa en etiquetas de navegación inactivas, ejes y metadatos sobre `surface/default`; en oscuro comparte valor con `text/secondary` porque la jerarquía se marca con tamaño y peso, no con otro gris.
 - En modo oscuro `surface/canvas` y `surface/sunken` comparten valor: la separación se hace con borde y elevación, no con otro negro.
 - `accent/ink` es el único texto permitido sobre `accent/default`.
 
@@ -159,6 +161,8 @@ Notas de uso:
 | --- | --- | --- | --- |
 | text/primary · surface/default (claro) | #1F1B16 / #FFFDF8 | 16,84:1 | AA texto |
 | text/secondary · surface/default (claro) | #6B6257 / #FFFDF8 | 5,89:1 | AA texto |
+| text/tertiary · surface/default (claro) | #4A4239 / #FFFDF8 | 9,69:1 | AA texto |
+| text/tertiary · surface/canvas (claro) | #4A4239 / #F7F2E9 | 8,84:1 | AA texto |
 | text/primary · surface/canvas (claro) | #1F1B16 / #F7F2E9 | 15,35:1 | AA texto |
 | text/secondary · surface/canvas (claro) | #6B6257 / #F7F2E9 | 5,37:1 | AA texto |
 | accent/ink · accent/default (claro) | #5C3B08 / #E8A33D | 4,67:1 | AA texto |
@@ -177,7 +181,9 @@ Regla: texto normal ≥ 4,5:1; texto grande (≥ 24 px o ≥ 19 px bold) y eleme
 
 ## 7. Tipografía
 
-Familia única: **Inter**. Estilos creados en el archivo (17):
+Familia única: **Inter**. El archivo tiene dos escalas complementarias: la **editorial** (17 estilos, portada, documentación y titulares) y la **UI compacta** (32 estilos, todo el producto móvil y web).
+
+### Escala editorial (17 estilos)
 
 | Estilo | Tamaño / línea | Peso | Uso |
 | --- | --- | --- | --- |
@@ -199,12 +205,42 @@ Familia única: **Inter**. Estilos creados en el archivo (17):
 | `Numeric/M` | 18 / auto | SemiBold | Importe de fila |
 | `Numeric/S` | 14 / auto | SemiBold | Importe secundario |
 
+### Escala UI compacta (32 estilos)
+
+La interfaz de producto se dibuja densa (móvil 390 px). Para que cada texto tenga estilo sin cambiar tamaños ni romper layouts, F4 añadió una escala de producto con línea automática y tres pesos. Nombres: `UI/[tamaño]` para Regular, `UI/[tamaño] Strong` para SemiBold y `UI/[tamaño] Bold` para Bold.
+
+| Tamaño | Regular | SemiBold | Bold | Uso típico |
+| --- | --- | --- | --- | --- |
+| 8 | `UI/8` | `UI/8 Strong` | — | Etiquetas de eje y micro-metadatos |
+| 9 | `UI/9` | `UI/9 Strong` | — | Tab bar, badges y overline |
+| 10 | `UI/10` | `UI/10 Strong` | — | Metadatos, fechas y ayudas |
+| 11 | `UI/11` | `UI/11 Strong` | — | Cuerpo de apoyo y etiquetas de campo |
+| 12 | `UI/12` | `UI/12 Strong` | — | Cuerpo compacto y nombres de fila |
+| 13 | `UI/13` | `UI/13 Strong` | — | Cuerpo y títulos de tarjeta pequeños |
+| 14 | `UI/14` | `UI/14 Strong` | `UI/14 Bold` | Botones, chips e importes de fila |
+| 15 | — | `UI/15 Strong` | — | Subtítulos de apoyo |
+| 16 | — | `UI/16 Strong` | `UI/16 Bold` | Título de pantalla interna |
+| 17 | — | `UI/17 Strong` | — | Subtítulo de sección |
+| 18 | — | — | `UI/18 Bold` | Título de pantalla y wordmark pequeño |
+| 19 | — | — | `UI/19 Bold` | Saludo y título de bloque |
+| 20 | — | `UI/20 Strong` | `UI/20 Bold` | Título de página y KPI |
+| 22 | — | — | `UI/22 Bold` | Titular de sección |
+| 24 | — | — | `UI/24 Bold` | Importe grande |
+| 26 | — | — | `UI/26 Bold` | Titular de onboarding |
+| 28 | — | — | `UI/28 Bold` | Importe de resumen |
+| 30 | — | — | `UI/30 Bold` | Importe destacado |
+| 32 | — | — | `UI/32 Bold` | Importe hero |
+| 40 | — | — | `UI/40 Bold` | Wordmark de portada móvil |
+| 44 | — | — | `UI/44 Bold` | Cifra editorial |
+| 52 | — | — | `UI/52 Bold` | Reloj de estado en el widget |
+
 Reglas:
 
 - Los cuatro estilos `Numeric/*` usan la feature `tnum` (cifras tabulares) para que los importes no bailen al actualizar.
 - Un importe nunca se parte en dos líneas: se trunca con elipsis o se reduce al siguiente estilo, en ese orden.
-- No se usan tamaños sueltos. Los estilos se aplican desde la lista de estilos de texto del archivo.
+- No se usan tamaños sueltos. Todo texto de producto usa un estilo `UI/*`; la portada y la documentación usan la escala editorial.
 - El español necesita acentos y ñ: no se reduce el tracking por debajo de lo definido en `Display/*`.
+
 
 ## 8. Elevación
 
@@ -376,7 +412,7 @@ Reglas:
 | Colores primitivos | `color/<nombre>` |
 | Números primitivos | `space/*`, `radius/*`, `size/*`, `border/*`, `motion/*` |
 | Colores semánticos | `surface/*`, `text/*`, `border/*`, `accent/*`, `status/*`, `focus/*`, `overlay/*`, `data/*` |
-| Estilos de texto | `Display/*`, `Heading/*`, `Body/*`, `Label/*`, `Caption`, `Numeric/*` |
+| Estilos de texto | Editorial: `Display/*`, `Heading/*`, `Body/*`, `Label/*`, `Caption`, `Numeric/*`. Producto: `UI/[tamaño]`, `UI/[tamaño] Strong`, `UI/[tamaño] Bold` |
 | Elevación | `Elevation/1`, `Elevation/2`, `Elevation/3` |
 | Grid | `Grid/Mobile 4col`, `Grid/Web 12col` |
 | Iconos | componentes `Icon/Home`, `Icon/Wallet`, `Icon/Arrows`, `Icon/Users`, `Icon/Add`, `Icon/Insights`, `Icon/Search`, `Icon/Sliders` |
@@ -387,7 +423,7 @@ Reglas:
 Verificación de cierre de F0:
 
 - [x] Cada token de esta tabla existe con el mismo nombre en `variable.list`.
-- [x] Los 17 estilos de texto, 3 de elevación y 2 de grid existen en `style.list`.
+- [x] Los 49 estilos de texto (17 editoriales + 32 de producto), 3 de elevación y 2 de grid existen en `style.list`.
 - [x] La muestra de tema cambia entre claro y oscuro sin editar colores a mano.
 - [x] La muestra de gráficos usa `data/1…data/5` y distingue las series por forma y etiqueta.
 - [x] El contraste de los pares principales está registrado y cumple AA.

@@ -59,4 +59,14 @@ Regla: ninguna pantalla se entrega solo con el estado feliz; el estado se elige 
 
 ## 5. Prototipo
 
-Los flujos conectados de alta de cuenta, registro de movimiento, gasto grupal y dashboard se enlazan en `01-Diseño → Prototipos` (ver `docs/diseno/handoff.md`). Cada pantalla enlaza con su estado de error o vacío mediante una interacción `onClick` en la acción principal.
+La sección `01-Diseño → Prototipos` contiene cinco tarjetas móviles con un botón «Abrir prototipo» que navega a la primera pantalla del recorrido:
+
+| Flujo | Recorrido | Versión / estado |
+| --- | --- | --- |
+| 0 · Onboarding | `M01 → M02 → M04 → M05` | v1.0 · En revisión |
+| A · Alta de cuenta | `M06 → M05` | v1.0 · En revisión |
+| B · Registro de movimiento | `M05 → M09 → M08` | v1.0 · En revisión |
+| C · Gasto grupal | `M11 → M12 → M14` | v1.0 · En revisión |
+| D · Preguntas y detalle | `M13 → M08` | v1.0 · En revisión |
+
+Cada pantalla enlaza con su estado de error o vacío mediante una interacción `onClick` en la acción principal. El detalle de qué hace cada salto está en las anotaciones del frame y en `docs/diseno/handoff.md`.

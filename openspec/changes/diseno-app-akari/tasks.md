@@ -59,13 +59,13 @@
 
 ## 6. F4 — Prototipos y handoff
 
-- [ ] 6.1 Crear la matriz de cobertura en `docs/diseno/cobertura.md` que relacione cada funcionalidad del canvas con pantallas móvil, web y estados; verificar que no hay funcionalidades sin pantalla ni pantallas sin requisito.
-- [ ] 6.2 Completar las anotaciones de todas las pantallas interactivas: disparadores, navegación, validaciones, estados no visibles, origen de datos y reglas de negocio; verificar que un formulario y una pantalla con estados ocultos están documentados.
-- [ ] 6.3 Actualizar portada y changelog con enlaces a prototipos, estado borrador/en revisión/aprobado y versión de cada flujo; verificar que un flujo aprobado tiene evidencia y entrada de changelog.
-- [ ] 6.4 Auditar Dev Mode: variables vinculadas, cero estilos locales, cero componentes separados sin justificar, iconos y assets exportables, y nombres según la convención; registrar y corregir hallazgos.
-- [ ] 6.5 Auditar accesibilidad final: contraste AA, objetivos de 44 px en móvil, foco visible, etiquetas y segundo canal en gráficos; registrar y corregir hallazgos.
-- [ ] 6.6 Escribir `docs/diseno/handoff.md` con `fileKey`, estructura de páginas y secciones, convención de nombres, cómo usar Dev Mode y enlaces a prototipos y matriz; verificar que una persona nueva puede localizar un componente y una pantalla siguiendo solo el documento.
-- [ ] 6.7 Verificación integral: recorrer los prototipos móvil y web completos, comprobar la matriz de cobertura contra el canvas y confirmar que tokens, componentes y pantallas están sincronizados; registrar el resultado.
+- [x] 6.1 Crear la matriz de cobertura en `docs/diseno/cobertura.md` que relacione cada funcionalidad del canvas con pantallas móvil, web y estados; verificar que no hay funcionalidades sin pantalla ni pantallas sin requisito.
+- [x] 6.2 Completar las anotaciones de todas las pantallas interactivas: disparadores, navegación, validaciones, estados no visibles, origen de datos y reglas de negocio; verificar que un formulario y una pantalla con estados ocultos están documentados.
+- [x] 6.3 Actualizar portada y changelog con enlaces a prototipos, estado borrador/en revisión/aprobado y versión de cada flujo; verificar que un flujo aprobado tiene evidencia y entrada de changelog.
+- [x] 6.4 Auditar Dev Mode: variables vinculadas, cero estilos locales, cero componentes separados sin justificar, iconos y assets exportables, y nombres según la convención; registrar y corregir hallazgos.
+- [x] 6.5 Auditar accesibilidad final: contraste AA, objetivos de 44 px en móvil, foco visible, etiquetas y segundo canal en gráficos; registrar y corregir hallazgos.
+- [x] 6.6 Escribir `docs/diseno/handoff.md` con `fileKey`, estructura de páginas y secciones, convención de nombres, cómo usar Dev Mode y enlaces a prototipos y matriz; verificar que una persona nueva puede localizar un componente y una pantalla siguiendo solo el documento.
+- [x] 6.7 Verificación integral: recorrer los prototipos móvil y web completos, comprobar la matriz de cobertura contra el canvas y confirmar que tokens, componentes y pantallas están sincronizados; registrar el resultado.
 - [ ] 6.8 Presentar F4 al usuario y obtener la aprobación final del diseño; verificar que todos los flujos quedan marcados como aprobados y que el changelog refleja la versión entregada.
 
 ## Workflow follow-up

@@ -47,4 +47,11 @@ Nada de esto duplica componentes: son las mismas variantes con distinto ancho y 
 
 ## 5. Prototipo
 
-Los recorridos web conectados son: resumen → detalle de cuenta → movimientos → gasto grupal → preguntas. Las interacciones están en `01-Diseño → Prototipos` y se documentan en `docs/diseno/handoff.md`.
+La sección `01-Diseño → Prototipos` incluye dos tarjetas web con botón «Abrir prototipo» y navegación real a la primera pantalla:
+
+| Flujo | Recorrido | Versión / estado |
+| --- | --- | --- |
+| E · Resumen y cuentas | `W01 → W02 → W03` | v1.0 · En revisión |
+| F · Grupos y ajustes | `W04 → W05 → W06` | v1.0 · En revisión |
+
+Los recorridos web completos son: resumen → detalle de cuenta → movimientos → gasto grupal → preguntas. Las interacciones están en `01-Diseño → Prototipos` y se documentan en `docs/diseno/handoff.md`.
