@@ -36,12 +36,17 @@ El diseño web SHALL definir breakpoints y layouts para móvil, tablet y escrito
 
 ### Requirement: Paridad funcional con móvil
 
-Cada flujo móvil SHALL tener equivalente web, salvo las superficies exclusivamente nativas como widgets y accesos rápidos del panel de notificaciones, que MUST documentarse como tales.
+Cada flujo móvil SHALL tener equivalente web, salvo las superficies exclusivamente nativas como widgets y accesos rápidos del panel de notificaciones, que MUST documentarse como tales. Los flujos de alta de cuenta y registro de movimiento se reutilizan desde `M06` y `M09` en el shell web y MUST NOT duplicarse como frames W.
 
 #### Scenario: Flujo con paridad
 
 - **WHEN** se compara un flujo de cuentas, movimientos o gastos grupales entre móvil y web
 - **THEN** la web permite completar las mismas acciones y ver la misma información
+
+#### Scenario: Reutilización documentada
+
+- **WHEN** un flujo móvil no tiene frame web propio
+- **THEN** la matriz de cobertura indica qué pantalla móvil se reutiliza en el shell web y no se dibuja un duplicado
 
 #### Scenario: Función exclusiva de móvil
 

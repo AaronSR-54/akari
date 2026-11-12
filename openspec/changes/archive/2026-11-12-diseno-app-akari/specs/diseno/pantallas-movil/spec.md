@@ -69,7 +69,7 @@ El diseño móvil SHALL incluir alta, edición y detalle de movimientos, suscrip
 
 ### Requirement: Gastos grupales y reparto proporcional
 
-El diseño móvil SHALL incluir creación de grupos y gastos grupales, reparto proporcional a ingresos editable por porcentaje, proporción o cantidad fija, indicación de quién paga a quién y a qué cuenta, gastos sin cuenta asociada y conversión de divisas.
+El diseño móvil SHALL incluir creación de grupos y gastos grupales, reparto proporcional a ingresos editable por porcentaje, proporción o cantidad fija, indicación de quién paga a quién y a qué cuenta, gastos sin cuenta asociada y la regla de conversión de divisas documentada en el diseño.
 
 #### Scenario: Reparto editable
 
@@ -84,7 +84,7 @@ El diseño móvil SHALL incluir creación de grupos y gastos grupales, reparto p
 #### Scenario: Conversión de divisas
 
 - **WHEN** el gasto usa una divisa distinta a la del grupo
-- **THEN** el diseño muestra importe original, tipo de cambio y equivalente antes de confirmar
+- **THEN** el diseño documenta la conversión a la divisa de la cuenta de cobro con el tipo del día y deja el importe original en el detalle; la regla vive como anotación en M11/W04 y no se dibuja una pantalla específica
 
 ### Requirement: Dashboard y preguntas rápidas
 
@@ -100,19 +100,19 @@ El diseño móvil SHALL incluir un dashboard tipo bento con accesos directos que
 - **WHEN** todavía no hay movimientos suficientes
 - **THEN** el dashboard muestra un estado vacío informativo y una acción para empezar a registrar datos
 
-### Requirement: Compartición de cuentas y red social
+### Requirement: Compartición de cuentas
 
-El diseño móvil SHALL incluir gestión de miembros y permisos de cuentas conjuntas, invitaciones y una red de amistades desde la que compartir cuentas.
+El diseño móvil SHALL incluir gestión de miembros y permisos de cuentas conjuntas e invitaciones. La red de amistades se planifica en un cambio posterior y queda documentada como exclusión justificada en la matriz de cobertura.
 
 #### Scenario: Invitación a cuenta conjunta
 
 - **WHEN** se invita a una persona a una cuenta conjunta
 - **THEN** el diseño muestra el estado pendiente y el permiso que tendrá al aceptar
 
-#### Scenario: Red de amigos
+#### Scenario: Red de amigos fuera de alcance
 
-- **WHEN** se consulta la red social
-- **THEN** se distinguen amistades, invitaciones pendientes y cuentas compartidas en común
+- **WHEN** se revisa el alcance de F2
+- **THEN** la matriz de cobertura justifica la ausencia de la red de amistades y la sitúa en un cambio posterior
 
 ### Requirement: Notificaciones y superficies externas
 

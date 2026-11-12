@@ -1,6 +1,6 @@
 # Estado de implementación del diseño
 
-- **Cambio:** `diseno-app-akari`
+- **Cambio:** `diseno-app-akari` (archivado el 2026-11-12 en `openspec/changes/archive/2026-11-12-diseno-app-akari`)
 - **Fecha:** 2026-11-12
 - **Fase actual:** F4 · Prototipos y handoff (aprobada el 12 nov 2026; cambio listo para archivar)
 - **Archivo Figma original:** https://www.figma.com/design/npwsfgd0s4n4UWszvg28wv/akari
@@ -84,9 +84,9 @@ La estructura de componentes sigue **Aurex Living · Real Estate Dashboard** (Or
 
 ## Siguiente paso
 
-1. Sincronizar las specs principales con los deltas del cambio (`openspec/specs/diseno/*`).
-2. Archivar el cambio `diseno-app-akari` y dejar constancia del `fileKey`, la versión v1.0 y los prototipos.
-3. Abrir el cambio de implementación (Next.js/React Native) usando `handoff.md` y `cobertura.md` como contrato.
+1. Abrir el cambio de implementación (Next.js/React Native) usando `handoff.md` y `cobertura.md` como contrato.
+2. Consumir las specs principales en `openspec/specs/diseno/*` y mantener el archivo como fuente de verdad visual.
+3. Registrar en el nuevo cambio cualquier desviación de tokens, componentes o flujos; si cambia un flujo aprobado, actualizar el changelog del archivo y la matriz.
 
 ## Nota sobre Figma
 

@@ -79,7 +79,7 @@ Para presentar: selecciona una pantalla y usa **Shift + Space** (o `proto.presen
 | F3 · Web | Aprobada (12 nov 2026) | 7 pantallas, accesibilidad y flujos E–F (tarea 5.10). |
 | F4 · Handoff | Aprobada (12 nov 2026) | Prototipos, anotaciones, matriz, auditoría y este documento (tarea 6.8). |
 
-Las secciones `Componentes`, `Móvil` y `Web` están marcadas como *Ready for dev* desde el 12 nov 2026; el changelog v1.0 registra la aprobación final de F1–F4.
+Las secciones `Componentes`, `Móvil` y `Web` están marcadas como *Ready for dev* desde el 12 nov 2026; el changelog v1.0 registra la aprobación final de F1–F4. Las specs principales viven en `openspec/specs/diseno/*` y el cambio quedó archivado en `openspec/changes/archive/2026-11-12-diseno-app-akari`.
 
 ## 7. Auditoría aplicada en F4
 

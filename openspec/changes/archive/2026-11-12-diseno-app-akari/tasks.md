@@ -70,5 +70,5 @@
 
 ## Workflow follow-up
 
-- Archivar el cambio cuando la revisión de diseño esté aprobada y las specs principales se hayan sincronizado.
-- Verificar el resultado archivado y dejar constancia del `fileKey` y de los enlaces de prototipo para los cambios de implementación posteriores.
+- [x] Archivar el cambio cuando la revisión de diseño esté aprobada y las specs principales se hayan sincronizado (archivado el 2026-11-12).
+- [x] Verificar el resultado archivado y dejar constancia del `fileKey` y de los enlaces de prototipo para los cambios de implementación posteriores.
