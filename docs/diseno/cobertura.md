@@ -83,3 +83,18 @@ La matriz se revisa contra el canvas, no contra la implementación: una fila sin
 - **Ninguna pantalla queda solo en estado feliz**: M02, M03, M06, M10, M17, M18, M19 y W03/W06 dibujan error, vacío, sin conexión o conflicto; el resto los documenta en anotaciones.
 - **Sin pantallas huérfanas**: cada frame se puede rastrear a una fila de esta matriz y cada fila del canvas tiene pantalla o justificación.
 - **Estado:** matriz aprobada con F4 el 12 nov 2026; `Componentes`, `Móvil` y `Web` marcados como *Ready for dev*.
+
+## 9. Prototipos por flujo
+
+| Flujo | Pantalla de entrada | Recorrido | Estado |
+| --- | --- | --- | --- |
+| 0 · Onboarding | `M01` | `M01 → M02 → M04 → M05` | Aprobado |
+| A · Alta de cuenta | `M06` | `M06 → M05` | Aprobado |
+| B · Registro de movimiento | `M05` | `M05 → M09 → M08` | Aprobado |
+| C · Gasto grupal | `M11` | `M11 → M12 → M14` | Aprobado |
+| D · Preguntas y detalle | `M13` | `M13 → M08` | Aprobado |
+| E · Resumen y cuentas web | `W01` | `W01 → W02 → W03` | Aprobado |
+| F · Grupos y ajustes web | `W04` | `W04 → W05 → W06` | Aprobado |
+
+Los botones «Abrir prototipo» de `01-Diseño ▸ Prototipos` abren la pantalla de entrada de cada fila. La tab bar móvil y la sidebar web permiten cambiar de raíz sin volver al índice.
+
