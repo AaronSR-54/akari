@@ -49,7 +49,7 @@ Alcance: `01-Diseño ▸ Componentes` y `02-Pantallas` (móvil y web). La portad
 | Componentes separados (detached) | 0 instancias sin `mainComponent`; 16 sets y 8 iconos con instancias | Sin acción | No hay copias separadas que justificar |
 | Iconos sin exportación | 8 componentes `Icon/*` sin ajustes de exportación | Exportación SVG 1× añadida | Assets listos para implementación |
 | Pantallas sin anotaciones | 0 anotaciones al iniciar F4 | 108 anotaciones en 26 pantallas (interacción, desarrollo, accesibilidad, contenido) | Cada pantalla documenta disparadores, validaciones, estados ocultos, datos y reglas |
-| Prototipo no navegable | `Prototipos` era un placeholder | Sección con 7 flujos, recorrido, versión, estado y botón «Abrir prototipo» | Flujos A–F conectados a su primera pantalla |
+| Prototipo no navegable | `Prototipos` era un placeholder | Sección con 7 flujos, recorrido, versión, estado y botón «Abrir prototipo» | Flujos 0–F conectados a su primera pantalla |
 
 ### Accesibilidad (6.5)
 
