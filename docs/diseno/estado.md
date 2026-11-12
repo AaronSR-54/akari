@@ -52,7 +52,7 @@ La estructura de componentes sigue **Aurex Living · Real Estate Dashboard** (Or
 
 ## Estado en FigCraft
 
-- `00-Portada`: portada, estado de revisión (F0–F4 «Aprobada»), changelog v0.1–v1.3 y páginas del archivo.
+- `00-Portada`: portada, estado de revisión (F0–F4 «Aprobada»), changelog v0.1–v1.4 y páginas del archivo.
 - `01-Diseño ▸ Fundamentos`: dirección visual, paletas, contraste AA, theme sample, tipografía, tokens, iconografía y gráficos.
 - `01-Diseño ▸ Componentes`: navegación, acciones, formularios, datos, feedback y estados, más pruebas de composición.
 - `01-Diseño ▸ Prototipos`: siete flujos conectados con recorrido, versión, estado y botón «Abrir prototipo».
@@ -106,6 +106,13 @@ Aprobada la F4, se añadió una iteración de navegación web registrada como v1
 - El botón de colapsar de la sidebar expandida pasa de un chevron suelto a un círculo de 32 px con `surface/sunken` y un **doble chevron** de 12 × 10 px `text/secondary`, sin sombra.
 - Se aplica a las cuatro variantes `Activo=...` en `Vista=Expandida`.
 - Changelog v1.3.
+
+## Iteración v1.4 · Sidebar unificada
+
+- Las cuatro variantes de la sidebar (Resumen, Movimientos, Grupos y Ajustes) comparten la misma estructura: header con logo + botón de colapsar, `Items` agrupados con gap 12, avatar al pie y `spaceBetween`.
+- La versión compacta usa el logo reducido M (46 px), items solo-icono y avatar de 40 px; se expande por hover.
+- Corregido el estado activo de la variante Grupos (antes tenía Resumen activo).
+- Changelog v1.4.
 
 ## Siguiente paso
 
