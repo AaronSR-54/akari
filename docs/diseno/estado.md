@@ -129,6 +129,15 @@ El cambio `implementacion-app-akari` lleva el diseño a código dentro del mismo
 - **Trazabilidad:** [mapa diseño → código](../desarrollo/mapa-diseno-codigo.md) y [desviaciones](../desarrollo/desviaciones.md).
 - **Contrato de comportamiento:** specs `openspec/specs/producto/*`; el diseño visual sigue siendo la referencia de `docs/diseno/`.
 
+## Iteración v1.5 · Navegación fija (implementación web)
+
+- Ajuste visual aprobado para la implementación web: la navegación lateral permanece fija al hacer scroll, sin animación vertical, y el rebote elástico del trackpad se contiene desde tablet.
+- La cabecera de la variante sidebar ya no muestra el título de la sección: queda con el buscador y el botón de avisos, y permanece pegada al borde superior también en reposo. En la variante header desaparece la barra secundaria y solo queda `HeaderNav`, también pegado arriba.
+- El contenido arranca con 24 px de aire bajo la cabecera en todos los breakpoints para que el título de la página no quede pegado.
+- La identidad de la persona aparece una sola vez por variante: en el pie de la sidebar cuando la navegación es lateral y en `HeaderNav` cuando es superior. La cabecera de escritorio no repite el avatar.
+- Las barras fijas usan superficies opacas de los tokens; se corrigen las opacidades no soportadas sobre variables CSS. El borde de la cabecera se mantiene como estaba, sin degradado.
+- Trazabilidad: change `fijar-navegacion-scroll` y spec `producto/shell-web`.
+
 ## Nota sobre Figma
 
 El plan Starter sigue limitando Figma a 20 llamadas MCP de lectura al mes, 3 páginas y 1 modo de variables. FigCraft es el entorno de diseño activo.

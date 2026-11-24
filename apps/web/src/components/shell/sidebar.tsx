@@ -5,23 +5,9 @@ import { usePathname } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { Avatar, Icon, IconBell, IconButton, IconSearch, Logo, cn } from '@akari/ui';
 import { isActivePath, navItems } from '../nav';
-import { useAccount, useGroup } from '../hooks';
 
 const initials = 'MR';
 const displayName = 'Marta';
-
-export function titleForPath(pathname: string): string {
-  if (pathname === '/') return 'Resumen';
-  if (pathname.startsWith('/movimientos/nuevo')) return 'Nuevo movimiento';
-  if (pathname.startsWith('/movimientos')) return 'Movimientos';
-  if (pathname.startsWith('/cuentas/nueva')) return 'Nueva cuenta';
-  if (pathname.startsWith('/cuentas/')) return 'Cuenta';
-  if (pathname.startsWith('/grupos/')) return 'Grupo';
-  if (pathname.startsWith('/grupos')) return 'Grupos';
-  if (pathname.startsWith('/preguntas')) return 'Preguntas rápidas';
-  if (pathname.startsWith('/ajustes')) return 'Datos y sincronización';
-  return 'Resumen';
-}
 
 function NavList({
   expanded = true,
@@ -139,23 +125,10 @@ export function Sidebar() {
   );
 }
 
-export function DesktopHeader({
-  onOpenSearch,
-  showActions = true,
-}: {
-  onOpenSearch: () => void;
-  showActions?: boolean;
-}) {
-  const pathname = usePathname();
-  const accountId = pathname.match(/^\/cuentas\/([^/]+)/)?.[1] ?? '';
-  const groupId = pathname.match(/^\/grupos\/([^/]+)/)?.[1] ?? '';
-  const account = useAccount(accountId === 'nueva' ? '' : accountId);
-  const group = useGroup(groupId);
-  const title = account?.name ?? group?.name ?? titleForPath(pathname);
+export function DesktopHeader({ onOpenSearch }: { onOpenSearch: () => void }) {
   return (
-    <header className="hidden h-[72px] shrink-0 items-center justify-between gap-6 px-8 lg:flex">
-      <p className="truncate text-ui-20-bold text-text-primary">{title}</p>
-      <div className={cn('flex shrink-0 items-center gap-2.5', !showActions && 'hidden')}>
+    <header className="sticky top-0 z-20 hidden h-[72px] shrink-0 items-center justify-end gap-6 bg-surface-canvas px-8 lg:-mt-4 lg:flex">
+      <div className="flex shrink-0 items-center gap-2.5">
         <button
           type="button"
           onClick={onOpenSearch}
@@ -171,7 +144,6 @@ export function DesktopHeader({
           icon={<IconBell size={18} />}
           className="bg-surface-default text-text-primary"
         />
-        <Avatar initials={initials} tone="strong" label={displayName} />
       </div>
     </header>
   );
@@ -180,7 +152,7 @@ export function DesktopHeader({
 export function HeaderNav({ onOpenSearch }: { onOpenSearch: () => void }) {
   const pathname = usePathname();
   return (
-    <header className="sticky top-0 z-30 hidden w-full bg-surface-canvas/90 backdrop-blur lg:block">
+    <header className="sticky top-0 z-30 hidden w-full bg-surface-canvas lg:-mt-4 lg:block">
       <div className="mx-auto flex h-[72px] w-full max-w-content items-center justify-between gap-4 px-4">
         <Link
           href="/"
@@ -280,7 +252,7 @@ export function MobileNav() {
   return (
     <nav
       aria-label="Navegación principal"
-      className="safe-bottom fixed inset-x-0 bottom-0 z-40 border-t border-border-subtle bg-surface-default/95 backdrop-blur md:hidden"
+      className="safe-bottom fixed inset-x-0 bottom-0 z-40 border-t border-border-subtle bg-surface-default md:hidden"
     >
       <ul className="mx-auto flex max-w-md items-center justify-around px-2 py-1.5">
         {navItems.map((item) => {

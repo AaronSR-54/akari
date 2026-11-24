@@ -19,6 +19,98 @@ test.describe('shell web', () => {
     expect(overflow).toBeLessThanOrEqual(1);
   });
 
+  test('el overscroll se contiene en escritorio y no en móvil', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 600 });
+    await seedDemo(page);
+    const overscrollY = () =>
+      page.evaluate(() => getComputedStyle(document.documentElement).overscrollBehaviorY);
+    await expect.poll(overscrollY).toBe('none');
+
+    await page.setViewportSize({ width: 390, height: 600 });
+    await expect.poll(overscrollY).toBe('auto');
+  });
+
+  test('la sidebar y la cabecera permanecen fijas al hacer scroll', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 600 });
+    await seedDemo(page);
+    await page.goto('/ajustes');
+    await expect(page.getByRole('heading', { name: 'Datos y sincronización' })).toBeVisible();
+
+    const aside = page.locator('aside');
+    const header = page.locator('header.h-\\[72px\\]');
+    await expect(header).toBeVisible();
+    await expect(header).not.toContainText('Datos y sincronización');
+    await expect(page.getByRole('heading', { name: 'Datos y sincronización', level: 1 })).toHaveCount(1);
+    const before = { aside: await aside.boundingBox(), header: await header.boundingBox() };
+    expect(before.header?.y).toBe(0);
+    const title = page.getByRole('heading', { name: 'Datos y sincronización', level: 1 });
+    const titleBox = await title.boundingBox();
+    const gap = (titleBox?.y ?? 0) - ((before.header?.y ?? 0) + (before.header?.height ?? 0));
+    expect(gap).toBeGreaterThanOrEqual(24);
+
+    await page.evaluate(() => window.scrollTo(0, 220));
+    await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(150);
+
+    const after = { aside: await aside.boundingBox(), header: await header.boundingBox() };
+    expect(after.aside?.y).toBe(before.aside?.y);
+    expect(after.header?.y).toBe(0);
+    await expect(header).toBeVisible();
+  });
+
+  test('el título respira bajo la barra en móvil', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await seedDemo(page);
+    await page.goto('/ajustes');
+
+    const bar = page.locator('header.sticky.top-0:visible');
+    const title = page.getByRole('heading', { name: 'Datos y sincronización', level: 1 });
+    await expect(bar).toBeVisible();
+    const barBox = await bar.boundingBox();
+    const titleBox = await title.boundingBox();
+    const gap = (titleBox?.y ?? 0) - ((barBox?.y ?? 0) + (barBox?.height ?? 0));
+    expect(gap).toBeGreaterThanOrEqual(24);
+  });
+
+  test('el modo header deja solo la navegación superior', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 600 });
+    await seedDemo(page);
+    await page.goto('/ajustes');
+    await page.getByLabel('Navegación de escritorio').selectOption('header');
+    await expect(page.getByLabel('Navegación de escritorio')).toHaveValue('header');
+
+    const nav = page.locator('header.sticky.top-0:visible');
+    await expect(nav).toBeVisible();
+    await expect(page.locator('header.h-\\[72px\\]')).toHaveCount(0);
+    expect((await nav.boundingBox())?.y).toBe(0);
+
+    await page.evaluate(() => window.scrollTo(0, 220));
+    await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(150);
+
+    const navBox = await nav.boundingBox();
+    expect(navBox?.y).toBe(0);
+    await expect(page.getByRole('button', { name: 'Buscar' })).toHaveCount(1);
+    await expect(page.getByRole('button', { name: 'Avisos' })).toHaveCount(1);
+  });
+
+  test('la identidad aparece una sola vez en cada variante', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 600 });
+    await seedDemo(page);
+    await page.goto('/ajustes');
+
+    const avatar = page.getByRole('img', { name: 'Marta' });
+    await expect(avatar).toHaveCount(1);
+    await expect(page.locator('aside').getByRole('img', { name: 'Marta' })).toHaveCount(1);
+    await expect(page.getByRole('button', { name: 'Buscar' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Avisos' })).toBeVisible();
+
+    await page.getByLabel('Navegación de escritorio').selectOption('header');
+    await expect(page.getByLabel('Navegación de escritorio')).toHaveValue('header');
+    await expect(avatar).toHaveCount(1);
+    await expect(
+      page.locator('header.sticky.top-0:visible').getByRole('img', { name: 'Marta' }),
+    ).toHaveCount(1);
+  });
+
   test('deep links y atajo de búsqueda', async ({ page }) => {
     await seedDemo(page);
     await page.goto('/cuentas/demo-acc-day');

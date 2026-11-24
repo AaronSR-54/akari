@@ -57,11 +57,8 @@ export function AppShell({ children }: { children: ReactNode }) {
           {sidebarMode ? null : <HeaderNav onOpenSearch={() => setSearchOpen(true)} />}
           <TabletHeader />
           <MobileTopBar onOpenSearch={() => setSearchOpen(true)} />
-          <DesktopHeader
-            onOpenSearch={() => setSearchOpen(true)}
-            showActions={sidebarMode}
-          />
-          <main id="contenido" className="flex-1 px-5 pb-24 md:px-6 md:pb-8 lg:px-8">
+          {sidebarMode ? <DesktopHeader onOpenSearch={() => setSearchOpen(true)} /> : null}
+          <main id="contenido" className="flex-1 px-5 pb-24 pt-6 md:px-6 md:pb-8 lg:px-8">
             {error ? (
               <StatePage
                 type="error"
