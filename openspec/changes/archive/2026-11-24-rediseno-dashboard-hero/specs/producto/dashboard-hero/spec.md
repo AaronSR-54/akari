@@ -30,13 +30,14 @@ El dashboard SHALL presentar el saldo total y la evolución del saldo del mes so
 
 ### Requirement: Evolución del saldo del mes
 
-La gráfica del hero SHALL representar el saldo de la cuenta de referencia a lo largo del mes, partiendo del saldo de cierre del mes anterior como base. Cada ingreso SHALL subir la línea y cada gasto bajarla; la serie SHALL terminar en el día actual y MUST NOT inventar días futuros. La gráfica SHALL permitir recorrer cada día transcurrido para consultar sus movimientos y el saldo resultante.
+La gráfica del hero SHALL representar el saldo de la cuenta de referencia a lo largo del mes, partiendo del saldo de cierre del mes anterior como base. Cada ingreso SHALL subir la línea y cada gasto bajarla; la serie SHALL terminar en el día actual y MUST NOT inventar días futuros. La gráfica SHALL permitir recorrer el cierre del mes anterior y cada día transcurrido para consultar sus movimientos y el saldo resultante.
 
 #### Scenario: Base en el saldo de apertura
 
 - **WHEN** el mes actual tiene movimientos y existe saldo del mes anterior
-- **THEN** la serie arranca en el cierre del día 1, en el borde izquierdo de la gráfica, calculado desde el saldo de cierre del mes anterior
-- **AND** no hay un tramo previo al día 1 ni marcas o referencias visibles
+- **THEN** la serie arranca en el cierre del mes anterior, como primer punto antes del día 1
+- **AND** el primer punto se puede recorrer y su detalle lo identifica como «Cierre del mes anterior» con su saldo
+- **AND** la fecha del cierre anterior no se muestra como texto fijo en la gráfica
 - **AND** el último punto de la serie coincide con el saldo actual de la divisa de referencia
 
 #### Scenario: Gastos hacia abajo e ingresos hacia arriba
@@ -55,7 +56,7 @@ La gráfica del hero SHALL representar el saldo de la cuenta de referencia a lo 
 #### Scenario: Detalle de un día con el teclado
 
 - **WHEN** la gráfica recibe el foco y se usan las flechas izquierda y derecha, Inicio o Fin
-- **THEN** el detalle recorre los días transcurridos y se anuncia el día activo a los lectores de pantalla
+- **THEN** el detalle recorre el cierre anterior y los días transcurridos y se anuncia el día activo a los lectores de pantalla
 - **AND** Escape cierra el detalle sin mover el foco fuera de la gráfica
 
 #### Scenario: Días futuros
@@ -145,7 +146,7 @@ La demo SHALL usar una fecha fija y un histórico de varios meses para que el sa
 
 - **WHEN** se cargan los datos de ejemplo con la fecha fija del mock
 - **THEN** la demo incluye movimientos del mes en curso y de al menos dos meses anteriores
-- **AND** la gráfica muestra el saldo desde el cierre del día 1 y la tarjeta el mismo saldo total estimado entre sesiones y recargas
+- **AND** la gráfica muestra el saldo desde el cierre del mes anterior y la tarjeta el mismo saldo total estimado entre sesiones y recargas
 
 ### Requirement: Sin gráficos semanales ni tarjetas duplicadas
 

@@ -67,6 +67,7 @@ test.describe('dashboard hero', () => {
 
     const month = page.locator('[data-hero="month"]');
     const bar = month.getByRole('group', { name: /Saldo del mes por día/ });
+    await expect(month.getByText(/31 oct/)).toHaveCount(0);
     await bar.focus();
 
     await expect(month.getByText('dom 29 nov')).toBeVisible();
@@ -77,8 +78,15 @@ test.describe('dashboard hero', () => {
     await expect(month.getByText('Suscripción vídeo')).toBeVisible();
     await expect(month.getByText('Saldo tras el día')).toBeVisible();
 
+    await page.keyboard.press('Home');
+    await expect(month.getByText('sáb 31 oct')).toBeVisible();
+    await expect(month.getByText('Cierre del mes anterior')).toBeVisible();
+    await expect(month.getByText('Saldo al cierre')).toBeVisible();
+    await expect(month.getByText('13.726,00 €', { exact: true })).toBeVisible();
+
     await page.keyboard.press('Escape');
     await expect(month.getByText('Saldo tras el día')).toBeHidden();
+    await expect(month.getByText('Cierre del mes anterior')).toBeHidden();
   });
 
   test('registrar un movimiento actualiza el gasto del mes y el detalle del día', async ({ page }) => {

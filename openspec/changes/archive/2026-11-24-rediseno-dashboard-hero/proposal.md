@@ -7,7 +7,7 @@ El resumen abre con una fila de tarjetas que encierra el saldo total en una caja
 ## What Changes
 
 - **Hero con saldo editorial:** saldo total agregado por divisa y proyección de fin de mes sobre el lienzo, sin caja, junto a la gráfica de evolución del saldo del mes, también fuera de tarjeta y con la tarjeta de balance justo debajo.
-- **Saldo del mes con base real:** la serie parte del saldo de cierre del mes anterior (la base a día 1) y termina en el saldo actual. Los ingresos suben la línea y los gastos la bajan; solo suma las cuentas incluidas en el saldo total y nunca convierte divisas.
+- **Saldo del mes con base real:** la serie parte del saldo de cierre del mes anterior, que se muestra como primer punto antes del día 1, y termina en el saldo actual. Los ingresos suben la línea y los gastos la bajan; solo suma las cuentas incluidas en el saldo total y nunca convierte divisas.
 - **Detalle diario:** la gráfica permite recorrer con el puntero o el teclado cada día transcurrido y ver sus movimientos con signo y el saldo tras ese día. Los días futuros no se pueden seleccionar.
 - **Balance del mes en tarjeta:** bajo la gráfica, una tarjeta muestra «Balance del mes» con el neto, signo explícito y color (verde positivo, rojo negativo) y el saldo total estimado a fin de mes como única línea de pie. La tarjeta va justo debajo de la gráfica, con su misma anchura y una sombra superior sutil, y la gráfica ocupa el alto disponible para que ambas columnas del hero terminen a la misma altura.
 - **Proyección de cierre:** el saldo total estimado sale de `overview.projections` (recurrencias y cuotas pendientes del mes). Sin proyección para la divisa de referencia, la línea se omite.

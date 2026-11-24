@@ -8,8 +8,8 @@
 
 ## 2. Design system: gráfica de saldo mensual
 
-- [x] 2.1 Añadir `MonthBalance` en `packages/ui/src/month-balance.tsx`: serie desde el cierre del día 1, sin tramo previo de apertura, puntos por día, área ámbar, línea de tinta y sin etiqueta ni líneas de referencia visibles. Sin título ni pie visibles; exportarlo desde `packages/ui/src/index.ts`.
-- [x] 2.2 Implementar el detalle por día: tooltip con movimientos y «Saldo tras el día», `clamp` horizontal, sin triángulo, `pointerdown`/`pointermove`, flechas, Inicio, Fin y Escape, límite a días transcurridos y región `aria-live`. Cubrir teclado, día sin movimientos y ausencia de textos de cabecera en `month-balance.test.tsx`.
+- [x] 2.1 Añadir `MonthBalance` en `packages/ui/src/month-balance.tsx`: serie desde el cierre del mes anterior como primer punto, seguido del día 1, sin etiqueta fija de fecha, puntos por día, área ámbar, línea de tinta y sin etiqueta ni líneas de referencia visibles. Sin título ni pie visibles; exportarlo desde `packages/ui/src/index.ts`.
+- [x] 2.2 Implementar el detalle por día: tooltip con movimientos y «Saldo tras el día», `clamp` horizontal, sin triángulo, `pointerdown`/`pointermove`, flechas, Inicio, Fin y Escape, límite a días transcurridos y región `aria-live`. Cubrir teclado, cierre anterior, día sin movimientos y ausencia de textos de cabecera fijos en `month-balance.test.tsx`.
 - [x] 2.3 Incluir la gráfica en la prueba de accesibilidad y comprobar grupo con nombre, foco visible y contraste en ambos temas.
 
 ## 3. Dashboard web: hero de saldo y tarjeta de balance

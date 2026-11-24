@@ -44,6 +44,9 @@ function renderMonth() {
     <MonthBalance
       days={days}
       openingBalanceMinor={1200000}
+      openingLabel="sáb 31 oct"
+      openingTotal="12.000,00 €"
+      openingAriaLabel="sábado 31 de octubre: saldo de cierre 12.000,00 €"
       elapsedDays={3}
       ariaLabel="Saldo del mes por día"
     />,
@@ -56,6 +59,7 @@ describe('month balance', () => {
     expect(screen.queryByText(/Base 1 nov/)).not.toBeInTheDocument();
     expect(screen.queryByText('Saldo del mes')).not.toBeInTheDocument();
     expect(screen.queryByText(/Día 3 de 30/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/31 oct/)).not.toBeInTheDocument();
   });
 
   it('recorre los días transcurridos con el teclado y muestra el saldo', async () => {
@@ -74,6 +78,12 @@ describe('month balance', () => {
     expect(screen.getByText('Sin movimientos')).toBeInTheDocument();
 
     await user.keyboard('{Home}');
+    expect(screen.getByText('sáb 31 oct')).toBeInTheDocument();
+    expect(screen.getByText('Cierre del mes anterior')).toBeInTheDocument();
+    expect(screen.getByText('Saldo al cierre')).toBeInTheDocument();
+    expect(screen.getByText('12.000,00 €')).toBeInTheDocument();
+
+    await user.keyboard('{ArrowRight}');
     expect(screen.getByText('dom 1 nov')).toBeInTheDocument();
     expect(screen.getByText('Nómina')).toBeInTheDocument();
 
@@ -84,18 +94,22 @@ describe('month balance', () => {
     expect(screen.queryByText('Saldo tras el día')).not.toBeInTheDocument();
   });
 
-  it('empieza en el día 1, sin un tramo previo desde la apertura', () => {
+  it('empieza en el cierre del mes anterior y sigue con el día 1', () => {
     const { container } = render(
       <MonthBalance
         days={days}
         openingBalanceMinor={1200000}
+        openingLabel="sáb 31 oct"
+        openingTotal="12.000,00 €"
+        openingAriaLabel="sábado 31 de octubre: saldo de cierre 12.000,00 €"
         elapsedDays={1}
         ariaLabel="Saldo del mes por día"
       />,
     );
     const line = container.querySelector('path[fill="none"]');
     expect(line?.getAttribute('d')).toMatch(/^M 0 /);
-    expect(line?.getAttribute('d')).not.toContain('L');
+    expect(line?.getAttribute('d')).toContain('L');
+    expect(screen.queryByText(/31 oct/)).not.toBeInTheDocument();
   });
 
   it('no permite seleccionar días futuros y anuncia el día activo', async () => {

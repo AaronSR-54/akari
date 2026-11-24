@@ -20,6 +20,12 @@ export type MonthBalanceProps = {
   days: MonthBalanceDay[];
   /** Saldo al cierre del mes anterior: base de la serie. */
   openingBalanceMinor: number;
+  /** Fecha del cierre anterior para el detalle, p. ej. «sáb 31 oct». */
+  openingLabel: string;
+  /** Saldo de apertura ya formateado. */
+  openingTotal: string;
+  /** Descripción accesible del cierre anterior. */
+  openingAriaLabel: string;
   /** Días transcurridos del mes; limita la serie y la interacción. */
   elapsedDays: number;
   ariaLabel: string;
@@ -34,6 +40,9 @@ export type MonthBalanceProps = {
 export function MonthBalance({
   days,
   openingBalanceMinor,
+  openingLabel,
+  openingTotal,
+  openingAriaLabel,
   elapsedDays,
   ariaLabel,
   className,
@@ -43,9 +52,7 @@ export function MonthBalance({
   const totalDays = days.length;
   const elapsed = Math.min(Math.max(elapsedDays, 0), totalDays);
   const elapsedDaysList = days.slice(0, elapsed);
-  const values = elapsedDaysList.length
-    ? elapsedDaysList.map((day) => day.balanceMinor)
-    : [openingBalanceMinor];
+  const values = [openingBalanceMinor, ...elapsedDaysList.map((day) => day.balanceMinor)];
   const rawMin = Math.min(...values);
   const rawMax = Math.max(...values);
   const rawRange = rawMax - rawMin;
@@ -53,10 +60,14 @@ export function MonthBalance({
   const min = rawMin - padding;
   const max = rawMax + padding;
   const scale = (value: number) => 34 - ((value - min) / (max - min)) * 28;
-  const points = elapsedDaysList.map((day, index) => ({
-    x: totalDays > 1 ? (index / (totalDays - 1)) * 100 : 0,
-    y: scale(day.balanceMinor),
-  }));
+  const openingPoint = { x: 0, y: scale(openingBalanceMinor) };
+  const points = [
+    openingPoint,
+    ...elapsedDaysList.map((day, index) => ({
+      x: totalDays > 0 ? ((index + 1) / totalDays) * 100 : 0,
+      y: scale(day.balanceMinor),
+    })),
+  ];
   const line = points.length
     ? `M ${points[0]!.x} ${points[0]!.y} ${points
         .slice(1)
@@ -67,31 +78,32 @@ export function MonthBalance({
   const area = line && last ? `${line} L 100 ${last.y} L 100 46 L 0 46 Z` : '';
   const selectedIndex = activeIndex ?? (points.length > 0 ? points.length - 1 : null);
   const point = selectedIndex !== null ? points[selectedIndex] : undefined;
-  const active = activeIndex !== null ? elapsedDaysList[activeIndex] : undefined;
+  const activeIsOpening = selectedIndex === 0;
+  const activeDay =
+    selectedIndex !== null && selectedIndex > 0 ? elapsedDaysList[selectedIndex - 1] : undefined;
+  const activeVisible = activeIndex !== null && (activeIsOpening || Boolean(activeDay));
   const activeTop = point ? (point.y / 38) * 100 : 0;
+  const openingTop = (openingPoint.y / 38) * 100;
   const tooltipAbove = activeTop > 52;
 
   const select = (index: number) => {
-    if (elapsed === 0) return;
-    setActiveIndex(Math.min(Math.max(index, 0), elapsed - 1));
+    setActiveIndex(Math.min(Math.max(index, 0), elapsed));
   };
 
   const onPointerMove = (event: PointerEvent<HTMLDivElement>) => {
-    if (elapsed === 0) return;
     const rect = event.currentTarget.getBoundingClientRect();
     if (rect.width === 0) return;
     const ratio = Math.min(Math.max((event.clientX - rect.left) / rect.width, 0), 1);
-    select(totalDays > 1 ? Math.round(ratio * (totalDays - 1)) : 0);
+    select(totalDays > 0 ? Math.round(ratio * totalDays) : 0);
   };
 
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
-    if (elapsed === 0) return;
-    const current = activeIndex ?? elapsed - 1;
+    const current = activeIndex ?? Math.max(elapsed, 0);
     const moves: Record<string, number> = {
       ArrowLeft: current - 1,
       ArrowRight: current + 1,
       Home: 0,
-      End: elapsed - 1,
+      End: elapsed,
     };
     if (event.key === 'Escape') {
       setActiveIndex(null);
@@ -113,7 +125,7 @@ export function MonthBalance({
         onPointerLeave={() => setActiveIndex(null)}
         onKeyDown={onKeyDown}
         onFocus={() => {
-          if (activeIndex === null) setActiveIndex(Math.max(elapsed - 1, 0));
+          if (activeIndex === null) setActiveIndex(Math.max(elapsed, 0));
         }}
         onBlur={() => setActiveIndex(null)}
         className="relative min-h-32 w-full flex-1 cursor-default rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
@@ -146,6 +158,11 @@ export function MonthBalance({
               />
             ) : null}
           </svg>
+          <span
+            aria-hidden="true"
+            className="pointer-events-none absolute block h-1.5 w-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-accent-strong/70"
+            style={{ left: 0, top: `${openingTop}%` }}
+          />
           {point ? (
             <>
               <span
@@ -160,7 +177,7 @@ export function MonthBalance({
               />
             </>
           ) : null}
-          {active && point ? (
+          {activeVisible && point ? (
             <div
               className="pointer-events-none z-30 w-56 rounded-lg bg-surface-inverse px-2.5 py-1.5 shadow-elevation-2"
               style={{
@@ -171,10 +188,14 @@ export function MonthBalance({
                   : { top: `calc(${activeTop}% + 12px)` }),
               }}
             >
-              <p className="text-ui-9 uppercase tracking-wide text-text-inverse">{active.label}</p>
-              {active.items && active.items.length > 0 ? (
+              <p className="text-ui-9 uppercase tracking-wide text-text-inverse">
+                {activeIsOpening ? openingLabel : activeDay?.label}
+              </p>
+              {activeIsOpening ? (
+                <p className="mt-0.5 text-ui-9 text-text-inverse">Cierre del mes anterior</p>
+              ) : activeDay?.items && activeDay.items.length > 0 ? (
                 <ul className="mt-1 flex flex-col gap-0.5">
-                  {active.items.slice(0, 4).map((item) => (
+                  {activeDay.items.slice(0, 4).map((item) => (
                     <li
                       key={item.id}
                       className="flex items-baseline justify-between gap-4 text-ui-9 text-text-inverse"
@@ -188,13 +209,15 @@ export function MonthBalance({
                 <p className="mt-0.5 text-ui-9 text-text-inverse">Sin movimientos</p>
               )}
               <div className="mt-1 flex items-baseline justify-between gap-4 border-t border-text-inverse/20 pt-1 text-ui-9 text-text-inverse">
-                <span>Saldo tras el día</span>
-                <span className="whitespace-nowrap font-tabular">{active.total}</span>
+                <span>{activeIsOpening ? 'Saldo al cierre' : 'Saldo tras el día'}</span>
+                <span className="whitespace-nowrap font-tabular">
+                  {activeIsOpening ? openingTotal : activeDay?.total}
+                </span>
               </div>
             </div>
           ) : null}
           <p aria-live="polite" className="sr-only">
-            {active?.ariaLabel ?? ''}
+            {activeVisible ? (activeIsOpening ? openingAriaLabel : activeDay?.ariaLabel ?? '') : ''}
           </p>
         </div>
       </div>

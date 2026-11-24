@@ -139,6 +139,7 @@ describe('accounts', () => {
     );
     expect(month.daysInMonth).toBe(30);
     expect(month.elapsedDays).toBe(29);
+    expect(month.openingDate).toBe('2026-10-31');
     expect(month.openingBalanceMinor).toBe(10000);
     expect(month.days).toHaveLength(30);
     expect(month.days[0]).toMatchObject({

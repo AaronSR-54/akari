@@ -10,6 +10,7 @@ import {
   startOfDay,
   startOfMonth,
   startOfWeek,
+  subDays,
   subMonths,
   subWeeks,
 } from 'date-fns';
@@ -248,6 +249,8 @@ export type MonthDayMovements = {
 export type CurrentMonthMovements = {
   month: string;
   currency: string;
+  /** Último día del mes anterior: base de la serie y primer punto del detalle. */
+  openingDate: string;
   daysInMonth: number;
   elapsedDays: number;
   openingBalanceMinor: number;
@@ -269,6 +272,7 @@ export function currentMonthMovements(
   openingBalanceMinor = 0,
 ): CurrentMonthMovements {
   const monthStart = startOfMonth(today);
+  const openingDate = format(subDays(monthStart, 1), 'yyyy-MM-dd');
   const daysInMonth = getDaysInMonth(monthStart);
   const todayKey = format(startOfDay(today), 'yyyy-MM-dd');
   let expenseMinor = 0;
@@ -319,6 +323,7 @@ export function currentMonthMovements(
   return {
     month: format(monthStart, 'yyyy-MM'),
     currency,
+    openingDate,
     daysInMonth,
     elapsedDays: Math.min(today.getDate(), daysInMonth),
     openingBalanceMinor,

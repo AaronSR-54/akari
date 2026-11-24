@@ -66,6 +66,9 @@ function OverviewBody({ overview }: { overview: Overview }) {
   const estimatedTotal = projected
     ? formatMinor(projected.minor, projected.currency)
     : undefined;
+  const openingTotal = formatMinor(month.openingBalanceMinor, currency);
+  const openingLabel = formatWeekdayDate(month.openingDate);
+  const openingAriaLabel = `${formatWeekdayFullDate(month.openingDate)}: saldo de cierre ${openingTotal}`;
   const balanceTone =
     month.netMinor > 0
       ? 'text-status-positive-text'
@@ -115,6 +118,9 @@ function OverviewBody({ overview }: { overview: Overview }) {
           <MonthBalance
             days={monthDays}
             openingBalanceMinor={month.openingBalanceMinor}
+            openingLabel={openingLabel}
+            openingTotal={openingTotal}
+            openingAriaLabel={openingAriaLabel}
             elapsedDays={month.elapsedDays}
             ariaLabel="Saldo del mes por día"
           />

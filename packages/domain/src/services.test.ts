@@ -206,6 +206,7 @@ describe('services', () => {
     expect(overview.month.count).toBe(2);
     expect(overview.month.daysInMonth).toBe(30);
     expect(overview.month.elapsedDays).toBe(24);
+    expect(overview.month.openingDate).toBe('2026-10-31');
     expect(overview.month.openingBalanceMinor).toBe(100000);
     expect(overview.month.days[23]).toMatchObject({
       expenseMinor: 1250,

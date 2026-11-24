@@ -13,7 +13,7 @@ Restricciones: no hay estado global (IndexedDB es la fuente de verdad y `useLive
 **Goals:**
 
 - Un hero editorial sin contenedor con el saldo total y su evolución mensual.
-- Una serie diaria que arranca en el cierre del día 1, calculado desde el saldo de apertura, con ingresos hacia arriba y gastos hacia abajo, y se calcula en dominio con pruebas.
+- Una serie diaria que arranca en el cierre del mes anterior como primer punto, seguido del día 1, con ingresos hacia arriba y gastos hacia abajo, y se calcula en dominio con pruebas.
 - Detalle por día con puntero y teclado: movimientos con signo y saldo tras el día.
 - La tarjeta de balance debajo de la gráfica, con el saldo total estimado a fin de mes.
 - Una demo determinista con histórico suficiente para que la base y la proyección se vean iguales siempre.
@@ -83,7 +83,7 @@ Se añade `MonthBalance` en `packages/ui/src/month-balance.tsx`:
 }
 ```
 
-La serie empieza en el cierre del día 1 en `x=0` y sigue con un punto por día hasta hoy, sin un tramo previo que una la apertura con el día 1. Con el mes completo el último punto cae en el borde derecho; si aún no ha terminado, el área ámbar se cierra al ancho completo de la columna para que su borde derecho coincida con el de la tarjeta. El eje Y se ajusta al mínimo y máximo de la serie con un 15 % de margen (o un margen mínimo si es plana). Se dibuja un área ámbar bajo la línea de tinta y el punto final con halo; el color no es el único canal, el detalle siempre muestra texto.
+La serie empieza en `(x=0, cierre del mes anterior)` y sigue con un punto por día (`día 1` en `x = 1 / díasDelMes`) hasta hoy. El primer punto es interactivo y su detalle lo identifica como «Cierre del mes anterior»; no hay una etiqueta fija con la fecha. Con el mes completo el último punto cae en el borde derecho; si aún no ha terminado, el área ámbar se cierra al ancho completo de la columna para que su borde derecho coincida con el de la tarjeta. El eje Y se ajusta al mínimo y máximo de la serie con un 15 % de margen (o un margen mínimo si es plana). Se dibuja un área ámbar bajo la línea de tinta y el punto final con halo; el color no es el único canal, el detalle siempre muestra texto.
 
 No hay título, pie ni referencia textual: la persona usuaria pidió quitar «Saldo del mes», «Día 29 de 30 · 11 movimientos» y «Base 1 nov · 13.726,00 €». La base no lleva ninguna marca visible. La etiqueta accesible del grupo conserva el nombre y las instrucciones de teclado, que no son texto visible.
 

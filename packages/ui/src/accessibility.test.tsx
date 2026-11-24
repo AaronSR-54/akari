@@ -54,6 +54,9 @@ describe('accessibility', () => {
             ariaLabel: `día ${index + 1}: saldo 12.000,00 €`,
           }))}
           openingBalanceMinor={1200000}
+          openingLabel="sáb 31 oct"
+          openingTotal="12.000,00 €"
+          openingAriaLabel="sábado 31 de octubre: saldo de cierre 12.000,00 €"
           elapsedDays={29}
           ariaLabel="Saldo del mes por día"
         />
@@ -80,6 +83,9 @@ describe('accessibility', () => {
           },
         ]}
         openingBalanceMinor={1200000}
+        openingLabel="sáb 31 oct"
+        openingTotal="12.000,00 €"
+        openingAriaLabel="sábado 31 de octubre: saldo de cierre 12.000,00 €"
         elapsedDays={1}
         ariaLabel="Saldo del mes por día"
       />,
