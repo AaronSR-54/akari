@@ -60,3 +60,13 @@ Guardas:
 - Un change = una rama = una PR. No reutilices la rama de otro change.
 - Ningún change se abre, implementa ni archiva en `main`: si detectas que estás en `main`, crea la rama antes de continuar.
 - Si `gh` falla, deja la rama subida y reporta el error junto con el comando exacto para crear la PR a mano.
+
+## Kan.bn: tarjeta por change
+
+Cada change tiene una tarjeta en el tablero autoalojado de Kan.bn (`akari/akari`). El título contiene el id del change y la tarjeta se asigna a `kan_CURRENT_USER`. La configuración está en `kan.config.json` (sin secretos) y el token en `.env` (`kan_API_KEY`); los detalles están en `docs/desarrollo/kanban.md`.
+
+- **Al crear un change** (`openspec new`, `/opsx-propose`, skill `openspec-propose`): después de crear la rama y los artefactos, ejecuta `node scripts/kan-sync.mjs start <change-id>`. Crea la tarjeta en `TO DO` si no existe, la asigna y la mueve a `IN PROGRESS`.
+- **Al aplicar o retomar** (`/opsx-apply`): no muevas la tarjeta; sigue en `IN PROGRESS`. Usa `--dry-run` y `--card <publicId>` si necesitas comprobar o desambiguar sin escribir.
+- **Al archivar** (`openspec archive`, skill `openspec-archive-change`): después de archivar y antes del commit, ejecuta `node scripts/kan-sync.mjs done <change-id>` para mover la tarjeta a `DONE`. No crea tarjetas nuevas.
+- **Si la sincronización falla** (sin `.env`, token revocado, red o lista inexistente): muestra el error, indica que la tarjeta no se ha actualizado y continúa con el propose o el archivado. Nunca bloquees el flujo de OpenSpec por el tablero.
+- **Nunca commitees** `.env`, el token ni datos personales. En un worktree, copia el `.env` desde el checkout principal antes de sincronizar; `kan.config.json` sí se versiona.

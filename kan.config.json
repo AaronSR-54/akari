@@ -1,0 +1,9 @@
+{
+  "baseUrl": "https://dxp2800-d84f.tail3a89a3.ts.net:8444/api/v1",
+  "boardPublicId": "pzfz4njgyrkf",
+  "lists": {
+    "todo": "TO DO",
+    "inProgress": "IN PROGRESS",
+    "done": "DONE"
+  }
+}

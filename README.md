@@ -45,6 +45,8 @@ Abre `http://localhost:3000`. La primera vez te llevará a `/onboarding`, donde 
 | `npx playwright install chromium` | Instala el navegador de E2E (una vez). |
 | `npm run e2e` | Flujos completos, responsive y accesibilidad. |
 | `npm run build -w @akari/tokens` | Regenera CSS, preset y catálogo de tokens. |
+| `node scripts/kan-sync.mjs start <change-id>` | Mueve la tarjeta del change a IN PROGRESS en Kan.bn. |
+| `node scripts/kan-sync.mjs done <change-id>` | Mueve la tarjeta del change a DONE en Kan.bn. |
 
 ## Documentación
 
@@ -53,6 +55,7 @@ Abre `http://localhost:3000`. La primera vez te llevará a `/onboarding`, donde 
 - [Convenciones](docs/desarrollo/convenciones.md)
 - [Mapa diseño → código](docs/desarrollo/mapa-diseno-codigo.md)
 - [Desviaciones y alcance diferido](docs/desarrollo/desviaciones.md)
+- [Kan.bn: tarjetas por change](docs/desarrollo/kanban.md)
 - [Estado del diseño](docs/diseno/estado.md) y [handoff](docs/diseno/handoff.md)
 
 El diseño visual sigue viviendo en `docs/diseno/` y `design/`; no se reescribe desde el código. Las specs `openspec/specs/producto/*` describen el comportamiento implementado.
