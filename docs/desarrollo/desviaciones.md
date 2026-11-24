@@ -1,0 +1,83 @@
+# Desviaciones y alcance diferido
+
+Este documento registra las diferencias entre el diseño aprobado (`docs/diseno/`) y la implementación web actual. Ninguna desviación cambia el diseño: son fases posteriores o límites explícitos de esta entrega.
+
+## 1. Cifrado y contraseña local
+
+- **Diseño:** la base local se cifra con una contraseña (M02/M03) y no hay recuperación remota.
+- **Implementación:** IndexedDB sin cifrado y sin pantalla de contraseña.
+- **Motivo:** esta fase prioriza validar el producto y los flujos con datos locales reales; el cifrado exige un cambio propio con migración de datos y revisión de seguridad.
+- **Consecuencia:** no introduzcas datos personales sensibles reales. La exportación se advierte como no cifrada.
+- **Cierre:** un cambio futuro deberá migrar el esquema, añadir desbloqueo y actualizar las specs `producto/datos-locales` y `diseno/pantallas-movil`.
+
+## 2. Sincronización
+
+- **Diseño:** nube opcional, tiempo real, conflictos y modo sin conexión (M04, M17, W06).
+- **Implementación:** solo local. No hay cuentas de usuario, servidor, cola de subida ni resolución de conflictos.
+- **Consecuencia:** la app funciona sin conexión por definición; el estado «sin conexión» de `StatePage` existe como componente, pero no se muestra un banner de sincronización porque no hay sincronización que mostrar.
+- **Cierre:** cambio propio de backend/sync; requiere definir identidad, permisos remotos y conflictos.
+
+## 3. App móvil
+
+- **Diseño:** 19 pantallas móviles, widgets y notificaciones nativas (M01–M19).
+- **Implementación:** web responsive hasta 390 px. No hay `apps/mobile` ni React Native en este cambio.
+- **Consecuencia:** la navegación móvil web reutiliza TabBar inferior, pero no hay notificaciones del sistema ni widgets.
+- **Cierre:** cambio posterior con `apps/mobile`, reutilizando `packages/tokens`, `packages/ui` y `packages/domain`.
+
+## 4. Invitaciones y permisos remotos
+
+- **Diseño:** invitaciones pendientes y roles Admin/Editor/Lectora en cuentas conjuntas (M14).
+- **Implementación:** los grupos tienen miembros y roles locales; no hay invitaciones ni verificación de identidad.
+- **Consecuencia:** cualquier persona con acceso al navegador puede cambiar roles desde la administración local. No se comparte información entre dispositivos.
+- **Cierre:** llega con backend/sync.
+
+## 5. Divisas
+
+- **Diseño:** gasto grupal con conversión a la divisa de cobro usando el tipo del día.
+- **Implementación:** el tipo de cambio se introduce manualmente al crear el gasto y se guarda con él; no se consulta un proveedor de tipos. Los totales del dashboard se agrupan por divisa y no se convierten.
+- **Consecuencia:** no hay tipos en vivo ni suma multdivisa automática.
+- **Cierre:** integrar un proveedor de tipos si el producto lo requiere; la spec ya exige conservar el tipo aplicado.
+
+## 6. Copia de seguridad
+
+- **Diseño:** exportación de copia cifrada (M17/W06).
+- **Implementación:** JSON legible, con `schemaVersion` y advertencia de que no está cifrado. Importación validada y atómica.
+- **Consecuencia:** el archivo debe tratarse como sensible.
+- **Cierre:** el cifrado de la copia se añadirá con el cifrado local.
+
+## 7. Notificaciones y avisos
+
+- **Diseño:** bandeja de avisos (M15) y notificaciones push.
+- **Implementación:** banner de próximo pago/cuota vencida en el resumen y recurrencias visibles en el detalle de cuenta. Sin bandeja ni push.
+- **Cierre:** app móvil + backend de notificaciones.
+
+## 8. Fechas
+
+- **Diseño:** formato `dd mmm aaaa`.
+- **Implementación:** campos `type="date"` nativos; el navegador decide el formato de entrada. Las fechas mostradas en listas y detalles usan `date-fns` con locale `es`.
+- **Consecuencia:** el control de entrada puede verse en formato del sistema operativo.
+- **Cierre:** sustituir por un date picker propio si se exige paridad exacta.
+
+## 9. Iconos
+
+- **Diseño:** ocho iconos `Icon/*` exportados en SVG desde FigCraft.
+- **Implementación:** componentes SVG con la geometría documentada (24 × 24, trazo 1,75, extremos redondeados).
+- **Consecuencia:** si el SVG original difiere en algún trazo, prevalece la geometría documentada hasta una revisión visual conjunta.
+- **Cierre:** sustituir los paths por los SVG exportados cuando estén disponibles.
+
+## 10. Autenticación y backend
+
+- **Diseño:** el canvas menciona autenticación y sincronización; F3/F4 no diseñan pantallas de login.
+- **Implementación:** no hay login, sesión, API ni pagos. Todo es local.
+- **Cierre:** cambio de backend con su propio diseño y specs.
+
+## 11. Pantallas no incluidas en esta entrega
+
+Quedan fuera, además de las superficies nativas: la creación de planes de plazos desde la UI (se muestran y registran cuotas sobre planes existentes), la bandeja de avisos, la gestión de invitaciones y la red de amistades. La app móvil las abordará junto con su cambio de implementación.
+
+## 12. Cómo registrar una desviación nueva
+
+1. Describe el comportamiento diseñado y el implementado.
+2. Indica el motivo, la consecuencia para la persona usuaria y el cambio que la cerrará.
+3. Enlaza la spec afectada.
+4. Si la desviación cambia el comportamiento esperado, actualiza la spec `producto/*` en el mismo cambio; si solo es una fase, mantén la spec y anota aquí el aplazamiento.

@@ -120,6 +120,15 @@ Aprobada la F4, se añadió una iteración de navegación web registrada como v1
 2. Consumir las specs principales en `openspec/specs/diseno/*` y mantener el archivo como fuente de verdad visual.
 3. Registrar en el nuevo cambio cualquier desviación de tokens, componentes o flujos; si cambia un flujo aprobado, actualizar el changelog del archivo y la matriz.
 
+## Implementación web (2026-11-24)
+
+El cambio `implementacion-app-akari` lleva el diseño a código dentro del mismo repositorio:
+
+- **Monorepo:** `apps/web` (Next.js) y paquetes `@akari/tokens`, `@akari/ui`, `@akari/domain` y `@akari/data`.
+- **Alcance:** onboarding local, cuentas, movimientos, dashboard, preguntas rápidas, gastos grupales, liquidación y ajustes; sin cifrado, sincronización ni app móvil.
+- **Trazabilidad:** [mapa diseño → código](../desarrollo/mapa-diseno-codigo.md) y [desviaciones](../desarrollo/desviaciones.md).
+- **Contrato de comportamiento:** specs `openspec/specs/producto/*`; el diseño visual sigue siendo la referencia de `docs/diseno/`.
+
 ## Nota sobre Figma
 
 El plan Starter sigue limitando Figma a 20 llamadas MCP de lectura al mes, 3 páginas y 1 modo de variables. FigCraft es el entorno de diseño activo.

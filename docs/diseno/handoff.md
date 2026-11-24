@@ -68,6 +68,7 @@ Para presentar: selecciona una pantalla y usa **Shift + Space** (o `proto.presen
 - **Flujos web:** `docs/diseno/flujos-web.md` (shell, densidades y diferencias).
 - **Componentes:** `docs/diseno/componentes.md` (inventario y API de props/variantes).
 - **Fundamentos:** `docs/diseno/fundamentos.md` (tokens, contraste, tipografía, iconografía y reglas).
+- **Implementación:** `docs/desarrollo/mapa-diseno-codigo.md` (pantalla → ruta → componente → prueba) y `docs/desarrollo/desviaciones.md`.
 
 ## 6. Estado de revisión
 
