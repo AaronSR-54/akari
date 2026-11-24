@@ -1,0 +1,49 @@
+@import '@fontsource-variable/inter';
+@import '@akari/tokens/css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --font-sans: 'Inter Variable', Inter, system-ui, sans-serif;
+  }
+
+  html {
+    font-family: var(--font-sans);
+    background-color: var(--color-surface-canvas);
+    color: var(--color-text-primary);
+  }
+
+  body {
+    min-height: 100vh;
+    background-color: var(--color-surface-canvas);
+    color: var(--color-text-primary);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  ::selection {
+    background-color: var(--color-accent-soft);
+    color: var(--color-accent-strong);
+  }
+
+  *:focus-visible {
+    outline: none;
+  }
+}
+
+@layer utilities {
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
