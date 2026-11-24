@@ -19,7 +19,11 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     setupFiles: [path.resolve(root, 'vitest.setup.ts')],
-    include: ['packages/**/*.{test,spec}.{ts,tsx}', 'apps/**/*.{test,spec}.{ts,tsx}'],
+    include: [
+      'packages/**/*.{test,spec}.{ts,tsx}',
+      'apps/**/*.{test,spec}.{ts,tsx}',
+      'scripts/**/*.{test,spec}.mjs',
+    ],
     exclude: ['**/node_modules/**', 'e2e/**', '**/.next/**'],
     css: false,
     coverage: {
