@@ -2,6 +2,35 @@
 
 Instrucciones para agentes que trabajen en este repositorio.
 
+## Núcleo de la aplicación
+
+**Qué es.** Akari es una app de finanzas personales y gastos compartidos, local-first y sin backend: los datos viven en IndexedDB del navegador. No hay autenticación, sincronización ni cifrado; no los añadas sin un change aprobado. La app móvil (React Native) reutilizará `domain`, `data` y `tokens` en un change posterior.
+
+**Capas y dependencias.**
+
+- `packages/tokens`: única fuente de tokens → CSS, preset de Tailwind y tipos. `generated/` no se edita a mano.
+- `packages/domain`: entidades, cálculos puros, puertos y casos de uso. No importa React, Next ni Dexie.
+- `packages/data`: adaptadores Dexie, migraciones, seed, copia/restauración y ciclo de vida. No contiene JSX ni importa React/Next/`ui`.
+- `packages/ui`: componentes presentacionales. No importa `data` ni Next.
+- `apps/web`: rutas, shell y hooks headless. Es la única capa que compone todo.
+
+**Dinero y fechas.**
+
+- Importes como enteros en la unidad menor de su divisa (`amountMinor`, `initialBalanceMinor`, `totalMinor`). Usa `money`, `add`, `subtract`, `multiply`, `formatMinor`, `parseAmountToMinor`; nunca sumes dinero con decimales o coma flotante.
+- Multidivisa: se agrupa por divisa; el dashboard no convierte. Un `GroupExpense` solo convierte con `exchangeRate` explícito al registrarse.
+- `Movement.amountMinor` siempre es positivo; el `type` (`expense`/`income`) decide el signo.
+- Fechas de negocio en `YYYY-MM-DD`, técnicas en ISO 8601; al mostrar usa `date-fns` con locale `es`.
+
+**Modelo.** Entidades en `packages/domain/src/types.ts`: `Account` (personal/joint/deposit, TAE en bps, `includeInTotal`), `Movement` (puede enlazar recurrencia, plan de cuotas o gasto grupal), `Recurrence`, `InstallmentPlan`, `Group`/`GroupExpense`/`Transfer` y `Settings`. Tablas y `SCHEMA_VERSION` en `packages/data/src/db.ts`; toda migración conserva los datos.
+
+**Flujo de datos.** Pantalla → hook headless (`apps/web/src/components/hooks.ts`) → caso de uso (`packages/domain/src/services.ts`) → puerto (`packages/domain/src/ports.ts`) → repositorio Dexie. `useLiveQuery` refresca las vistas; no hay estado global: IndexedDB es la fuente de verdad. Los casos de uso lanzan `ValidationError`/`NotFoundError` y toda mutación nueva necesita prueba.
+
+**Capacidades actuales.** Onboarding, cuentas (alta/edición/archivo), movimientos y recurrencias, planes de cuotas, resumen, preguntas rápidas, grupos con reparto (`equal`/`percentage`/`fixed`) y liquidación mínima, ajustes (tema y shell), seed, copia/restauración JSON sin cifrar y reset.
+
+**Fuentes de verdad.** Diseño visual: `docs/diseno/` + `design/` (no se reescribe sin un cambio de diseño aprobado). Comportamiento: `openspec/specs/`. Arquitectura, convenciones, mapa diseño→código y desviaciones: `docs/desarrollo/`. Rutas y shell: `docs/desarrollo/arquitectura.md`.
+
+**Verificación.** Antes de dar algo por terminado: `npm run typecheck`, `npm run lint`, `npm test` y `npm run build`. Si cambia una pantalla o un flujo, añade o actualiza E2E (`npm run e2e`).
+
 ## FigCraft (MCP)
 
 - **Espera siempre un código de sesión live antes de usar el MCP `figcraft`.** No abras, asumas ni reutilices una sesión por iniciativa propia.
