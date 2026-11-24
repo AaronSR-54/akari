@@ -27,7 +27,7 @@ Instrucciones para agentes que trabajen en este repositorio.
 
 **Capacidades actuales.** Onboarding, cuentas (alta/edición/archivo), movimientos y recurrencias, planes de cuotas, resumen, preguntas rápidas, grupos con reparto (`equal`/`percentage`/`fixed`) y liquidación mínima, ajustes (tema y shell), seed, copia/restauración JSON sin cifrar y reset.
 
-**Fuentes de verdad.** Diseño visual: `docs/diseno/` + `design/` (no se reescribe sin un cambio de diseño aprobado). Comportamiento: `openspec/specs/`. Arquitectura, convenciones, mapa diseño→código y desviaciones: `docs/desarrollo/`. Rutas y shell: `docs/desarrollo/arquitectura.md`.
+**Fuentes de verdad.** El diseño visual vive en `docs/diseno/` + `design/` y está **congelado**: ningún change de OpenSpec lo modifica (ver «Diseño congelado»). Comportamiento: `openspec/specs/producto/`. Arquitectura, convenciones, mapa diseño→código y desviaciones: `docs/desarrollo/`. Rutas y shell: `docs/desarrollo/arquitectura.md`.
 
 **Verificación.** Antes de dar algo por terminado: `npm run typecheck`, `npm run lint`, `npm test` y `npm run build`. Si cambia una pantalla o un flujo, añade o actualiza E2E (`npm run e2e`).
 
@@ -39,16 +39,27 @@ Instrucciones para agentes que trabajen en este repositorio.
 - El código es de un solo uso por sesión: si la sesión cae o cambia el host, vuelve a pedir uno nuevo en lugar de reintentar con el anterior.
 - Los detalles de la sesión vigente (host, archivo, enlace de invitación) se anotan en `docs/diseno/estado.md`, pero el agente no los usa como sustituto del código que le entregue el usuario.
 
+## Diseño congelado: OpenSpec va directo a código
+
+La fase de diseño está **parada**. Los changes de OpenSpec se dedican solo a comportamiento, código, pruebas y documentación técnica; no producen ni actualizan diseño.
+
+- **No se tocan** `docs/diseno/`, `design/`, FigCraft ni `openspec/specs/diseno/*`. No son entregables de ningún change y no se reescriben «para alinear» con lo implementado.
+- Un change se redacta e implementa con código, pruebas, specs de comportamiento (`openspec/specs/producto/*`) y documentación en `docs/desarrollo/`.
+- Si el código se separa del diseño aprobado, no se corrige el diseño: se registra la desviación en `docs/desarrollo/desviaciones.md` y se continúa con el código.
+- No abras ni consultes FigCraft para un change. Solo se usa si el usuario lo pide explícitamente y entrega un código de sesión live (ver «FigCraft (MCP)»).
+- La rama y la PR de un change no incluyen cambios en `docs/diseno/`, `design/` ni `openspec/specs/diseno/*`. Si aparecen en el working tree, déjalos fuera.
+- Solo el usuario puede reabrir la fase de diseño; hasta entonces, cualquier propuesta visual se limita a una nota en `docs/desarrollo/desviaciones.md`.
+
 ## OpenSpec: rama por change y cierre
 
 Cada change vive en su propia rama `feat/<change-id>` desde el momento en que se crea, y solo termina cuando sus cambios están commiteados en esa rama y con una PR abierta a `main`.
 
-- **Al crear un change** (`openspec new`, `/opsx-propose`, skill `openspec-propose`): lo primero es actualizar `main` (`git fetch origin`, `git switch main`, `git pull --ff-only`) y crear `feat/<change-id>` desde ese HEAD. No escribas proposal, design, specs ni tasks en `main`; todo el ciclo (artefactos, código, specs y archivo) ocurre en esa rama.
+- **Al crear un change** (`openspec new`, `/opsx-propose`, skill `openspec-propose`): lo primero es actualizar `main` (`git fetch origin`, `git switch main`, `git pull --ff-only`) y crear `feat/<change-id>` desde ese HEAD. No escribas proposal, design, specs ni tasks en `main`; todo el ciclo (artefactos, código, specs y archivo) ocurre en esa rama. El change nace ya acotado a código y comportamiento: no incluye diseño ni trabajo en FigCraft (ver «Diseño congelado»).
 - **Al aplicar o retomar** (skill `openspec-apply-change`, `/opsx-apply`): confirma que estás en `feat/<change-id>`. Si la rama no existe (change antiguo), créala desde `main` actualizado antes de seguir.
 - **Al archivar** (`openspec archive`, skill `openspec-archive-change`): completa estos pasos.
 
 1. **Rama.** Trabaja en la `feat/<change-id>` ya creada; si no existe, créala desde `main` actualizado antes de commitear. No la recrees si ya existe.
-2. **Alcance del commit.** Incluye solo lo del change: `openspec/changes/archive/<fecha>-<change-id>/`, los specs principales que el archivado sincronice en `openspec/specs/` y el código y pruebas derivados de sus tareas. No mezcles cambios ajenos: si el working tree tiene trabajo no relacionado, déjalo fuera; si no puedes distinguir qué pertenece al change, párate y pregunta.
+2. **Alcance del commit.** Incluye solo lo del change: `openspec/changes/archive/<fecha>-<change-id>/`, los specs de comportamiento que el archivado sincronice en `openspec/specs/producto/` y el código y pruebas derivados de sus tareas. No incluyas `docs/diseno/`, `design/` ni `openspec/specs/diseno/*`: el diseño está congelado. No mezcles cambios ajenos: si el working tree tiene trabajo no relacionado, déjalo fuera; si no puedes distinguir qué pertenece al change, párate y pregunta.
 3. **Commit.** Conventional commits en español, p. ej. `feat(<change-id>): archivar el change y sincronizar specs`. No amendes commits ya publicados ni uses `--force`.
 4. **Push.** `git push -u origin feat/<change-id>`.
 5. **PR.** `gh pr create --base main --title "<tipo>(<change-id>): <resumen>"` con cuerpo en español: resumen del change, deltas de specs, tareas completadas y resultado de las verificaciones (lint/tests/build). Enlaza la carpeta archivada.
