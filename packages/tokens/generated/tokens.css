@@ -1,0 +1,497 @@
+/* Generado por packages/tokens/scripts/generate.ts. No editar a mano. */
+:root, [data-theme="light"] {
+  color-scheme: light;
+  --color-paper-50: #FFFDF8;
+  --color-paper-100: #F7F2E9;
+  --color-paper-200: #EFE7D8;
+  --color-paper-300: #E6DDCE;
+  --color-paper-400: #CFC3B0;
+  --color-ink-300: #9A9083;
+  --color-ink-500: #6B6257;
+  --color-ink-700: #4A4239;
+  --color-ink-900: #1F1B16;
+  --color-amber-50: #FBF1DF;
+  --color-amber-100: #F5E6CC;
+  --color-amber-300: #E8A33D;
+  --color-amber-500: #C9821F;
+  --color-amber-700: #8A5A12;
+  --color-amber-900: #5C3B08;
+  --color-amber-ink: #5C3B08;
+  --color-positive-50: #E6F3EC;
+  --color-positive-600: #2F7D5A;
+  --color-positive-700: #246247;
+  --color-danger-50: #F9E7E4;
+  --color-danger-600: #B5453A;
+  --color-danger-700: #8F352C;
+  --color-info-50: #E8F0F7;
+  --color-info-600: #2F6690;
+  --color-night-950: #14110D;
+  --color-night-900: #1E1A15;
+  --color-night-800: #27221C;
+  --color-night-700: #3A332A;
+  --color-night-600: #52483C;
+  --color-night-500: #7A6F60;
+  --color-dark-text: #F7F2E9;
+  --color-dark-muted: #C9BFAF;
+  --color-dark-accent: #F0B45A;
+  --color-dark-positive: #6FC59C;
+  --color-dark-danger: #E58C82;
+  --color-dark-info: #7FB3D5;
+  --color-dark-amber-text: #F7C97E;
+  --color-dark-amber-soft: #3A2A12;
+  --color-dark-positive-text: #A6E3C4;
+  --color-dark-positive-soft: #173126;
+  --color-dark-danger-text: #F2B4AD;
+  --color-dark-danger-soft: #3A1C18;
+  --color-dark-info-text: #B3D4EA;
+  --color-dark-info-soft: #172A38;
+  --space-0: 0px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-20: 80px;
+  --space-24: 96px;
+  --radius-none: 0px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
+  --radius-full: 999px;
+  --size-icon-sm: 16px;
+  --size-icon-md: 20px;
+  --size-icon-lg: 24px;
+  --size-touch-min: 44px;
+  --size-control-sm: 36px;
+  --size-control-md: 44px;
+  --size-control-lg: 52px;
+  --border-width-1: 1px;
+  --border-width-2: 2px;
+  --motion-fast: 120ms;
+  --motion-base: 180ms;
+  --motion-slow: 280ms;
+  --elevation-1: 0 1px 3px rgba(31,27,22,0.06);
+  --elevation-2: 0 4px 12px rgba(31,27,22,0.10);
+  --elevation-3: 0 12px 32px rgba(31,27,22,0.14);
+  --grid-mobile-4col-columns: 4;
+  --grid-mobile-4col-gutter: 16px;
+  --grid-mobile-4col-margin: 24px;
+  --grid-web-12col-columns: 12;
+  --grid-web-12col-gutter: 24px;
+  --grid-web-12col-margin: 72px;
+  --font-sans: 'Inter Variable', Inter, system-ui, -apple-system, sans-serif;
+  --color-surface-canvas: #F7F2E9;
+  --color-surface-default: #FFFDF8;
+  --color-surface-raised: #FFFDF8;
+  --color-surface-sunken: #EFE7D8;
+  --color-surface-inverse: #1F1B16;
+  --color-text-primary: #1F1B16;
+  --color-text-secondary: #6B6257;
+  --color-text-tertiary: #4A4239;
+  --color-text-disabled: #9A9083;
+  --color-text-placeholder: #9A9083;
+  --color-text-inverse: #FFFDF8;
+  --color-border-subtle: #E6DDCE;
+  --color-border-strong: #CFC3B0;
+  --color-accent-default: #E8A33D;
+  --color-accent-strong: #8A5A12;
+  --color-accent-soft: #F5E6CC;
+  --color-accent-ink: #5C3B08;
+  --color-status-positive: #2F7D5A;
+  --color-status-positive-text: #246247;
+  --color-status-positive-soft: #E6F3EC;
+  --color-status-danger: #B5453A;
+  --color-status-danger-text: #8F352C;
+  --color-status-danger-soft: #F9E7E4;
+  --color-status-info: #2F6690;
+  --color-status-info-text: #2F6690;
+  --color-status-info-soft: #E8F0F7;
+  --color-status-warning: #C9821F;
+  --color-status-warning-text: #8A5A12;
+  --color-status-warning-soft: #F5E6CC;
+  --color-focus-ring: #8A5A12;
+  --color-overlay-scrim: #1F1B16;
+  --color-data-1: #2F6690;
+  --color-data-2: #C9821F;
+  --color-data-3: #2F7D5A;
+  --color-data-4: #B5453A;
+  --color-data-5: #6B6257;
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+  --color-surface-canvas: #14110D;
+  --color-surface-default: #1E1A15;
+  --color-surface-raised: #27221C;
+  --color-surface-sunken: #14110D;
+  --color-surface-inverse: #FFFDF8;
+  --color-text-primary: #F7F2E9;
+  --color-text-secondary: #C9BFAF;
+  --color-text-tertiary: #C9BFAF;
+  --color-text-disabled: #7A6F60;
+  --color-text-placeholder: #7A6F60;
+  --color-text-inverse: #1F1B16;
+  --color-border-subtle: #3A332A;
+  --color-border-strong: #52483C;
+  --color-accent-default: #F0B45A;
+  --color-accent-strong: #F7C97E;
+  --color-accent-soft: #3A2A12;
+  --color-accent-ink: #14110D;
+  --color-status-positive: #6FC59C;
+  --color-status-positive-text: #A6E3C4;
+  --color-status-positive-soft: #173126;
+  --color-status-danger: #E58C82;
+  --color-status-danger-text: #F2B4AD;
+  --color-status-danger-soft: #3A1C18;
+  --color-status-info: #7FB3D5;
+  --color-status-info-text: #B3D4EA;
+  --color-status-info-soft: #172A38;
+  --color-status-warning: #F0B45A;
+  --color-status-warning-text: #F7C97E;
+  --color-status-warning-soft: #3A2A12;
+  --color-focus-ring: #F7C97E;
+  --color-overlay-scrim: #14110D;
+  --color-data-1: #7FB3D5;
+  --color-data-2: #F0B45A;
+  --color-data-3: #6FC59C;
+  --color-data-4: #E58C82;
+  --color-data-5: #C9BFAF;
+}
+
+.text-display-xl {
+  font-size: 92px;
+  line-height: normal;
+  font-weight: 700;
+}
+
+.text-display-l {
+  font-size: 56px;
+  line-height: normal;
+  font-weight: 700;
+}
+
+.text-heading-xxl {
+  font-size: 34px;
+  line-height: normal;
+  font-weight: 700;
+}
+
+.text-heading-xl {
+  font-size: 26px;
+  line-height: normal;
+  font-weight: 700;
+}
+
+.text-heading-l {
+  font-size: 22px;
+  line-height: normal;
+  font-weight: 700;
+}
+
+.text-heading-m {
+  font-size: 20px;
+  line-height: normal;
+  font-weight: 700;
+}
+
+.text-heading-s {
+  font-size: 18px;
+  line-height: normal;
+  font-weight: 600;
+}
+
+.text-body-l {
+  font-size: 17px;
+  line-height: 26px;
+  font-weight: 400;
+}
+
+.text-body-m {
+  font-size: 15px;
+  line-height: 22px;
+  font-weight: 400;
+}
+
+.text-body-s {
+  font-size: 13px;
+  line-height: 19px;
+  font-weight: 400;
+}
+
+.text-label-m {
+  font-size: 13px;
+  line-height: normal;
+  font-weight: 600;
+}
+
+.text-label-s {
+  font-size: 12px;
+  line-height: normal;
+  font-weight: 600;
+}
+
+.text-caption {
+  font-size: 11px;
+  line-height: 16px;
+  font-weight: 400;
+}
+
+.text-numeric-xl {
+  font-size: 30px;
+  line-height: normal;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+.text-numeric-l {
+  font-size: 24px;
+  line-height: normal;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+.text-numeric-m {
+  font-size: 18px;
+  line-height: normal;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+.text-numeric-s {
+  font-size: 14px;
+  line-height: normal;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+.text-ui-8 {
+  font-size: 8px;
+  line-height: normal;
+  font-weight: 400;
+}
+
+.text-ui-8-strong {
+  font-size: 8px;
+  line-height: normal;
+  font-weight: 600;
+}
+
+.text-ui-9 {
+  font-size: 9px;
+  line-height: normal;
+  font-weight: 400;
+}
+
+.text-ui-9-strong {
+  font-size: 9px;
+  line-height: normal;
+  font-weight: 600;
+}
+
+.text-ui-10 {
+  font-size: 10px;
+  line-height: normal;
+  font-weight: 400;
+}
+
+.text-ui-10-strong {
+  font-size: 10px;
+  line-height: normal;
+  font-weight: 600;
+}
+
+.text-ui-11 {
+  font-size: 11px;
+  line-height: normal;
+  font-weight: 400;
+}
+
+.text-ui-11-strong {
+  font-size: 11px;
+  line-height: normal;
+  font-weight: 600;
+}
+
+.text-ui-12 {
+  font-size: 12px;
+  line-height: normal;
+  font-weight: 400;
+}
+
+.text-ui-12-strong {
+  font-size: 12px;
+  line-height: normal;
+  font-weight: 600;
+}
+
+.text-ui-13 {
+  font-size: 13px;
+  line-height: normal;
+  font-weight: 400;
+}
+
+.text-ui-13-strong {
+  font-size: 13px;
+  line-height: normal;
+  font-weight: 600;
+}
+
+.text-ui-14 {
+  font-size: 14px;
+  line-height: normal;
+  font-weight: 400;
+}
+
+.text-ui-14-strong {
+  font-size: 14px;
+  line-height: normal;
+  font-weight: 600;
+}
+
+.text-ui-14-bold {
+  font-size: 14px;
+  line-height: normal;
+  font-weight: 700;
+}
+
+.text-ui-15-strong {
+  font-size: 15px;
+  line-height: normal;
+  font-weight: 600;
+}
+
+.text-ui-16-strong {
+  font-size: 16px;
+  line-height: normal;
+  font-weight: 600;
+}
+
+.text-ui-16-bold {
+  font-size: 16px;
+  line-height: normal;
+  font-weight: 700;
+}
+
+.text-ui-17-strong {
+  font-size: 17px;
+  line-height: normal;
+  font-weight: 600;
+}
+
+.text-ui-18-bold {
+  font-size: 18px;
+  line-height: normal;
+  font-weight: 700;
+}
+
+.text-ui-19-bold {
+  font-size: 19px;
+  line-height: normal;
+  font-weight: 700;
+}
+
+.text-ui-20-strong {
+  font-size: 20px;
+  line-height: normal;
+  font-weight: 600;
+}
+
+.text-ui-20-bold {
+  font-size: 20px;
+  line-height: normal;
+  font-weight: 700;
+}
+
+.text-ui-22-bold {
+  font-size: 22px;
+  line-height: normal;
+  font-weight: 700;
+}
+
+.text-ui-24-bold {
+  font-size: 24px;
+  line-height: normal;
+  font-weight: 700;
+}
+
+.text-ui-26-bold {
+  font-size: 26px;
+  line-height: normal;
+  font-weight: 700;
+}
+
+.text-ui-28-bold {
+  font-size: 28px;
+  line-height: normal;
+  font-weight: 700;
+}
+
+.text-ui-30-bold {
+  font-size: 30px;
+  line-height: normal;
+  font-weight: 700;
+}
+
+.text-ui-32-bold {
+  font-size: 32px;
+  line-height: normal;
+  font-weight: 700;
+}
+
+.text-ui-40-bold {
+  font-size: 40px;
+  line-height: normal;
+  font-weight: 700;
+}
+
+.text-ui-44-bold {
+  font-size: 44px;
+  line-height: normal;
+  font-weight: 700;
+}
+
+.text-ui-52-bold {
+  font-size: 52px;
+  line-height: normal;
+  font-weight: 700;
+}
+
+.font-tabular {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+.elevation-1 { box-shadow: var(--elevation-1); }
+.elevation-2 { box-shadow: var(--elevation-2); }
+.elevation-3 { box-shadow: var(--elevation-3); }
+
+.grid-web {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: var(--grid-web-12col-gutter);
+}
+
+.grid-mobile {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--grid-mobile-4col-gutter);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

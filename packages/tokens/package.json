@@ -1,0 +1,21 @@
+{
+  "name": "@akari/tokens",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/tokens.ts",
+    "./css": "./generated/tokens.css",
+    "./preset": "./generated/tailwind-preset.cjs",
+    "./catalog": "./generated/catalog.json"
+  },
+  "scripts": {
+    "build": "tsx scripts/generate.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "tsx": "^4.23.15",
+    "typescript": "^5.9.3"
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "name": "@akari/data",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@akari/domain": "0.1.0",
+    "dexie": "^4.4.7"
+  },
+  "devDependencies": {
+    "fake-indexeddb": "^6.2.8",
+    "typescript": "^5.9.3",
+    "vitest": "^5.1.1"
+  }
+}

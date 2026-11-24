@@ -1,0 +1,228 @@
+export type PrimitiveColor = { value: string; usage: string };
+export type SemanticColor = { light: string; dark: string };
+
+export const primitiveColors: Record<string, PrimitiveColor> = {
+  'color/paper-50': { value: '#FFFDF8', usage: 'Superficie elevada en claro' },
+  'color/paper-100': { value: '#F7F2E9', usage: 'Lienzo cálido' },
+  'color/paper-200': { value: '#EFE7D8', usage: 'Superficie hundida / pista de barras' },
+  'color/paper-300': { value: '#E6DDCE', usage: 'Bordes sutiles' },
+  'color/paper-400': { value: '#CFC3B0', usage: 'Bordes fuertes' },
+  'color/ink-300': { value: '#9A9083', usage: 'Texto deshabilitado' },
+  'color/ink-500': { value: '#6B6257', usage: 'Texto secundario' },
+  'color/ink-700': { value: '#4A4239', usage: 'Texto terciario / ejes' },
+  'color/ink-900': { value: '#1F1B16', usage: 'Texto principal, scrim' },
+  'color/amber-50': { value: '#FBF1DF', usage: 'Ámbar muy suave' },
+  'color/amber-100': { value: '#F5E6CC', usage: 'Fondo de acento' },
+  'color/amber-300': { value: '#E8A33D', usage: 'Acento / acción principal' },
+  'color/amber-500': { value: '#C9821F', usage: 'Acento en texto sobre papel' },
+  'color/amber-700': { value: '#8A5A12', usage: 'Acento fuerte / warning-text' },
+  'color/amber-900': { value: '#5C3B08', usage: 'Texto sobre ámbar' },
+  'color/amber-ink': { value: '#5C3B08', usage: 'Tinta de botón ámbar' },
+  'color/positive-50': { value: '#E6F3EC', usage: 'Fondo de estado positivo' },
+  'color/positive-600': { value: '#2F7D5A', usage: 'Estado positivo' },
+  'color/positive-700': { value: '#246247', usage: 'Texto positivo' },
+  'color/danger-50': { value: '#F9E7E4', usage: 'Fondo de error' },
+  'color/danger-600': { value: '#B5453A', usage: 'Error / negativo' },
+  'color/danger-700': { value: '#8F352C', usage: 'Texto de error' },
+  'color/info-50': { value: '#E8F0F7', usage: 'Fondo informativo' },
+  'color/info-600': { value: '#2F6690', usage: 'Informativo / serie 1' },
+  'color/night-950': { value: '#14110D', usage: 'Lienzo oscuro' },
+  'color/night-900': { value: '#1E1A15', usage: 'Superficie oscura' },
+  'color/night-800': { value: '#27221C', usage: 'Superficie elevada oscura' },
+  'color/night-700': { value: '#3A332A', usage: 'Borde oscuro' },
+  'color/night-600': { value: '#52483C', usage: 'Borde fuerte oscuro' },
+  'color/night-500': { value: '#7A6F60', usage: 'Texto deshabilitado oscuro' },
+  'color/dark-text': { value: '#F7F2E9', usage: 'Texto principal oscuro' },
+  'color/dark-muted': { value: '#C9BFAF', usage: 'Texto secundario oscuro' },
+  'color/dark-accent': { value: '#F0B45A', usage: 'Acento oscuro' },
+  'color/dark-positive': { value: '#6FC59C', usage: 'Positivo oscuro' },
+  'color/dark-danger': { value: '#E58C82', usage: 'Negativo oscuro' },
+  'color/dark-info': { value: '#7FB3D5', usage: 'Informativo oscuro' },
+  'color/dark-amber-text': { value: '#F7C97E', usage: 'Texto ámbar oscuro' },
+  'color/dark-amber-soft': { value: '#3A2A12', usage: 'Fondo ámbar oscuro' },
+  'color/dark-positive-text': { value: '#A6E3C4', usage: 'Texto positivo oscuro' },
+  'color/dark-positive-soft': { value: '#173126', usage: 'Fondo positivo oscuro' },
+  'color/dark-danger-text': { value: '#F2B4AD', usage: 'Texto de error oscuro' },
+  'color/dark-danger-soft': { value: '#3A1C18', usage: 'Fondo de error oscuro' },
+  'color/dark-info-text': { value: '#B3D4EA', usage: 'Texto informativo oscuro' },
+  'color/dark-info-soft': { value: '#172A38', usage: 'Fondo informativo oscuro' },
+};
+
+export const semanticColors: Record<string, SemanticColor> = {
+  'surface/canvas': { light: '#F7F2E9', dark: '#14110D' },
+  'surface/default': { light: '#FFFDF8', dark: '#1E1A15' },
+  'surface/raised': { light: '#FFFDF8', dark: '#27221C' },
+  'surface/sunken': { light: '#EFE7D8', dark: '#14110D' },
+  'surface/inverse': { light: '#1F1B16', dark: '#FFFDF8' },
+  'text/primary': { light: '#1F1B16', dark: '#F7F2E9' },
+  'text/secondary': { light: '#6B6257', dark: '#C9BFAF' },
+  'text/tertiary': { light: '#4A4239', dark: '#C9BFAF' },
+  'text/disabled': { light: '#9A9083', dark: '#7A6F60' },
+  'text/placeholder': { light: '#9A9083', dark: '#7A6F60' },
+  'text/inverse': { light: '#FFFDF8', dark: '#1F1B16' },
+  'border/subtle': { light: '#E6DDCE', dark: '#3A332A' },
+  'border/strong': { light: '#CFC3B0', dark: '#52483C' },
+  'accent/default': { light: '#E8A33D', dark: '#F0B45A' },
+  'accent/strong': { light: '#8A5A12', dark: '#F7C97E' },
+  'accent/soft': { light: '#F5E6CC', dark: '#3A2A12' },
+  'accent/ink': { light: '#5C3B08', dark: '#14110D' },
+  'status/positive': { light: '#2F7D5A', dark: '#6FC59C' },
+  'status/positive-text': { light: '#246247', dark: '#A6E3C4' },
+  'status/positive-soft': { light: '#E6F3EC', dark: '#173126' },
+  'status/danger': { light: '#B5453A', dark: '#E58C82' },
+  'status/danger-text': { light: '#8F352C', dark: '#F2B4AD' },
+  'status/danger-soft': { light: '#F9E7E4', dark: '#3A1C18' },
+  'status/info': { light: '#2F6690', dark: '#7FB3D5' },
+  'status/info-text': { light: '#2F6690', dark: '#B3D4EA' },
+  'status/info-soft': { light: '#E8F0F7', dark: '#172A38' },
+  'status/warning': { light: '#C9821F', dark: '#F0B45A' },
+  'status/warning-text': { light: '#8A5A12', dark: '#F7C97E' },
+  'status/warning-soft': { light: '#F5E6CC', dark: '#3A2A12' },
+  'focus/ring': { light: '#8A5A12', dark: '#F7C97E' },
+  'overlay/scrim': { light: '#1F1B16', dark: '#14110D' },
+  'data/1': { light: '#2F6690', dark: '#7FB3D5' },
+  'data/2': { light: '#C9821F', dark: '#F0B45A' },
+  'data/3': { light: '#2F7D5A', dark: '#6FC59C' },
+  'data/4': { light: '#B5453A', dark: '#E58C82' },
+  'data/5': { light: '#6B6257', dark: '#C9BFAF' },
+};
+
+export const space: Record<string, number> = {
+  'space/0': 0,
+  'space/1': 4,
+  'space/2': 8,
+  'space/3': 12,
+  'space/4': 16,
+  'space/5': 20,
+  'space/6': 24,
+  'space/8': 32,
+  'space/10': 40,
+  'space/12': 48,
+  'space/16': 64,
+  'space/20': 80,
+  'space/24': 96,
+};
+
+export const radius: Record<string, number> = {
+  'radius/none': 0,
+  'radius/sm': 6,
+  'radius/md': 10,
+  'radius/lg': 14,
+  'radius/xl': 20,
+  'radius/full': 999,
+};
+
+export const sizes: Record<string, number> = {
+  'size/icon-sm': 16,
+  'size/icon-md': 20,
+  'size/icon-lg': 24,
+  'size/touch-min': 44,
+  'size/control-sm': 36,
+  'size/control-md': 44,
+  'size/control-lg': 52,
+};
+
+export const borders: Record<string, number> = {
+  'border/width-1': 1,
+  'border/width-2': 2,
+};
+
+export const motion: Record<string, number> = {
+  'motion/fast': 120,
+  'motion/base': 180,
+  'motion/slow': 280,
+};
+
+export type TextStyle = {
+  size: number;
+  lineHeight: number | 'auto';
+  weight: 400 | 500 | 600 | 700;
+  usage: string;
+};
+
+export const textStyles: Record<string, TextStyle> = {
+  'Display/XL': { size: 92, lineHeight: 'auto', weight: 700, usage: 'Portada y hero editorial' },
+  'Display/L': { size: 56, lineHeight: 'auto', weight: 700, usage: 'Hero de web' },
+  'Heading/XXL': { size: 34, lineHeight: 'auto', weight: 700, usage: 'Título de sección' },
+  'Heading/XL': { size: 26, lineHeight: 'auto', weight: 700, usage: 'Título de pantalla' },
+  'Heading/L': { size: 22, lineHeight: 'auto', weight: 700, usage: 'Encabezado de bloque' },
+  'Heading/M': { size: 20, lineHeight: 'auto', weight: 700, usage: 'Título de tarjeta grande' },
+  'Heading/S': { size: 18, lineHeight: 'auto', weight: 600, usage: 'Título de tarjeta' },
+  'Body/L': { size: 17, lineHeight: 26, weight: 400, usage: 'Cuerpo principal' },
+  'Body/M': { size: 15, lineHeight: 22, weight: 400, usage: 'Cuerpo secundario' },
+  'Body/S': { size: 13, lineHeight: 19, weight: 400, usage: 'Apoyo, notas y descripciones' },
+  'Label/M': { size: 13, lineHeight: 'auto', weight: 600, usage: 'Botones, campos y etiquetas' },
+  'Label/S': { size: 12, lineHeight: 'auto', weight: 600, usage: 'Badges y tabs' },
+  Caption: { size: 11, lineHeight: 16, weight: 400, usage: 'Metadatos y ayudas' },
+  'Numeric/XL': { size: 30, lineHeight: 'auto', weight: 700, usage: 'Importe destacado' },
+  'Numeric/L': { size: 24, lineHeight: 'auto', weight: 700, usage: 'Saldo de tarjeta' },
+  'Numeric/M': { size: 18, lineHeight: 'auto', weight: 600, usage: 'Importe de fila' },
+  'Numeric/S': { size: 14, lineHeight: 'auto', weight: 600, usage: 'Importe secundario' },
+  'UI/8': { size: 8, lineHeight: 'auto', weight: 400, usage: 'Etiquetas de eje y micro-metadatos' },
+  'UI/8 Strong': { size: 8, lineHeight: 'auto', weight: 600, usage: 'Etiquetas de eje' },
+  'UI/9': { size: 9, lineHeight: 'auto', weight: 400, usage: 'Tab bar, badges y overline' },
+  'UI/9 Strong': { size: 9, lineHeight: 'auto', weight: 600, usage: 'Tab bar activo' },
+  'UI/10': { size: 10, lineHeight: 'auto', weight: 400, usage: 'Metadatos, fechas y ayudas' },
+  'UI/10 Strong': { size: 10, lineHeight: 'auto', weight: 600, usage: 'Metadatos destacados' },
+  'UI/11': { size: 11, lineHeight: 'auto', weight: 400, usage: 'Cuerpo de apoyo y etiquetas de campo' },
+  'UI/11 Strong': { size: 11, lineHeight: 'auto', weight: 600, usage: 'Etiquetas de campo' },
+  'UI/12': { size: 12, lineHeight: 'auto', weight: 400, usage: 'Cuerpo compacto y nombres de fila' },
+  'UI/12 Strong': { size: 12, lineHeight: 'auto', weight: 600, usage: 'Nombres de fila' },
+  'UI/13': { size: 13, lineHeight: 'auto', weight: 400, usage: 'Cuerpo y títulos de tarjeta pequeños' },
+  'UI/13 Strong': { size: 13, lineHeight: 'auto', weight: 600, usage: 'Títulos de tarjeta' },
+  'UI/14': { size: 14, lineHeight: 'auto', weight: 400, usage: 'Botones, chips e importes de fila' },
+  'UI/14 Strong': { size: 14, lineHeight: 'auto', weight: 600, usage: 'Botones e importes' },
+  'UI/14 Bold': { size: 14, lineHeight: 'auto', weight: 700, usage: 'Importes destacados' },
+  'UI/15 Strong': { size: 15, lineHeight: 'auto', weight: 600, usage: 'Subtítulos de apoyo' },
+  'UI/16 Strong': { size: 16, lineHeight: 'auto', weight: 600, usage: 'Título de pantalla interna' },
+  'UI/16 Bold': { size: 16, lineHeight: 'auto', weight: 700, usage: 'Título de pantalla interna' },
+  'UI/17 Strong': { size: 17, lineHeight: 'auto', weight: 600, usage: 'Subtítulo de sección' },
+  'UI/18 Bold': { size: 18, lineHeight: 'auto', weight: 700, usage: 'Título de pantalla y wordmark' },
+  'UI/19 Bold': { size: 19, lineHeight: 'auto', weight: 700, usage: 'Saludo y título de bloque' },
+  'UI/20 Strong': { size: 20, lineHeight: 'auto', weight: 600, usage: 'Título de página' },
+  'UI/20 Bold': { size: 20, lineHeight: 'auto', weight: 700, usage: 'KPI y título de página' },
+  'UI/22 Bold': { size: 22, lineHeight: 'auto', weight: 700, usage: 'Titular de sección' },
+  'UI/24 Bold': { size: 24, lineHeight: 'auto', weight: 700, usage: 'Importe grande' },
+  'UI/26 Bold': { size: 26, lineHeight: 'auto', weight: 700, usage: 'Titular de onboarding' },
+  'UI/28 Bold': { size: 28, lineHeight: 'auto', weight: 700, usage: 'Importe de resumen' },
+  'UI/30 Bold': { size: 30, lineHeight: 'auto', weight: 700, usage: 'Importe destacado' },
+  'UI/32 Bold': { size: 32, lineHeight: 'auto', weight: 700, usage: 'Importe hero' },
+  'UI/40 Bold': { size: 40, lineHeight: 'auto', weight: 700, usage: 'Wordmark de portada móvil' },
+  'UI/44 Bold': { size: 44, lineHeight: 'auto', weight: 700, usage: 'Cifra editorial' },
+  'UI/52 Bold': { size: 52, lineHeight: 'auto', weight: 700, usage: 'Reloj de estado en el widget' },
+};
+
+export const elevations: Record<string, { value: string; usage: string }> = {
+  'Elevation/1': {
+    value: '0 1px 3px rgba(31,27,22,0.06)',
+    usage: 'Bordes, separadores y tarjetas en reposo',
+  },
+  'Elevation/2': {
+    value: '0 4px 12px rgba(31,27,22,0.10)',
+    usage: 'Tarjeta activa, popover pequeño',
+  },
+  'Elevation/3': {
+    value: '0 12px 32px rgba(31,27,22,0.14)',
+    usage: 'Modal, bottom sheet, menú flotante',
+  },
+};
+
+export const grids: Record<string, { columns: number; gutter: number; margin: number }> = {
+  'Grid/Mobile 4col': { columns: 4, gutter: 16, margin: 24 },
+  'Grid/Web 12col': { columns: 12, gutter: 24, margin: 72 },
+};
+
+export const fontFamily = "'Inter Variable', Inter, system-ui, -apple-system, sans-serif";
+
+export const tokenCatalog = {
+  primitiveColors,
+  semanticColors,
+  space,
+  radius,
+  sizes,
+  borders,
+  motion,
+  textStyles,
+  elevations,
+  grids,
+};
