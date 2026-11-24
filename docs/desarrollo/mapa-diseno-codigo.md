@@ -25,7 +25,7 @@ Este documento relaciona el diseño aprobado, las specs `producto/*` y la implem
 | `M17` | Ajustes | `/ajustes` | Implementada (sin sync) |
 | `M18` | Movimientos vacío | `StatePage` en `/movimientos` | Implementada |
 | `M19` | Sin conexión | Local-first; estado disponible en `StatePage` | Parcial: sin cola de sincronización |
-| `W01` | Resumen multi-cuenta | `/` | Implementada (KPIs, cuentas, movimientos y gráfico) |
+| `W01` | Resumen multi-cuenta | `/` | Implementada (saldo y evolución del saldo del mes sin caja, tarjeta de balance con signo, color y saldo total estimado bajo la gráfica, próximo pago, cuentas y movimientos; sin gráfico semanal) |
 | `W02` | Detalle de cuenta | `/cuentas/[id]` | Implementada |
 | `W03` | Movimientos (tabla) | `/movimientos` | Implementada (chips, tabla y paginación) |
 | `W04` | Gasto grupal (web) | `/grupos/[id]` | Implementada (compositor de 3 columnas + liquidación) |
@@ -45,7 +45,7 @@ Este documento relaciona el diseño aprobado, las specs `producto/*` y la implem
 | Tipografía Inter y escalas | `@fontsource-variable/inter`, utilidades generadas | `tokens.test.ts`, pruebas de componentes |
 | Espaciado, radios, elevación y layout | preset de Tailwind y CSS generado | E2E `shell` (responsive sin desbordamiento) |
 | Movimiento y reducción | tokens `motion/*`, bloque `prefers-reduced-motion` | `tokens.test.ts` (CSS generado) |
-| Iconografía y visualización | `icons.tsx`, `ChartBars`, `ChartSparkline` | `logo.test.tsx`, `data-display.test.tsx`, axe |
+| Iconografía y visualización | `icons.tsx`, `ChartArea`, `ChartBars`, `ChartSparkline` | `logo.test.tsx`, `data-display.test.tsx`, axe |
 
 ### `producto/componentes`
 
@@ -83,6 +83,17 @@ Este documento relaciona el diseño aprobado, las specs `producto/*` y la implem
 | Detalle de cuenta | `AccountDetailScreen` | E2E `accounts-movements` |
 | Dashboard y preguntas rápidas | `DashboardScreen`, `QuestionsScreen`, `getQuickAnswers` | E2E `questions-settings`, `services.test.ts` |
 
+### `producto/dashboard-hero`
+
+| Requisito | Implementación | Verificación |
+| --- | --- | --- |
+| Hero sin contenedor | `DashboardScreen` (bloques `data-hero`) | E2E `dashboard.spec.ts` |
+| Saldo diario del mes y base a día 1 | `currentMonthMovements`, `getOverview.month`, apertura en `getOverview` | `accounts.test.ts`, `services.test.ts`, E2E `dashboard.spec.ts` |
+| Gráfica de saldo con detalle diario | `MonthBalance` | `month-balance.test.tsx`, `accessibility.test.tsx`, axe, E2E `dashboard.spec.ts` |
+| Tarjeta de balance con saldo total estimado | `StatCard` en `data-hero="month-summary"`, `overview.projections` | `services.test.ts`, E2E `dashboard.spec.ts` |
+| Entrada animada | `@keyframes hero-chart-emerge`, `globals.css` | E2E `dashboard.spec.ts` (movimiento reducido) |
+| Retirada del gráfico semanal | eliminación de `ChartArea` del dashboard | E2E `dashboard.spec.ts` |
+
 ### `producto/gastos-grupales`
 
 | Requisito | Implementación | Verificación |
@@ -115,7 +126,7 @@ Este documento relaciona el diseño aprobado, las specs `producto/*` y la implem
 | B · Registro de movimiento | `/cuentas/[id] → /movimientos/nuevo → /movimientos` | `e2e/accounts-movements.spec.ts` |
 | C · Gasto grupal y liquidación | `/grupos → /grupos/[id]` | `e2e/groups.spec.ts` |
 | D · Preguntas y detalle | `/ → /preguntas`, `/cuentas/[id]` | `e2e/questions-settings.spec.ts`, `e2e/shell.spec.ts` |
-| E · Resumen y cuentas | `/ → /cuentas/[id] → /movimientos` | `e2e/shell.spec.ts`, `e2e/accounts-movements.spec.ts` |
+| E · Resumen y cuentas | `/ → /cuentas/[id] → /movimientos` | `e2e/dashboard.spec.ts`, `e2e/shell.spec.ts`, `e2e/accounts-movements.spec.ts` |
 | F · Grupos y ajustes | `/grupos/[id] → /ajustes` | `e2e/groups.spec.ts`, `e2e/questions-settings.spec.ts` |
 
 ## 4. Cómo mantener el mapa

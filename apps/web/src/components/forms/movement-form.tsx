@@ -2,7 +2,6 @@
 
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { format } from 'date-fns';
 import {
   decimalString,
   money,
@@ -29,6 +28,7 @@ import {
 import { useData } from '../providers';
 import { frequencyOptions, movementCategoryOptions } from '../../lib/options';
 import { errorMessage } from '../../lib/format';
+import { appTodayKey } from '../../lib/clock';
 
 export function MovementForm({
   accounts,
@@ -51,7 +51,7 @@ export function MovementForm({
   const [amount, setAmount] = useState(
     movement ? decimalString(money(movement.amountMinor, movement.currency)).replace('.', ',') : '',
   );
-  const [date, setDate] = useState(movement?.date ?? format(new Date(), 'yyyy-MM-dd'));
+  const [date, setDate] = useState(movement?.date ?? appTodayKey());
   const [concept, setConcept] = useState(movement?.concept ?? '');
   const [category, setCategory] = useState(movement?.category ?? 'Alimentación');
   const [note, setNote] = useState(movement?.note ?? '');

@@ -1,13 +1,22 @@
-import { format, isAfter, isBefore, parseISO, startOfMonth, startOfWeek } from 'date-fns';
+import {
+  endOfMonth,
+  format,
+  isAfter,
+  isBefore,
+  parseISO,
+  startOfMonth,
+  startOfWeek,
+  subMonths,
+} from 'date-fns';
 import { es } from 'date-fns/locale';
 import {
   aggregateBalances,
   calculateAccountBalance,
-  monthExpenses,
-  monthOverMonthExpenses,
+  currentMonthMovements,
+  dailyTotals,
+  monthExpenseEstimate,
   projectMonthEnd,
   upcomingPayments,
-  dailyTotals,
 } from './accounts.js';
 import { NotFoundError, ValidationError } from './errors.js';
 import { addFrequency, nextInstallment } from './recurrence.js';
@@ -531,8 +540,9 @@ export type Overview = {
   accounts: Account[];
   totalBalances: ReturnType<typeof aggregateBalances>;
   projections: ReturnType<typeof aggregateBalances>;
-  monthExpense: ReturnType<typeof monthExpenses>;
-  comparison: ReturnType<typeof monthOverMonthExpenses>;
+  month: ReturnType<typeof currentMonthMovements> & {
+    estimate: ReturnType<typeof monthExpenseEstimate>;
+  };
   upcoming: ReturnType<typeof upcomingPayments>;
   recentMovements: Movement[];
   dailyExpenses: ReturnType<typeof dailyTotals>;
@@ -566,12 +576,30 @@ export async function getOverview(
     });
   }
 
+  const todayKey = format(today, 'yyyy-MM-dd');
+  const totalBalances = aggregateBalances(activeAccounts, movements, todayKey);
+  const balanceAccounts = activeAccounts.filter(
+    (account) => account.includeInTotal && account.currency === currency,
+  );
+  const balanceAccountIds = new Set(balanceAccounts.map((account) => account.id));
+  const balanceMovements = movements.filter((movement) =>
+    balanceAccountIds.has(movement.accountId),
+  );
+  const previousMonthEnd = format(endOfMonth(subMonths(today, 1)), 'yyyy-MM-dd');
+  const openingBalanceMinor = balanceAccounts.reduce(
+    (sum, account) =>
+      sum + calculateAccountBalance(account, movements, previousMonthEnd).minor,
+    0,
+  );
+
   return {
     accounts: activeAccounts,
-    totalBalances: aggregateBalances(activeAccounts, movements),
+    totalBalances,
     projections: [...projectedTotals.values()],
-    monthExpense: monthExpenses(movements, today),
-    comparison: monthOverMonthExpenses(movements, today, currency),
+    month: {
+      ...currentMonthMovements(balanceMovements, currency, today, openingBalanceMinor),
+      estimate: monthExpenseEstimate(movements, currency, today),
+    },
     upcoming: upcomingPayments(recurrences, installments, activeAccounts, today),
     recentMovements: movements
       .filter((movement) => activeAccounts.some((account) => account.id === movement.accountId))
@@ -581,7 +609,7 @@ export async function getOverview(
     balancesByAccount: Object.fromEntries(
       activeAccounts.map((account) => [
         account.id,
-        calculateAccountBalance(account, movements),
+        calculateAccountBalance(account, movements, todayKey),
       ]),
     ),
   };

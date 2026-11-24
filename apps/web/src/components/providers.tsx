@@ -2,7 +2,16 @@
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import { ThemeProvider, ToastProvider } from '@akari/ui';
-import { openDatabase, createRepositories, storageErrorMessage, type AkariDB, type AkariRepositories } from '@akari/data';
+import {
+  DEMO_SEED_VERSION,
+  loadDemoDatabase,
+  openDatabase,
+  createRepositories,
+  storageErrorMessage,
+  type AkariDB,
+  type AkariRepositories,
+} from '@akari/data';
+import { appNow } from '../lib/clock';
 
 type DataContextValue = {
   db: AkariDB;
@@ -35,6 +44,21 @@ export function Providers({ children }: { children: ReactNode }) {
       active = false;
     };
   }, [db, attempt]);
+
+  useEffect(() => {
+    if (!ready) return;
+    let active = true;
+    const refreshDemo = async () => {
+      const settings = await repositories.settings.get();
+      if (!active || !settings?.demoLoaded) return;
+      if ((settings.demoSeedVersion ?? 1) >= DEMO_SEED_VERSION) return;
+      await loadDemoDatabase(db, appNow());
+    };
+    void refreshDemo().catch(() => undefined);
+    return () => {
+      active = false;
+    };
+  }, [ready, db, repositories]);
 
   return (
     <ThemeProvider>

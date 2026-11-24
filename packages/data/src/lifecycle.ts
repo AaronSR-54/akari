@@ -1,21 +1,25 @@
 import { toStorageError } from '@akari/domain';
 import type { AkariDB } from './db.js';
 import { createRepositories } from './repositories.js';
-import { seedDemoData } from './seed.js';
+import { DEMO_SEED_VERSION, seedDemoData } from './seed.js';
 
 export async function loadDemoDatabase(db: AkariDB, today = new Date()): Promise<void> {
+  // Todo en una transacción: si la demo se refresca con la app abierta, las
+  // vistas no llegan a ver la configuración por defecto (sin onboarding) y
+  // no rebotan a la pantalla de bienvenida.
   await db.transaction('rw', db.tables, async () => {
     for (const name of db.tables.map((table) => table.name)) {
       await db.table(name).clear();
     }
-  });
-  const repositories = createRepositories(db);
-  await seedDemoData(repositories, today);
-  await repositories.settings.update({
-    onboardingCompleted: true,
-    demoLoaded: true,
-    theme: 'system',
-    shellMode: 'sidebar',
+    const repositories = createRepositories(db);
+    await seedDemoData(repositories, today);
+    await repositories.settings.update({
+      onboardingCompleted: true,
+      demoLoaded: true,
+      demoSeedVersion: DEMO_SEED_VERSION,
+      theme: 'system',
+      shellMode: 'sidebar',
+    });
   });
 }
 

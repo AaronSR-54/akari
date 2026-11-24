@@ -1,7 +1,6 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { format } from 'date-fns';
 import {
   addGroupExpense,
   convertMinor,
@@ -29,6 +28,7 @@ import {
 import { useData } from '../providers';
 import { currencyOptions, splitModeOptions } from '../../lib/options';
 import { errorMessage, formatLongDate } from '../../lib/format';
+import { appTodayKey } from '../../lib/clock';
 
 export function GroupExpenseForm({
   group,
@@ -47,7 +47,7 @@ export function GroupExpenseForm({
   const [rate, setRate] = useState('');
   const [payerMemberId, setPayerMemberId] = useState(group.members[0]?.id ?? '');
   const [accountId, setAccountId] = useState('');
-  const [date, setDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [date, setDate] = useState(appTodayKey());
   const [mode, setMode] = useState<SplitMode>('equal');
   const [selected, setSelected] = useState<Record<string, boolean>>(
     Object.fromEntries(group.members.map((member) => [member.id, true])),

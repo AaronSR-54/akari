@@ -74,9 +74,9 @@ test.describe('cuentas y movimientos', () => {
     await expect(visible(page, 'Suscripción música')).toBeVisible();
 
     if (page.viewportSize()!.width >= 768) {
-      await expect(page.getByText(/1–10 de 11 movimientos/)).toBeVisible();
+      await expect(page.getByText(/1–10 de 22 movimientos/)).toBeVisible();
       await page.getByRole('button', { name: '2', exact: true }).click();
-      await expect(page.getByText(/11–11 de 11 movimientos/)).toBeVisible();
+      await expect(page.getByText(/11–20 de 22 movimientos/)).toBeVisible();
     }
   });
 

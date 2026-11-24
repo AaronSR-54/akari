@@ -5,6 +5,7 @@ import {
   Amount,
   Badge,
   BalanceSummary,
+  ChartArea,
   ChartBars,
   MovementRow,
   ProgressInstallments,
@@ -94,6 +95,58 @@ describe('data display', () => {
     expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '3');
     expect(screen.getByText('Atrasado')).toBeInTheDocument();
     expect(screen.getAllByText(/3 de 12/).length).toBeGreaterThan(0);
+  });
+
+  it('chart area describe la serie y marca el último valor', () => {
+    render(
+      <ChartArea
+        values={[0, 500, 1200, 3000]}
+        labels={['L', 'M', 'X', 'J']}
+        ariaLabel="Movimientos de la semana: 30,00 €"
+        description="Del lunes al jueves, total 30,00 €. Jueves, 12,00 € acumulados."
+      />,
+    );
+    const chart = screen.getByRole('img', { name: 'Movimientos de la semana: 30,00 €' });
+    expect(chart).toHaveAttribute('aria-describedby');
+    expect(
+      screen.getByText(/Del lunes al jueves, total 30,00 €/),
+    ).toBeInTheDocument();
+    expect(screen.getByText('J')).toBeInTheDocument();
+    const paths = document.querySelectorAll('svg path');
+    expect(paths).toHaveLength(2);
+    expect(paths[1]).toHaveAttribute('d', expect.stringContaining('L 100 6'));
+    const dot = document.querySelector('[data-chart-point="core"]');
+    expect(dot).toBeInTheDocument();
+    expect(dot).toHaveClass('rounded-full', 'h-2', 'w-2');
+    expect(dot).toHaveStyle({ left: '100%', top: '15%' });
+  });
+
+  it('chart area muestra el importe en un tooltip inline', () => {
+    render(
+      <ChartArea
+        values={[500, 1200]}
+        labels={['L', 'M']}
+        ariaLabel="Movimientos de la semana"
+        showLabels={false}
+        tooltip={{ label: 'Semana · lun 23 – hoy', value: '12,00 € netos' }}
+      />,
+    );
+    expect(screen.getByText('Semana · lun 23 – hoy')).toBeInTheDocument();
+    expect(screen.getByText('12,00 € netos')).toBeInTheDocument();
+    expect(screen.queryByText('L')).not.toBeInTheDocument();
+  });
+
+  it('chart area admite un solo punto y series en cero', () => {
+    const { rerender } = render(
+      <ChartArea values={[500]} labels={['L']} ariaLabel="Un día" description="Lunes, 5,00 €" />,
+    );
+    expect(screen.getByRole('img', { name: 'Un día' })).toBeInTheDocument();
+    expect(document.querySelector('[data-chart-point="core"]')).toHaveStyle({ left: '100%' });
+
+    rerender(<ChartArea values={[0, 0]} labels={['L', 'M']} ariaLabel="Sin gastos" />);
+    expect(document.querySelector('svg path')?.getAttribute('d')).not.toContain('NaN');
+    expect(document.querySelectorAll('[data-chart-point="core"]')).toHaveLength(1);
+    expect(document.querySelector('[data-chart-point="halo"]')).toBeInTheDocument();
   });
 
   it('charts tienen descripción accesible y etiquetas', () => {

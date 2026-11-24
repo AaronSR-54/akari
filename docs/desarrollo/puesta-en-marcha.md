@@ -59,6 +59,8 @@ Proyectos E2E:
 
 - En `/onboarding`, elige «Ver con datos de ejemplo».
 - En `/ajustes` puedes volver a cargar ejemplos o reiniciar todos los datos.
+- El mock usa una **fecha fija**: domingo 29 de noviembre de 2026 (`apps/web/src/lib/clock.ts`). Así la gráfica de saldo del mes muestra siempre la misma evolución desde la base a día 1 y la tarjeta de balance el mismo saldo total estimado, con tres meses de historial sembrados. Los formularios también arrancan con esa fecha.
+- Para cambiar la fecha sin tocar código, define `NEXT_PUBLIC_AKARI_NOW` con un ISO 8601, por ejemplo `2026-11-29T12:00:00`, y reinicia el servidor.
 - Exporta una copia antes de reiniciar: el archivo no está cifrado en esta fase.
 
 ## Scripts

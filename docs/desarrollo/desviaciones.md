@@ -75,7 +75,16 @@ Este documento registra las diferencias entre el diseño aprobado (`docs/diseno/
 
 Quedan fuera, además de las superficies nativas: la creación de planes de plazos desde la UI (se muestran y registran cuotas sobre planes existentes), la bandeja de avisos, la gestión de invitaciones y la red de amistades. La app móvil las abordará junto con su cambio de implementación.
 
-## 12. Cómo registrar una desviación nueva
+## 12. Hero del resumen (change `rediseno-dashboard-hero`)
+
+- **Diseño:** `W01` abre con tres `StatCard` y muestra «Gastos por semana» como gráfico de barras en la columna derecha.
+- **Implementación:** el saldo total sigue sobre el lienzo, sin caja, a la izquierda, y a la derecha la evolución del saldo durante el mes, también fuera de tarjeta, empezando en el cierre del día 1 (calculado desde el cierre del mes anterior) y sin un tramo previo de apertura. Cada ingreso sube la línea y cada gasto la baja; la gráfica no lleva título, pie ni referencias visibles, y permite recorrer cada día con el puntero o el teclado para ver sus movimientos y el saldo tras ese día. Debajo, «Balance del mes» muestra el neto con signo y color (verde positivo, rojo negativo) y el saldo total estimado a fin de mes como única línea de pie. La gráfica ocupa el alto de su fila, así que crece con la columna del saldo y ambas columnas terminan a la misma altura; la tarjeta va justo debajo, con su misma anchura, sin borde superior y con una sombra superior sutil, y el área ámbar llega hasta el borde derecho de la columna y se prolonga bajo las esquinas redondeadas de la tarjeta para que la unión no deje un corte. «Próximo pago» queda bajo el saldo y «Preguntas rápidas» al pie de «Últimos movimientos». Se han retirado el gráfico semanal y el `ChartArea` del resumen.
+- **Motivo:** el saldo y su evolución mensual responden mejor a la planificación que un neto semanal; los gastos hacia abajo y los ingresos hacia arriba hacen legible el efecto de cada movimiento, y el saldo total estimado añade contexto sin competir con el hero.
+- **Consecuencia:** la composición actual no coincide con el frame `W01` aprobado. El diseño está congelado: no se han modificado FigCraft, `design/` ni `docs/diseno/`, y la desviación queda registrada aquí.
+- **Mock determinista:** la app de demo usa el 29/11/2026 como fecha fija y siembra tres meses de historial para que la base y la proyección se vean siempre iguales. No es el comportamiento de producción: el reloj se puede ajustar con `NEXT_PUBLIC_AKARI_NOW` y está documentado en `puesta-en-marcha.md`.
+- **Cierre:** solo si la persona usuaria reabre la fase de diseño; hasta entonces la implementación se mantiene y la trazabilidad vive en `producto/dashboard-hero`.
+
+## 13. Cómo registrar una desviación nueva
 
 1. Describe el comportamiento diseñado y el implementado.
 2. Indica el motivo, la consecuencia para la persona usuaria y el cambio que la cerrará.

@@ -1,8 +1,10 @@
 import {
+  addDays,
   addMonths,
   endOfMonth,
   endOfWeek,
   format,
+  getDaysInMonth,
   isWithinInterval,
   parseISO,
   startOfDay,
@@ -12,7 +14,7 @@ import {
   subWeeks,
 } from 'date-fns';
 import { add, money, subtract, zero, type Money } from './money.js';
-import type { Account, InstallmentPlan, Movement, Recurrence } from './types.js';
+import type { Account, InstallmentPlan, Movement, MovementType, Recurrence } from './types.js';
 import { nextInstallment } from './recurrence.js';
 
 export function movementsForAccount(movements: Movement[], accountId: string): Movement[] {
@@ -35,11 +37,15 @@ export function calculateAccountBalance(
   return total;
 }
 
-export function aggregateBalances(accounts: Account[], movements: Movement[]): Money[] {
+export function aggregateBalances(
+  accounts: Account[],
+  movements: Movement[],
+  upTo?: string,
+): Money[] {
   const totals = new Map<string, Money>();
   for (const account of accounts) {
     if (account.archivedAt || !account.includeInTotal) continue;
-    const balance = calculateAccountBalance(account, movements);
+    const balance = calculateAccountBalance(account, movements, upTo);
     const current = totals.get(account.currency) ?? zero(account.currency);
     totals.set(account.currency, add(current, balance));
   }
@@ -81,9 +87,18 @@ export function projectMonthEnd(
   plans: InstallmentPlan[],
   today = new Date(),
 ): Money {
-  let projected = calculateAccountBalance(account, movements);
   const start = startOfDay(today);
   const end = endOfMonth(today);
+  const todayKey = format(start, 'yyyy-MM-dd');
+  const monthEndKey = format(end, 'yyyy-MM-dd');
+  let projected = calculateAccountBalance(account, movements, todayKey);
+
+  for (const movement of movements) {
+    if (movement.accountId !== account.id) continue;
+    if (movement.date <= todayKey || movement.date > monthEndKey) continue;
+    const amount = money(movement.amountMinor, account.currency);
+    projected = movement.type === 'income' ? add(projected, amount) : subtract(projected, amount);
+  }
 
   for (const recurrence of recurrences) {
     if (recurrence.accountId !== account.id) continue;
@@ -210,6 +225,170 @@ export function dailyTotals(
       .reduce((sum, movement) => sum + movement.amountMinor, 0);
     return { date: key, totalMinor };
   });
+}
+
+export type MonthDayMovements = {
+  date: string;
+  day: number;
+  elapsed: boolean;
+  expenseMinor: number;
+  incomeMinor: number;
+  netMinor: number;
+  /** Saldo al cierre del día: apertura del mes + neto acumulado. */
+  balanceMinor: number;
+  count: number;
+  movements: Array<{
+    id: string;
+    concept: string;
+    type: MovementType;
+    amountMinor: number;
+  }>;
+};
+
+export type CurrentMonthMovements = {
+  month: string;
+  currency: string;
+  daysInMonth: number;
+  elapsedDays: number;
+  openingBalanceMinor: number;
+  expenseMinor: number;
+  incomeMinor: number;
+  netMinor: number;
+  count: number;
+  days: MonthDayMovements[];
+};
+
+/**
+ * Movimientos de cada día del mes en curso, con ingresos, gastos y el saldo
+ * resultante a partir del saldo de apertura (el de cierre del mes anterior).
+ */
+export function currentMonthMovements(
+  movements: Movement[],
+  currency: string,
+  today = new Date(),
+  openingBalanceMinor = 0,
+): CurrentMonthMovements {
+  const monthStart = startOfMonth(today);
+  const daysInMonth = getDaysInMonth(monthStart);
+  const todayKey = format(startOfDay(today), 'yyyy-MM-dd');
+  let expenseMinor = 0;
+  let incomeMinor = 0;
+  let netMinor = 0;
+  let count = 0;
+  let balanceMinor = openingBalanceMinor;
+
+  const days = Array.from({ length: daysInMonth }, (_, index) => {
+    const date = addDays(monthStart, index);
+    const key = format(date, 'yyyy-MM-dd');
+    const daily = movements
+      .filter((movement) => movement.currency === currency && movement.date === key)
+      .sort((a, b) => a.createdAt.localeCompare(b.createdAt) || a.id.localeCompare(b.id));
+    const dayExpense = daily
+      .filter((movement) => movement.type === 'expense')
+      .reduce((sum, movement) => sum + movement.amountMinor, 0);
+    const dayIncome = daily
+      .filter((movement) => movement.type === 'income')
+      .reduce((sum, movement) => sum + movement.amountMinor, 0);
+    const dayNet = dayIncome - dayExpense;
+    const elapsed = key <= todayKey;
+    if (elapsed) {
+      expenseMinor += dayExpense;
+      incomeMinor += dayIncome;
+      netMinor += dayNet;
+      count += daily.length;
+    }
+    balanceMinor += dayNet;
+    return {
+      date: key,
+      day: index + 1,
+      elapsed,
+      expenseMinor: dayExpense,
+      incomeMinor: dayIncome,
+      netMinor: dayNet,
+      balanceMinor,
+      count: daily.length,
+      movements: daily.map(({ id, concept, type, amountMinor }) => ({
+        id,
+        concept,
+        type,
+        amountMinor,
+      })),
+    };
+  });
+
+  return {
+    month: format(monthStart, 'yyyy-MM'),
+    currency,
+    daysInMonth,
+    elapsedDays: Math.min(today.getDate(), daysInMonth),
+    openingBalanceMinor,
+    expenseMinor,
+    incomeMinor,
+    netMinor,
+    count,
+    days,
+  };
+}
+
+export type MonthExpenseEstimate = {
+  /** Estimación del gasto total del mes; `null` si no hay meses anteriores con datos. */
+  estimateMinor: number | null;
+  dailyAverageMinor: number | null;
+  remainingDays: number;
+  monthsWithData: number;
+};
+
+/**
+ * Proyecta el gasto de fin de mes a partir del gasto diario medio de los meses
+ * anteriores completos: lo ya gastado más los días que quedan por delante.
+ */
+export function monthExpenseEstimate(
+  movements: Movement[],
+  currency: string,
+  today = new Date(),
+  months = 3,
+): MonthExpenseEstimate {
+  const daysInMonth = getDaysInMonth(today);
+  const elapsedDays = Math.min(today.getDate(), daysInMonth);
+  const remainingDays = Math.max(daysInMonth - elapsedDays, 0);
+  const monthStartKey = format(startOfMonth(today), 'yyyy-MM-dd');
+  const todayKey = format(startOfDay(today), 'yyyy-MM-dd');
+  const currentMinor = movements
+    .filter(
+      (movement) =>
+        movement.type === 'expense' &&
+        movement.currency === currency &&
+        movement.date >= monthStartKey &&
+        movement.date <= todayKey,
+    )
+    .reduce((sum, movement) => sum + movement.amountMinor, 0);
+
+  let sampleTotal = 0;
+  let sampleDays = 0;
+  let monthsWithData = 0;
+
+  for (let offset = 1; offset <= months; offset += 1) {
+    const date = startOfMonth(subMonths(today, offset));
+    const monthTotal = monthExpenses(movements, date)
+      .filter((entry) => entry.currency === currency)
+      .reduce((sum, entry) => sum + entry.minor, 0);
+    if (monthTotal <= 0) continue;
+    monthsWithData += 1;
+    sampleTotal += monthTotal;
+    sampleDays += getDaysInMonth(date);
+  }
+
+  if (sampleDays === 0) {
+    return { estimateMinor: null, dailyAverageMinor: null, remainingDays, monthsWithData: 0 };
+  }
+
+  const dailyAverageMinor = sampleTotal / sampleDays;
+  return {
+    estimateMinor: currentMinor + Math.round(dailyAverageMinor * remainingDays),
+    dailyAverageMinor: Math.round(dailyAverageMinor),
+    remainingDays,
+    monthsWithData,
+  };
 }
 
 export function weeklyTotals(

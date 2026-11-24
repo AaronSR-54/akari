@@ -9,6 +9,7 @@ import {
   storageErrorMessage,
 } from './lifecycle.js';
 import { wrapRepository } from './repositories.js';
+import { DEMO_SEED_VERSION } from './seed.js';
 
 let db: AkariDB;
 
@@ -25,11 +26,20 @@ describe('lifecycle', () => {
     await loadDemoDatabase(db, new Date('2026-11-15T12:00:00.000Z'));
     const repositories = buildRepositories(db);
     expect(await repositories.accounts.list()).toHaveLength(3);
-    expect((await repositories.settings.get()).onboardingCompleted).toBe(true);
+    const settings = await repositories.settings.get();
+    expect(settings.onboardingCompleted).toBe(true);
+    expect(settings.demoSeedVersion).toBe(DEMO_SEED_VERSION);
     const accounts = await repositories.accounts.list();
-    const totals = aggregateBalances(accounts, await repositories.movements.list());
-    expect(totals.find((entry) => entry.currency === 'EUR')?.minor).toBe(1272201);
-    expect((await repositories.movements.list()).every((movement) => /^\d{4}-\d{2}-\d{2}$/.test(movement.date))).toBe(true);
+    const movements = await repositories.movements.list();
+    const totals = aggregateBalances(accounts, movements);
+    expect(totals.find((entry) => entry.currency === 'EUR')?.minor).toBe(1587801);
+    expect(movements.every((movement) => /^\d{4}-\d{2}-\d{2}$/.test(movement.date))).toBe(true);
+    const demoWeek = new Set(
+      movements
+        .filter((movement) => movement.date >= '2026-11-09' && movement.date <= '2026-11-15')
+        .map((movement) => movement.date),
+    );
+    expect(demoWeek.size).toBe(7);
     const summary = await getGroupSummary(repositories, 'demo-grp-flat');
     expect(summary?.pendingTotalMinor).toBeGreaterThan(0);
 
