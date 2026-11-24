@@ -39,11 +39,15 @@ Instrucciones para agentes que trabajen en este repositorio.
 - El código es de un solo uso por sesión: si la sesión cae o cambia el host, vuelve a pedir uno nuevo en lugar de reintentar con el anterior.
 - Los detalles de la sesión vigente (host, archivo, enlace de invitación) se anotan en `docs/diseno/estado.md`, pero el agente no los usa como sustituto del código que le entregue el usuario.
 
-## OpenSpec: cierre de changes
+## OpenSpec: rama por change y cierre
 
-Archivar un change (`openspec archive`, skill `openspec-archive-change`) no termina hasta que sus cambios están commiteados en una rama y con una PR abierta a `main`.
+Cada change vive en su propia rama `feat/<change-id>` desde el momento en que se crea, y solo termina cuando sus cambios están commiteados en esa rama y con una PR abierta a `main`.
 
-1. **Rama.** Crea `feat/<change-id>` desde `main` actualizado (`git fetch origin`, `git switch main`, `git pull --ff-only`) y trabaja ahí. Si ya estás en la rama `feat/<change-id>` de ese change, reutilízala. Si la implementación aún no está commiteada, crea la rama **antes** de aplicar/archivar para que el código viaje en la misma PR.
+- **Al crear un change** (`openspec new`, `/opsx-propose`, skill `openspec-propose`): lo primero es actualizar `main` (`git fetch origin`, `git switch main`, `git pull --ff-only`) y crear `feat/<change-id>` desde ese HEAD. No escribas proposal, design, specs ni tasks en `main`; todo el ciclo (artefactos, código, specs y archivo) ocurre en esa rama.
+- **Al aplicar o retomar** (skill `openspec-apply-change`, `/opsx-apply`): confirma que estás en `feat/<change-id>`. Si la rama no existe (change antiguo), créala desde `main` actualizado antes de seguir.
+- **Al archivar** (`openspec archive`, skill `openspec-archive-change`): completa estos pasos.
+
+1. **Rama.** Trabaja en la `feat/<change-id>` ya creada; si no existe, créala desde `main` actualizado antes de commitear. No la recrees si ya existe.
 2. **Alcance del commit.** Incluye solo lo del change: `openspec/changes/archive/<fecha>-<change-id>/`, los specs principales que el archivado sincronice en `openspec/specs/` y el código y pruebas derivados de sus tareas. No mezcles cambios ajenos: si el working tree tiene trabajo no relacionado, déjalo fuera; si no puedes distinguir qué pertenece al change, párate y pregunta.
 3. **Commit.** Conventional commits en español, p. ej. `feat(<change-id>): archivar el change y sincronizar specs`. No amendes commits ya publicados ni uses `--force`.
 4. **Push.** `git push -u origin feat/<change-id>`.
@@ -54,4 +58,5 @@ Guardas:
 
 - Revisa `git status` antes de añadir: nunca subas `.env`, credenciales ni artefactos ignorados.
 - Un change = una rama = una PR. No reutilices la rama de otro change.
+- Ningún change se abre, implementa ni archiva en `main`: si detectas que estás en `main`, crea la rama antes de continuar.
 - Si `gh` falla, deja la rama subida y reporta el error junto con el comando exacto para crear la PR a mano.
