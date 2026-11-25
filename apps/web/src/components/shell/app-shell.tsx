@@ -2,7 +2,7 @@
 
 import { useEffect, useState, type ReactNode } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { Button, StatePage } from '@akari/ui';
+import { Button, StatePage, cn } from '@akari/ui';
 import { useData, useDataRetry } from '../providers';
 import { useSettings } from '../hooks';
 import { PageTitleProvider, usePageTitle } from '../page-title';
@@ -34,6 +34,7 @@ function AppShellInner({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const { title, meta } = usePageTitle();
   const [searchOpen, setSearchOpen] = useState(false);
+  const [sidebarPinned, setSidebarPinned] = useState(false);
 
   useEffect(() => {
     const handler = (event: KeyboardEvent) => {
@@ -65,7 +66,15 @@ function AppShellInner({ children }: { children: ReactNode }) {
         Saltar al contenido
       </a>
       <div className="flex min-h-screen gap-4 lg:min-h-[calc(100vh-2rem)]">
-        {sidebarMode ? <Sidebar /> : null}
+        {sidebarMode ? (
+          <>
+            <div
+              className={cn('hidden shrink-0 lg:block', sidebarPinned ? 'w-60' : 'w-[76px]')}
+              aria-hidden="true"
+            />
+            <Sidebar pinned={sidebarPinned} onPinnedChange={setSidebarPinned} />
+          </>
+        ) : null}
         <div className="flex min-w-0 flex-1 flex-col">
           {sidebarMode ? null : <HeaderNav onOpenSearch={() => setSearchOpen(true)} />}
           <TabletHeader />

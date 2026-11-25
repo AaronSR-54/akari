@@ -158,6 +158,116 @@ test.describe('shell web', () => {
     await expect(aside).toHaveAttribute('data-expanded', 'false');
   });
 
+  test('ítems de 44 px y avatar de 40 px sin desbordamiento', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await seedDemo(page);
+    const overflow = () =>
+      page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    const navHeight = (selector: string) =>
+      page.locator(selector).first().evaluate((el) => Math.round(el.getBoundingClientRect().height));
+
+    await expect.poll(() => navHeight('aside ul li a:visible')).toBe(44);
+    const asideAvatar = page.locator('aside [role="img"][aria-label="Marta"]');
+    expect(Math.round((await asideAvatar.boundingBox())?.width ?? 0)).toBe(40);
+    expect(await overflow()).toBeLessThanOrEqual(1);
+
+    await page.goto('/ajustes');
+    await chooseOption(page, 'Navegación de escritorio', 'Header');
+    await expect.poll(() => navHeight('header nav a:visible')).toBe(44);
+    const headerAvatar = page.locator('header.sticky.top-0:visible [role="img"][aria-label="Marta"]');
+    expect(Math.round((await headerAvatar.boundingBox())?.width ?? 0)).toBe(40);
+    expect(await overflow()).toBeLessThanOrEqual(1);
+
+    await page.setViewportSize({ width: 900, height: 900 });
+    await expect.poll(() => navHeight('header nav a:visible')).toBe(44);
+    const tabletAvatar = page.locator('header [role="img"][aria-label="Marta"]:visible');
+    expect(Math.round((await tabletAvatar.boundingBox())?.width ?? 0)).toBe(40);
+
+    await page.setViewportSize({ width: 390, height: 844 });
+    const mobileAvatar = page.locator('header [role="img"][aria-label="Marta"]:visible');
+    expect(Math.round((await mobileAvatar.boundingBox())?.width ?? 0)).toBe(40);
+    const tabHeight = await page
+      .locator('nav.fixed a')
+      .first()
+      .evaluate((el) => Math.round(el.getBoundingClientRect().height));
+    expect(tabHeight).toBeGreaterThanOrEqual(44);
+  });
+
+  test('el logotipo mide 32 px en sidebar y en header', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await seedDemo(page);
+    const logoHeight = async () =>
+      Math.round(
+        (await page.locator('[role="img"][aria-label="akari"]:visible').first().boundingBox())?.height ?? 0,
+      );
+
+    await expect.poll(logoHeight).toBe(32);
+
+    await page.goto('/ajustes');
+    await chooseOption(page, 'Navegación de escritorio', 'Header');
+    await expect(page.locator('header.sticky.top-0:visible')).toBeVisible();
+    await expect.poll(logoHeight).toBe(32);
+  });
+
+  test('la sidebar se expande sobre el contenido sin redimensionarlo', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await seedDemo(page);
+    const aside = page.locator('aside');
+    const main = page.locator('main');
+
+    await expect(aside).toHaveAttribute('data-expanded', 'false');
+    await expect.poll(async () => Math.round((await aside.boundingBox())?.width ?? 0)).toBe(76);
+    const mainCompact = await main.boundingBox();
+
+    await aside.hover();
+    await expect(aside).toHaveAttribute('data-expanded', 'true');
+    await expect.poll(async () => Math.round((await aside.boundingBox())?.width ?? 0)).toBe(240);
+    const mainExpanded = await main.boundingBox();
+    expect(mainExpanded?.x).toBe(mainCompact?.x);
+    expect(mainExpanded?.width).toBe(mainCompact?.width);
+
+    const asideBox = await aside.boundingBox();
+    expect((asideBox?.x ?? 0) + (asideBox?.width ?? 0)).toBeGreaterThan(mainExpanded?.x ?? 0);
+
+    await page.mouse.move(600, 400);
+    await expect(aside).toHaveAttribute('data-expanded', 'false');
+    await expect.poll(async () => Math.round((await aside.boundingBox())?.width ?? 0)).toBe(76);
+    const mainCollapsed = await main.boundingBox();
+    expect(mainCollapsed?.x).toBe(mainCompact?.x);
+    expect(mainCollapsed?.width).toBe(mainCompact?.width);
+  });
+
+  test('el panel flotante se atenúa y al fijarlo se redimensiona el contenido', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await seedDemo(page);
+    const aside = page.locator('aside');
+    const main = page.locator('main');
+    const scrim = page.locator('[data-sidebar-scrim]');
+
+    await aside.hover();
+    await expect(aside).toHaveAttribute('data-expanded', 'true');
+    await expect(scrim).toHaveCount(1);
+    expect(await aside.getAttribute('class')).toContain('elevation-3');
+    const compactMain = await main.boundingBox();
+
+    await aside.getByRole('button', { name: 'Expandir navegación' }).click();
+    await expect(scrim).toHaveCount(0);
+    await page.mouse.move(700, 500);
+    await expect(aside).toHaveAttribute('data-expanded', 'true');
+    await expect.poll(async () => Math.round((await main.boundingBox())?.x ?? 0)).toBe(
+      Math.round((compactMain?.x ?? 0) + 164),
+    );
+    expect(Math.round((await main.boundingBox())?.width ?? 0)).toBe(Math.round((compactMain?.width ?? 0) - 164));
+    expect(await aside.getAttribute('class')).toContain('elevation-1');
+
+    await aside.hover();
+    await aside.getByRole('button', { name: 'Colapsar navegación' }).click();
+    await page.locator('header.h-\\[72px\\]').getByRole('heading', { level: 1 }).click();
+    await page.mouse.move(700, 500);
+    await expect(aside).toHaveAttribute('data-expanded', 'false');
+    await expect.poll(async () => Math.round((await main.boundingBox())?.x ?? 0)).toBe(Math.round(compactMain?.x ?? 0));
+  });
+
   test('el error de almacenamiento conserva la navegación', async ({ page }) => {
     await page.addInitScript(() => {
       Object.defineProperty(window, 'indexedDB', { value: undefined, configurable: true });
