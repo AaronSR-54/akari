@@ -42,6 +42,8 @@ export type Movement = {
   concept: string;
   category: string;
   note?: string;
+  /** Miembro de la cuenta que registró el movimiento; solo en cuentas conjuntas. */
+  memberId?: string | null;
   recurrenceId?: string;
   installmentPlanId?: string;
   groupExpenseId?: string;
@@ -136,6 +138,8 @@ export type Settings = {
   displayName?: string;
   /** Versión del seed de ejemplo; permite refrescar demos antiguas. */
   demoSeedVersion?: number;
+  /** Identificadores de avisos ya vistos; se recorta a los más recientes. */
+  seenNotificationIds?: string[];
 };
 
 export const defaultSettings: Settings = {
@@ -166,6 +170,8 @@ export type MovementInput = {
   concept: string;
   category: string;
   note?: string;
+  /** Miembro autor cuando la cuenta es conjunta. */
+  memberId?: string | null;
   repeat?: {
     frequency: Frequency;
     endDate?: string | null;

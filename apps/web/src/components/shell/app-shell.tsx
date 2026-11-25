@@ -4,7 +4,7 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { Button, StatePage, cn } from '@akari/ui';
 import { useData, useDataRetry } from '../providers';
-import { useSettings } from '../hooks';
+import { useMarkNotificationsSeen, useNotifications, useSettings } from '../hooks';
 import { PageTitleProvider, usePageTitle } from '../page-title';
 import { routeTitles } from '../nav';
 import { defaultProfile } from '../../lib/profile';
@@ -17,6 +17,8 @@ import {
   TabletHeader,
 } from './sidebar';
 import { SearchDialog } from './search-dialog';
+import { NotificationsPanel } from './notifications-panel';
+import { useNotificationPayments } from './use-notification-payments';
 import { PageSkeleton } from '../page-skeleton';
 
 export function AppShell({ children }: { children: ReactNode }) {
@@ -31,10 +33,14 @@ function AppShellInner({ children }: { children: ReactNode }) {
   const { ready, error } = useData();
   const retry = useDataRetry();
   const settings = useSettings();
+  const notifications = useNotifications();
+  const markSeen = useMarkNotificationsSeen();
+  const { pay, busyId } = useNotificationPayments();
   const router = useRouter();
   const pathname = usePathname();
   const { title, meta } = usePageTitle();
   const [searchOpen, setSearchOpen] = useState(false);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [sidebarPinned, setSidebarPinned] = useState(false);
 
   useEffect(() => {
@@ -54,10 +60,31 @@ function AppShellInner({ children }: { children: ReactNode }) {
     }
   }, [settings, router]);
 
+  useEffect(() => {
+    if (!notificationsOpen || !notifications) return;
+    const unseen = notifications
+      .filter((notification) => !notification.seen)
+      .map((notification) => notification.id);
+    if (unseen.length > 0) {
+      void markSeen(unseen).catch(() => undefined);
+    }
+  }, [notificationsOpen, notifications, markSeen]);
+
   const sidebarMode = settings?.shellMode !== 'header';
   const showApp = ready && settings?.onboardingCompleted;
   const headerTitle = title || routeTitles[pathname ?? ''] || '';
   const displayName = settings?.displayName ?? defaultProfile.displayName;
+  const notificationCount =
+    notifications?.filter((notification) => !notification.seen).length ?? 0;
+  const toggleNotifications = () => setNotificationsOpen((open) => !open);
+  const notificationsPanel = notificationsOpen ? (
+    <NotificationsPanel
+      notifications={notifications}
+      busyId={busyId}
+      onPay={pay}
+      onClose={() => setNotificationsOpen(false)}
+    />
+  ) : null;
 
   return (
     <div className="min-h-screen bg-surface-canvas lg:p-4">
@@ -79,12 +106,27 @@ function AppShellInner({ children }: { children: ReactNode }) {
         ) : null}
         <div className="flex min-w-0 flex-1 flex-col">
           {sidebarMode ? null : (
-            <HeaderNav onOpenSearch={() => setSearchOpen(true)} displayName={displayName} />
+            <HeaderNav
+              onOpenSearch={() => setSearchOpen(true)}
+              displayName={displayName}
+              onToggleNotifications={toggleNotifications}
+              notificationCount={notificationCount}
+              notificationsOpen={notificationsOpen}
+              notificationsPanel={notificationsPanel}
+            />
           )}
           <TabletHeader displayName={displayName} />
           <MobileTopBar onOpenSearch={() => setSearchOpen(true)} displayName={displayName} />
           {sidebarMode ? (
-            <DesktopHeader title={headerTitle} meta={meta} onOpenSearch={() => setSearchOpen(true)} />
+            <DesktopHeader
+              title={headerTitle}
+              meta={meta}
+              onOpenSearch={() => setSearchOpen(true)}
+              onToggleNotifications={toggleNotifications}
+              notificationCount={notificationCount}
+              notificationsOpen={notificationsOpen}
+              notificationsPanel={notificationsPanel}
+            />
           ) : null}
           <main id="contenido" className="flex-1 px-5 pb-24 pt-6 md:px-6 md:pb-8 lg:px-8">
             {error ? (

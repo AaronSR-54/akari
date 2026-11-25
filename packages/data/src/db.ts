@@ -59,17 +59,27 @@ export class AkariDB extends Dexie {
         await transaction.table<Settings>('settings').put(normalized);
       });
 
-    // v3 añade bankId al índice de cuentas; las filas existentes no se reescriben.
-    this.version(3).stores({
-      accounts: 'id, type, bankId, includeInTotal, archivedAt',
-      movements: 'id, accountId, date, type, category, recurrenceId, installmentPlanId, [accountId+date]',
-      recurrences: 'id, accountId, nextDate',
-      installments: 'id, accountId',
-      groups: 'id',
-      groupExpenses: 'id, groupId, date, [groupId+date]',
-      transfers: 'id, groupId, status',
-      settings: 'id',
-    });
+    // v3 añade bankId al índice de cuentas y el autor del movimiento; no borra datos.
+    this.version(3)
+      .stores({
+        accounts: 'id, type, bankId, includeInTotal, archivedAt',
+        movements: 'id, accountId, date, type, category, recurrenceId, installmentPlanId, [accountId+date]',
+        recurrences: 'id, accountId, nextDate',
+        installments: 'id, accountId',
+        groups: 'id',
+        groupExpenses: 'id, groupId, date, [groupId+date]',
+        transfers: 'id, groupId, status',
+        settings: 'id',
+      })
+      .upgrade(async (transaction) => {
+        // Los movimientos previos a v3 quedan sin atribuir; las cuentas conservan su bankId.
+        await transaction
+          .table<Movement>('movements')
+          .toCollection()
+          .modify((movement) => {
+            if (movement.memberId === undefined) movement.memberId = null;
+          });
+      });
   }
 }
 

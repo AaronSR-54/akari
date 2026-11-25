@@ -5,5 +5,6 @@ export * from './errors.js';
 export * from './accounts.js';
 export * from './recurrence.js';
 export * from './group.js';
+export * from './notifications.js';
 export * from './ports.js';
 export * from './services.js';

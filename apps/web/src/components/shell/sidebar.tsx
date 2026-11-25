@@ -2,10 +2,56 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useEffect, useRef, useState } from 'react';
-import { Avatar, Icon, IconBell, IconButton, IconSearch, Logo, cn } from '@akari/ui';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { Avatar, Icon, IconBell, IconButton, IconSearch, Logo, cn, type IconSize } from '@akari/ui';
 import { defaultProfile, initialsFromName } from '../../lib/profile';
 import { isActivePath, navItems, type NavItem } from '../nav';
+
+export function NotificationsMenu({
+  open,
+  onToggle,
+  count,
+  iconSize = 18,
+  className,
+  children,
+}: {
+  open: boolean;
+  onToggle: () => void;
+  count: number;
+  iconSize?: IconSize;
+  className?: string;
+  children?: ReactNode;
+}) {
+  return (
+    <div className="relative">
+      <IconButton
+        aria-label={
+          count === 0 ? 'Avisos' : count === 1 ? 'Avisos, 1 pendiente' : `Avisos, ${count} pendientes`
+        }
+        aria-haspopup="dialog"
+        aria-expanded={open}
+        size="lg"
+        onClick={onToggle}
+        icon={
+          <span className="relative inline-flex">
+            <IconBell size={iconSize} />
+            {count > 0 ? (
+              <span
+                aria-hidden="true"
+                data-notification-count={count}
+                className="absolute -right-1.5 -top-1.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-status-danger-text px-1 text-ui-9 text-text-inverse"
+              >
+                {count > 9 ? '9+' : count}
+              </span>
+            ) : null}
+          </span>
+        }
+        className={className}
+      />
+      {children}
+    </div>
+  );
+}
 
 function NavLogo({ format }: { format: 'expanded' | 'initial' }) {
   return (
@@ -162,10 +208,18 @@ export function DesktopHeader({
   title,
   meta,
   onOpenSearch,
+  onToggleNotifications,
+  notificationCount,
+  notificationsOpen,
+  notificationsPanel,
 }: {
   title: string;
   meta: string;
   onOpenSearch: () => void;
+  onToggleNotifications: () => void;
+  notificationCount: number;
+  notificationsOpen: boolean;
+  notificationsPanel?: ReactNode;
 }) {
   return (
     <header className="sticky top-0 z-20 hidden h-[72px] shrink-0 items-center justify-between gap-6 bg-surface-canvas px-8 lg:-mt-4 lg:flex">
@@ -183,12 +237,14 @@ export function DesktopHeader({
           <span className="flex-1">Buscar</span>
           <kbd className="rounded border border-border-subtle px-1 text-ui-9">⌘K</kbd>
         </button>
-        <IconButton
-          aria-label="Avisos"
-          size="lg"
-          icon={<IconBell size={18} />}
+        <NotificationsMenu
+          open={notificationsOpen}
+          onToggle={onToggleNotifications}
+          count={notificationCount}
           className="bg-surface-default text-text-primary"
-        />
+        >
+          {notificationsPanel}
+        </NotificationsMenu>
       </div>
     </header>
   );
@@ -197,9 +253,17 @@ export function DesktopHeader({
 export function HeaderNav({
   onOpenSearch,
   displayName = defaultProfile.displayName,
+  onToggleNotifications,
+  notificationCount,
+  notificationsOpen,
+  notificationsPanel,
 }: {
   onOpenSearch: () => void;
   displayName?: string;
+  onToggleNotifications: () => void;
+  notificationCount: number;
+  notificationsOpen: boolean;
+  notificationsPanel?: ReactNode;
 }) {
   const pathname = usePathname();
   return (
@@ -234,7 +298,14 @@ export function HeaderNav({
         </nav>
         <div className="flex items-center gap-3">
           <IconButton aria-label="Buscar" icon={<IconSearch size={20} />} onClick={onOpenSearch} />
-          <IconButton aria-label="Avisos" icon={<IconBell size={20} />} />
+          <NotificationsMenu
+            open={notificationsOpen}
+            onToggle={onToggleNotifications}
+            count={notificationCount}
+            iconSize={20}
+          >
+            {notificationsPanel}
+          </NotificationsMenu>
           <Link
             href="/ajustes"
             aria-label="Ajustes"
