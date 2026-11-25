@@ -89,6 +89,45 @@ Cada claim SHALL asignar un puerto de desarrollo y otro E2E guardados en `.opsx/
 - **WHEN** se inspecciona el estado de Git después de reclamar o arrancar un servidor
 - **THEN** `.opsx/ports.json` no aparece como cambio pendiente ni se commitea
 
+### Requirement: Limpieza de claims y worktrees
+
+Tras archivar un change, el agente SHALL conservar su worktree hasta que GitHub confirme que la PR está mergeada. La limpieza SHALL consultar el estado de la PR con `gh` antes de borrar nada y SHALL eliminar únicamente el worktree y la rama local; SHALL NOT borrar etiquetas de claim ni la rama remota. Si la PR no está mergeada o no se puede consultar, SHALL fallar sin modificar Git. Un claim abandonado SHALL liberarse con `release`, que sí retira etiquetas y devuelve tarjetas.
+
+#### Scenario: Espera al merge
+
+- **WHEN** se archiva un change y se abre su PR
+- **THEN** el agente mantiene el worktree y no ejecuta `cleanup` hasta que una persona mergee la PR
+
+#### Scenario: Limpieza tras merge
+
+- **WHEN** la PR del change está mergeada y se ejecuta `kan-sync cleanup <change-id>`
+- **THEN** el worktree desaparece de `git worktree list` y la rama local se borra, sin que cambien las etiquetas de claim ni la rama remota
+
+#### Scenario: Merge no confirmado
+
+- **WHEN** la PR está abierta, cerrada sin merge o `gh` no puede consultar su estado
+- **THEN** la herramienta falla con un mensaje claro y no borra el worktree ni la rama
+
+#### Scenario: Simulación de la limpieza
+
+- **WHEN** se ejecuta `cleanup --dry-run` sobre una PR mergeada
+- **THEN** la herramienta imprime qué se borraría y no modifica Git
+
+#### Scenario: Change sin worktree propio
+
+- **WHEN** se ejecuta `cleanup` desde el checkout principal en `main`
+- **THEN** la herramienta se niega a borrar ese directorio
+
+#### Scenario: Limpieza con trabajo pendiente
+
+- **WHEN** se ejecuta `cleanup` sin `--force` sobre un worktree con cambios sin commitear
+- **THEN** la herramienta se niega, enumera los ficheros pendientes y no borra nada
+
+#### Scenario: Claim abandonado
+
+- **WHEN** una persona abandona un claim y ejecuta `release`
+- **THEN** las tarjetas vuelven a `TO DO`, el worktree se elimina si está limpio y las etiquetas se borran
+
 ## ADDED Requirements
 
 ### Requirement: Convención de nombres en inglés
@@ -248,25 +287,6 @@ El flujo SHALL evitar que dos PR de archivado compitan por los mismos ficheros d
 
 - **WHEN** un change necesita modificar `AGENTS.md`, `package.json`, `kan.config.json`, la CI o la documentación de flujo
 - **THEN** el flujo avisa de que es un fichero compartido y pide coordinarlo antes de abrir la PR
-
-### Requirement: Limpieza de claims y worktrees
-
-Al mergear una PR, el flujo SHALL eliminar el worktree y la rama local, y SHALL borrar las etiquetas de claim. Un claim abandonado SHALL poder liberarse sin dejar ramas, etiquetas ni tarjetas bloqueadas.
-
-#### Scenario: Limpieza tras merge
-
-- **WHEN** una PR de change se mergea y la persona ejecuta la limpieza
-- **THEN** el worktree desaparece de `git worktree list`, la rama local se borra y las etiquetas de claim de sus tarjetas ya no existen
-
-#### Scenario: Claim abandonado
-
-- **WHEN** una persona abandona un claim y ejecuta `release`
-- **THEN** las tarjetas vuelven a `TO DO`, el worktree se elimina si está limpio y las etiquetas se borran
-
-#### Scenario: Limpieza con trabajo pendiente
-
-- **WHEN** se intenta limpiar un worktree con cambios sin commitear o una rama con una PR abierta
-- **THEN** el flujo se niega sin `--force` y enumera lo que impide la limpieza
 
 ### Requirement: Entorno e identidad sin secretos compartidos
 

@@ -49,6 +49,7 @@ Abre `http://localhost:3000`. La primera vez te llevará a `/onboarding`, donde 
 | `node scripts/kan-sync.mjs claim <card...> --change <id>` | Reclama una o varias tarjetas y crea rama, worktree y change. |
 | `node scripts/kan-sync.mjs done <change-id> --pr <url>` | Mueve las tarjetas a DONE al archivar y registra la PR. |
 | `node scripts/kan-sync.mjs release <change-id>` | Devuelve tarjetas y limpia un claim abandonado. |
+| `node scripts/kan-sync.mjs cleanup <change-id>` | Tras validar el merge de la PR, borra el worktree y la rama local. |
 | `npm run dev:worktree` | Arranca Next en el puerto del worktree. |
 | `npm run e2e:worktree` | Ejecuta E2E con el puerto del worktree. |
 
