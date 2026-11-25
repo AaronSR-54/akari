@@ -78,3 +78,32 @@ El calendario SHALL ser operable solo con teclado, anunciar el día activo, la f
 
 - **WHEN** el sistema indica preferencia por movimiento reducido
 - **THEN** las transiciones del panel usan duración cero y el estado abierto sigue siendo perceptible
+
+### Requirement: Calendario en hoja inferior en móvil
+
+En vistas móviles el campo de fecha SHALL presentar el mismo calendario dentro de una hoja inferior modal anclada al borde inferior, con el scrim del sistema, el scroll de fondo bloqueado y el foco retenido, y SHALL cerrarla al elegir o cancelar devolviendo el foco al disparador.
+
+#### Scenario: Apertura en móvil
+
+- **WHEN** la persona abre un campo de fecha en una vista móvil
+- **THEN** aparece una hoja inferior modal con el calendario, el fondo atenuado y el resto del formulario inerte mientras la hoja está abierta
+
+#### Scenario: Elección de un día en la hoja
+
+- **WHEN** la persona elige un día en la hoja inferior
+- **THEN** la hoja se cierra, el disparador muestra la fecha elegida y el valor se comunica una sola vez
+
+#### Scenario: Cierre sin cambios en la hoja
+
+- **WHEN** la persona cierra la hoja con Escape, con la ✕ o pulsando el scrim
+- **THEN** la hoja se cierra, la fecha anterior se conserva y el foco vuelve al disparador
+
+#### Scenario: Hoja sobre otro modal
+
+- **WHEN** la hoja de fecha se abre desde un formulario que ya está dentro de un modal
+- **THEN** Escape y la trampa de foco afectan solo a la hoja, y al cerrarla el modal inferior sigue abierto con su estado y su foco
+
+#### Scenario: Sin hoja fuera de móvil
+
+- **WHEN** la vista es de tablet o escritorio
+- **THEN** el campo abre el panel flotante junto al disparador y no aparece ninguna hoja inferior
