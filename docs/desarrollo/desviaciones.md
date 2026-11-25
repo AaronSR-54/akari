@@ -106,3 +106,11 @@ Quedan fuera, además de las superficies nativas: la creación de planes de plaz
 - **Motivo:** la tarjeta `vg0xdmgej32g` pide mover el título a la cabecera en vista sidebar; el usuario amplió el alcance para incluir también el subtítulo (fecha y número de cuentas del resumen).
 - **Consecuencia:** título y subtítulo permanecen fijos arriba en escritorio; en tablet/móvil y variante `header` siguen en el contenido.
 - **Cierre:** solo si la persona usuaria reabre la fase de diseño; hasta entonces la implementación se mantiene y la trazabilidad vive en `producto/shell-web`.
+
+## 16. Detalle de movimiento en modal (change `detalle-de-movimientos`)
+
+- **Diseño:** no existe un detalle de movimiento en el diseño congelado; la consulta y la edición de un movimiento viven en la tabla de `W03`, con un botón «Editar» por fila.
+- **Implementación:** al seleccionar cualquier fila de movimientos (listado, resumen o detalle de cuenta) se abre una modal con concepto, tipo, importe con signo, divisa, fecha, categoría, cuenta, nota, vínculos y fecha de creación. La modal ofrece «Editar» y «Eliminar», y se cierra con la ✕ de la cabecera; la tabla de `W03` deja de mostrar botones de edición y la columna «Acciones». No hay ruta de detalle.
+- **Motivo:** la tarjeta pide un detalle por movimiento y retirar la edición de las tablas; el producto tiende a resolver crear, editar y detallar en modales, y el diseño no contempla esa superficie.
+- **Consecuencia:** la tabla de movimientos difiere del frame aprobado (sin columna «Acciones») y aparece una modal no diseñada. El diseño está congelado: no se han modificado FigCraft, `design/` ni `docs/diseno/`, y la desviación queda registrada aquí.
+- **Cierre:** solo si la persona usuaria reabre la fase de diseño; hasta entonces la implementación se mantiene y la trazabilidad vive en `producto/finanzas-personales`.

@@ -37,6 +37,7 @@ import { PageHeaderResponsive } from '../../components/page-header-responsive';
 import { useData } from '../../components/providers';
 import { ActionLink } from '../../components/action-link';
 import { PageSkeleton } from '../../components/page-skeleton';
+import { MovementDetailDialog } from '../../components/movement-detail-dialog';
 import {
   errorMessage,
   formatLongDate,
@@ -57,6 +58,7 @@ export function AccountDetailScreen({ accountId }: { accountId: string }) {
   const { toast } = useToast();
   const router = useRouter();
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [detailId, setDetailId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   if (summary === undefined) {
@@ -228,6 +230,7 @@ export function AccountDetailScreen({ accountId }: { accountId: string }) {
                       amountMinor={movement.amountMinor}
                       currency={movement.currency}
                       type={movement.type}
+                      onClick={() => setDetailId(movement.id)}
                     />
                   ))}
                 </div>
@@ -330,6 +333,12 @@ export function AccountDetailScreen({ accountId }: { accountId: string }) {
           ? 'Esta cuenta tiene movimientos. No se puede eliminar mientras existan; archívala o elimina sus movimientos primero.'
           : 'La cuenta se eliminará de este navegador. Esta acción no se puede deshacer.'}
       </Modal>
+
+      <MovementDetailDialog
+        movementId={detailId}
+        open={Boolean(detailId)}
+        onClose={() => setDetailId(null)}
+      />
     </div>
   );
 }

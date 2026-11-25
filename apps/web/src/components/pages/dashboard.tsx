@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useLayoutEffect, useRef } from 'react';
+import { useLayoutEffect, useRef, useState } from 'react';
 import { formatMinor, type Overview } from '@akari/domain';
 import {
   AccountCard,
@@ -22,6 +22,7 @@ import { PageTitle } from '../page-title';
 import { PageHeaderResponsive } from '../page-header-responsive';
 import { ActionLink } from '../action-link';
 import { PageSkeleton } from '../page-skeleton';
+import { MovementDetailDialog } from '../movement-detail-dialog';
 import { appNow } from '../../lib/clock';
 import {
   formatDayMonth,
@@ -40,6 +41,7 @@ function greeting() {
 }
 
 function OverviewBody({ overview }: { overview: Overview }) {
+  const [detailId, setDetailId] = useState<string | null>(null);
   const leftRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<HTMLDivElement>(null);
   const balanceRef = useRef<HTMLDivElement>(null);
@@ -171,6 +173,7 @@ function OverviewBody({ overview }: { overview: Overview }) {
                     amountMinor={movement.amountMinor}
                     currency={movement.currency}
                     type={movement.type}
+                    onClick={() => setDetailId(movement.id)}
                   />
                 ))}
               </div>
@@ -310,6 +313,11 @@ function OverviewBody({ overview }: { overview: Overview }) {
           {formatDayMonth(upcoming.date)}.
         </Banner>
       ) : null}
+      <MovementDetailDialog
+        movementId={detailId}
+        open={Boolean(detailId)}
+        onClose={() => setDetailId(null)}
+      />
     </Stack>
   );
 }
