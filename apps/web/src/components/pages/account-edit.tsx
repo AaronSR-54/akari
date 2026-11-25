@@ -6,6 +6,7 @@ import { AccountForm } from '../forms/account-form';
 import { useAccount } from '../hooks';
 import { PageTitle } from '../page-title';
 import { PageHeaderResponsive } from '../page-header-responsive';
+import { HeadingMeta } from '../heading-meta';
 import { PageSkeleton } from '../page-skeleton';
 import { ActionLink } from '../action-link';
 
@@ -32,13 +33,13 @@ export function AccountEditScreen({ accountId }: { accountId: string }) {
       <PageTitle title={`Editar ${account.name}`} />
       <PageHeaderResponsive
         title={`Editar ${account.name}`}
-        description="Cambiar el saldo inicial recalcula el saldo y los agregados."
         breadcrumbs={
           <Link href={`/cuentas/${account.id}`} className="hover:underline">
             {account.name} / Editar
           </Link>
         }
       />
+      <HeadingMeta detail="Cambiar el saldo inicial recalcula el saldo y los agregados." />
       <div className="max-w-2xl">
         <AccountForm account={account} />
       </div>

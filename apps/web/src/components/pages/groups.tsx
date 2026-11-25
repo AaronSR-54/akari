@@ -14,6 +14,7 @@ import {
 import { GroupForm } from '../../components/forms/group-form';
 import { PageTitle } from '../../components/page-title';
 import { PageHeaderResponsive } from '../../components/page-header-responsive';
+import { HeadingMeta } from '../../components/heading-meta';
 import { GroupStatusBadge } from '../../components/group-status-badge';
 import { PageSkeleton } from '../../components/page-skeleton';
 import { Modal, Button } from '@akari/ui';
@@ -69,10 +70,18 @@ export function GroupsScreen() {
     <div>
       <PageTitle title="Grupos" />
       <Stack gap={5}>
-        <PageHeaderResponsive
-          title="Grupos"
-          meta={`${groups.length} ${groups.length === 1 ? 'grupo' : 'grupos'} · gastos compartidos y liquidaciones`}
-          actions={<Button onClick={() => setCreating(true)}>Crear grupo</Button>}
+        <div className="hidden md:block">
+          <PageHeaderResponsive
+            title="Grupos"
+            actions={<Button onClick={() => setCreating(true)}>Crear grupo</Button>}
+          />
+        </div>
+        <div className="md:hidden">
+          <Button onClick={() => setCreating(true)}>Crear grupo</Button>
+        </div>
+        <HeadingMeta
+          label={`${groups.length} ${groups.length === 1 ? 'grupo' : 'grupos'}`}
+          detail="gastos compartidos y liquidaciones"
         />
         {groups.length === 0 ? (
           <StatePage
