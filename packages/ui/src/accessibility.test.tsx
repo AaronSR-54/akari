@@ -1,8 +1,9 @@
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { axe } from 'jest-axe';
 import { describe, expect, it } from 'vitest';
 import { Button } from './buttons.js';
-import { TextField } from './fields.js';
+import { SelectField, TextField } from './fields.js';
 import {
   Badge,
   BalanceSummary,
@@ -61,6 +62,15 @@ describe('accessibility', () => {
           ariaLabel="Saldo del mes por día"
         />
         <TextField label="Concepto" help="Ej. Cena" />
+        <SelectField
+          label="Tipo"
+          value="personal"
+          onValueChange={() => undefined}
+          options={[
+            { value: 'personal', label: 'Personal' },
+            { value: 'deposit', label: 'Depósito' },
+          ]}
+        />
         <Button>Guardar</Button>
         <StatePage type="empty" title="Sin movimientos" description="Añade el primero para empezar." />
       </main>,
@@ -114,5 +124,27 @@ describe('accessibility', () => {
       />,
     );
     expect(screen.getByRole('button', { name: 'Añadir movimiento' })).toBeInTheDocument();
+  });
+
+  it('el selector abierto no tiene violaciones graves', async () => {
+    const user = userEvent.setup();
+    const { container } = render(
+      <main>
+        <SelectField
+          label="Tipo"
+          value="personal"
+          onValueChange={() => undefined}
+          options={[
+            { value: 'personal', label: 'Personal' },
+            { value: 'deposit', label: 'Depósito' },
+          ]}
+        />
+      </main>,
+    );
+    await user.click(screen.getByRole('combobox', { name: 'Tipo' }));
+    expect(screen.getByRole('listbox', { name: 'Tipo' })).toBeInTheDocument();
+
+    const results = await axe(container, { rules: { 'color-contrast': { enabled: false } } });
+    expect(results).toHaveNoViolations();
   });
 });

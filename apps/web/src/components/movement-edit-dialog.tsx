@@ -117,7 +117,7 @@ export function MovementEditDialog({
           <SelectField
             label="Categoría"
             value={category}
-            onChange={(event) => setCategory(event.target.value)}
+            onValueChange={setCategory}
             options={movementCategoryOptions}
           />
           {error ? (

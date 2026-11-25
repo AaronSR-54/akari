@@ -74,7 +74,7 @@ export function GroupForm({ onCreated }: { onCreated?: (group: Group) => void })
           <SelectField
             label="Divisa del grupo"
             value={currency}
-            onChange={(event) => setCurrency(event.target.value)}
+            onValueChange={setCurrency}
             options={currencyOptions}
           />
           <div className="flex flex-col gap-3">
@@ -90,7 +90,7 @@ export function GroupForm({ onCreated }: { onCreated?: (group: Group) => void })
                 <SelectField
                   label="Rol"
                   value={member.role}
-                  onChange={(event) => updateMember(index, { role: event.target.value as MemberRole })}
+                  onValueChange={(value) => updateMember(index, { role: value as MemberRole })}
                   options={memberRoleOptions}
                 />
                 <div className="flex items-end pb-6">

@@ -227,7 +227,7 @@ export function GroupDetailScreen({ groupId }: { groupId: string }) {
               <SelectField
                 label="Cuenta donde se recibe la liquidación"
                 value={group.settlementAccountId ?? ''}
-                onChange={(event) => changeSettlementAccount(event.target.value)}
+                onValueChange={(value) => void changeSettlementAccount(value)}
                 options={[
                   { value: '', label: 'Sin cuenta' },
                   ...accounts.map((account) => ({

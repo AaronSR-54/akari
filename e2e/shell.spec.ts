@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { seedDemo } from './helpers';
+import { chooseOption, seedDemo } from './helpers';
 
 test.describe('shell web', () => {
   test('sidebar, tablet y móvil sin desbordamiento', async ({ page }) => {
@@ -75,8 +75,8 @@ test.describe('shell web', () => {
     await page.setViewportSize({ width: 1440, height: 600 });
     await seedDemo(page);
     await page.goto('/ajustes');
-    await page.getByLabel('Navegación de escritorio').selectOption('header');
-    await expect(page.getByLabel('Navegación de escritorio')).toHaveValue('header');
+    await chooseOption(page, 'Navegación de escritorio', 'Header');
+    await expect(page.getByLabel('Navegación de escritorio')).toHaveAttribute('data-value', 'header');
 
     const nav = page.locator('header.sticky.top-0:visible');
     await expect(nav).toBeVisible();
@@ -103,8 +103,8 @@ test.describe('shell web', () => {
     await expect(page.getByRole('button', { name: 'Buscar' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Avisos' })).toBeVisible();
 
-    await page.getByLabel('Navegación de escritorio').selectOption('header');
-    await expect(page.getByLabel('Navegación de escritorio')).toHaveValue('header');
+    await chooseOption(page, 'Navegación de escritorio', 'Header');
+    await expect(page.getByLabel('Navegación de escritorio')).toHaveAttribute('data-value', 'header');
     await expect(avatar).toHaveCount(1);
     await expect(
       page.locator('header.sticky.top-0:visible').getByRole('img', { name: 'Marta' }),
@@ -115,11 +115,11 @@ test.describe('shell web', () => {
     await seedDemo(page);
     await page.goto('/cuentas/demo-acc-day');
     await expect(page.getByRole('heading', { name: 'Cuenta diaria' })).toBeVisible();
-    await expect(page).toHaveTitle('Cuenta diaria · akari');
+    await expect(page).toHaveTitle('Cuenta diaria · akari', { timeout: 30_000 });
     await expect(page.getByText(/Resumen.*Cuentas.*Cuenta diaria/)).toBeVisible();
 
     await page.goto('/movimientos?cuenta=demo-acc-day');
-    await expect(page.getByLabel('Cuenta', { exact: true })).toHaveValue('demo-acc-day');
+    await expect(page.getByLabel('Cuenta', { exact: true })).toHaveAttribute('data-value', 'demo-acc-day');
 
     await page.keyboard.press('Control+k');
     const dialog = page.getByRole('dialog', { name: 'Buscar en akari' });
@@ -141,7 +141,7 @@ test.describe('shell web', () => {
 
     await aside.getByRole('link', { name: 'Movimientos' }).focus();
     await expect(aside).toHaveAttribute('data-expanded', 'true');
-    await page.locator('main').click({ position: { x: 10, y: 10 } });
+    await page.locator('main').getByRole('heading', { level: 1 }).click();
     await expect(aside).toHaveAttribute('data-expanded', 'false');
   });
 

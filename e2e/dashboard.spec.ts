@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { seedDemo } from './helpers';
+import { chooseOption, seedDemo } from './helpers';
 
 const toNumber = (text: string | null) => {
   const value = Number((text ?? '0').replace(/[^\d,]/g, '').replace(',', '.'));
@@ -98,7 +98,7 @@ test.describe('dashboard hero', () => {
     await page.getByRole('link', { name: 'Añadir movimiento' }).first().click();
     await page.getByLabel('Importe').fill('25');
     await page.getByLabel('Concepto').fill('Entradas');
-    await page.getByLabel('Categoría').selectOption({ label: 'Ocio' });
+    await chooseOption(page, 'Categoría', 'Ocio');
     await page.getByRole('button', { name: 'Guardar movimiento' }).click();
     await expect(page).toHaveURL(/\/movimientos$/);
     await expect(page.getByRole('heading', { name: 'Movimientos' })).toBeVisible();

@@ -1,14 +1,19 @@
 'use client';
 
 import {
+  useCallback,
+  useEffect,
   useId,
+  useLayoutEffect,
+  useRef,
+  useState,
   type InputHTMLAttributes,
+  type KeyboardEvent as ReactKeyboardEvent,
   type ReactNode,
-  type SelectHTMLAttributes,
   type TextareaHTMLAttributes,
 } from 'react';
 import { cn } from './cn.js';
-import { IconSearch } from './icons.js';
+import { IconChevronDown, IconSearch } from './icons.js';
 
 const controlClass =
   'w-full rounded-lg border border-border-subtle bg-surface-default px-3.5 text-ui-14 text-text-primary placeholder:text-text-placeholder transition-colors duration-fast focus-visible:border-accent-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring disabled:bg-surface-sunken disabled:text-text-disabled';
@@ -152,12 +157,309 @@ export function DateField({ label, help, error, id, required, className, ...prop
 
 export type SelectOption = { value: string; label: string };
 
-export type SelectFieldProps = Omit<SelectHTMLAttributes<HTMLSelectElement>, 'id'> & {
+const useIsomorphicLayoutEffect = typeof window === 'undefined' ? useEffect : useLayoutEffect;
+
+const SELECT_PANEL_GAP = 4;
+const SELECT_PANEL_MAX_HEIGHT = 280;
+const SELECT_PANEL_MIN_HEIGHT = 96;
+const SELECT_VIEWPORT_MARGIN = 8;
+const SELECT_TYPEAHEAD_TIMEOUT = 500;
+
+type SelectPanelPosition = {
+  left: number;
+  width: number;
+  top?: number;
+  bottom?: number;
+  maxHeight: number;
+};
+
+type SelectControlProps = {
+  id: string;
+  value: string;
+  onValueChange: (value: string) => void;
+  options: SelectOption[];
+  listboxLabel: string;
+  ariaLabel?: string;
+  name?: string;
+  required?: boolean;
+  disabled?: boolean;
+  invalid?: boolean;
+  describedBy?: string;
+  variant: 'field' | 'pill';
+  className?: string;
+};
+
+function SelectControl({
+  id,
+  value,
+  onValueChange,
+  options,
+  listboxLabel,
+  ariaLabel,
+  name,
+  required,
+  disabled,
+  invalid,
+  describedBy,
+  variant,
+  className,
+}: SelectControlProps) {
+  const [open, setOpen] = useState(false);
+  const [position, setPosition] = useState<SelectPanelPosition | null>(null);
+  const [activeIndex, setActiveIndex] = useState(-1);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const optionRefs = useRef<Array<HTMLDivElement | null>>([]);
+  const typeahead = useRef({ text: '', at: 0 });
+  const listboxId = `${id}-listbox`;
+  const selectedIndex = options.findIndex((option) => option.value === value);
+  const selectedLabel = selectedIndex >= 0 ? options[selectedIndex]?.label : undefined;
+
+  const optionId = (index: number) => `${listboxId}-option-${index}`;
+
+  const closePanel = useCallback((focusTrigger = false) => {
+    setOpen(false);
+    setPosition(null);
+    if (focusTrigger) triggerRef.current?.focus();
+  }, []);
+
+  const openPanel = useCallback(() => {
+    if (options.length === 0) return;
+    setActiveIndex(selectedIndex >= 0 ? selectedIndex : 0);
+    setOpen(true);
+  }, [options.length, selectedIndex]);
+
+  useIsomorphicLayoutEffect(() => {
+    if (!open) return;
+    const update = () => {
+      const trigger = triggerRef.current;
+      if (!trigger || typeof window === 'undefined') return;
+      const rect = trigger.getBoundingClientRect();
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
+      const width = Math.min(
+        Math.max(rect.width, variant === 'pill' ? 192 : rect.width),
+        viewportWidth - SELECT_VIEWPORT_MARGIN * 2,
+      );
+      const left = Math.max(
+        SELECT_VIEWPORT_MARGIN,
+        Math.min(rect.left, viewportWidth - width - SELECT_VIEWPORT_MARGIN),
+      );
+      const spaceBelow = viewportHeight - rect.bottom - SELECT_PANEL_GAP - SELECT_VIEWPORT_MARGIN;
+      const spaceAbove = rect.top - SELECT_PANEL_GAP - SELECT_VIEWPORT_MARGIN;
+      const placeAbove = spaceBelow < SELECT_PANEL_MIN_HEIGHT && spaceAbove > spaceBelow;
+      const maxHeight = Math.max(
+        SELECT_PANEL_MIN_HEIGHT,
+        Math.min(SELECT_PANEL_MAX_HEIGHT, placeAbove ? spaceAbove : spaceBelow),
+      );
+      setPosition(
+        placeAbove
+          ? { left, width, bottom: viewportHeight - rect.top + SELECT_PANEL_GAP, maxHeight }
+          : { left, width, top: rect.bottom + SELECT_PANEL_GAP, maxHeight },
+      );
+    };
+
+    update();
+    window.addEventListener('resize', update);
+    window.addEventListener('scroll', update, true);
+    return () => {
+      window.removeEventListener('resize', update);
+      window.removeEventListener('scroll', update, true);
+    };
+  }, [open, variant]);
+
+  useEffect(() => {
+    if (!open) return;
+    const handlePointerDown = (event: PointerEvent) => {
+      const target = event.target as Node | null;
+      if (!target) return;
+      if (triggerRef.current?.contains(target) || panelRef.current?.contains(target)) return;
+      closePanel();
+    };
+    document.addEventListener('pointerdown', handlePointerDown);
+    return () => document.removeEventListener('pointerdown', handlePointerDown);
+  }, [open, closePanel]);
+
+  useEffect(() => {
+    if (!open || activeIndex < 0) return;
+    optionRefs.current[activeIndex]?.scrollIntoView?.({ block: 'nearest' });
+  }, [open, activeIndex]);
+
+  const commit = (index: number) => {
+    const option = options[index];
+    if (!option) return;
+    closePanel();
+    if (option.value !== value) onValueChange(option.value);
+  };
+
+  const moveActive = (delta: number) => {
+    if (options.length === 0) return;
+    setActiveIndex((current) => {
+      const start = current >= 0 ? current : 0;
+      return (start + delta + options.length) % options.length;
+    });
+  };
+
+  const handleTypeahead = (key: string) => {
+    const now = Date.now();
+    const previous = typeahead.current;
+    const text = (now - previous.at > SELECT_TYPEAHEAD_TIMEOUT ? key : previous.text + key).toLowerCase();
+    typeahead.current = { text, at: now };
+    const match = options.findIndex((option) => option.label.toLowerCase().startsWith(text));
+    if (match < 0) return;
+    setActiveIndex(match);
+    if (!open) setOpen(true);
+  };
+
+  const handleKeyDown = (event: ReactKeyboardEvent<HTMLButtonElement>) => {
+    if (disabled) return;
+    const { key } = event;
+
+    if (key === 'Tab') {
+      if (open) closePanel();
+      return;
+    }
+
+    if (key === 'Escape') {
+      if (open) {
+        event.preventDefault();
+        closePanel(true);
+      }
+      return;
+    }
+
+    if (key === 'ArrowDown') {
+      event.preventDefault();
+      if (open) moveActive(1);
+      else openPanel();
+      return;
+    }
+
+    if (key === 'ArrowUp') {
+      event.preventDefault();
+      if (open) moveActive(-1);
+      else openPanel();
+      return;
+    }
+
+    if (key === 'Home' || key === 'End') {
+      if (!open) return;
+      event.preventDefault();
+      setActiveIndex(key === 'Home' ? 0 : options.length - 1);
+      return;
+    }
+
+    if (key === 'Enter' || key === ' ') {
+      event.preventDefault();
+      if (open && activeIndex >= 0) commit(activeIndex);
+      else openPanel();
+      return;
+    }
+
+    if (key.length === 1 && !event.metaKey && !event.ctrlKey && !event.altKey) {
+      handleTypeahead(key);
+    }
+  };
+
+  return (
+    <>
+      <button
+        type="button"
+        role="combobox"
+        id={id}
+        ref={triggerRef}
+        disabled={disabled}
+        aria-expanded={open}
+        aria-controls={listboxId}
+        aria-haspopup="listbox"
+        aria-activedescendant={open && activeIndex >= 0 ? optionId(activeIndex) : undefined}
+        aria-required={required ? true : undefined}
+        aria-invalid={invalid ? true : undefined}
+        aria-describedby={describedBy}
+        aria-label={ariaLabel}
+        data-value={value}
+        onClick={() => {
+          if (open) closePanel();
+          else openPanel();
+        }}
+        onKeyDown={handleKeyDown}
+        className={cn(
+          variant === 'field'
+            ? cn(
+                controlClass,
+                'flex h-12 items-center justify-between gap-2 pr-3.5 text-left',
+                invalid && 'border-status-danger',
+              )
+            : 'flex h-8 items-center gap-2 rounded-full border border-border-subtle bg-surface-default px-3 text-left text-ui-10-strong text-text-primary transition-colors duration-fast focus-visible:border-accent-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring disabled:bg-surface-sunken disabled:text-text-disabled',
+          className,
+        )}
+      >
+        <span className="truncate">{selectedLabel ?? ''}</span>
+        <IconChevronDown
+          size={16}
+          className={cn(
+            'shrink-0 text-text-secondary transition-transform duration-fast motion-reduce:transition-none',
+            open && 'rotate-180',
+          )}
+        />
+      </button>
+      {name ? <input type="hidden" name={name} value={value} /> : null}
+      {open ? (
+        <div
+          id={listboxId}
+          ref={panelRef}
+          role="listbox"
+          aria-label={listboxLabel}
+          style={{
+            position: 'fixed',
+            left: position?.left,
+            width: position?.width,
+            top: position?.top,
+            bottom: position?.bottom,
+            maxHeight: position?.maxHeight,
+            visibility: position ? 'visible' : 'hidden',
+          }}
+          className="z-50 overflow-y-auto rounded-lg border border-border-subtle bg-surface-raised p-1 elevation-2"
+        >
+          {options.map((option, index) => (
+            <div
+              key={option.value}
+              ref={(element) => {
+                optionRefs.current[index] = element;
+              }}
+              id={optionId(index)}
+              role="option"
+              aria-selected={index === selectedIndex}
+              onMouseDown={(event) => event.preventDefault()}
+              onMouseEnter={() => setActiveIndex(index)}
+              onClick={() => commit(index)}
+              className={cn(
+                'cursor-pointer truncate rounded-md px-3 py-2 text-ui-13 text-text-primary',
+                index === activeIndex && 'bg-surface-sunken',
+                index === selectedIndex && 'text-ui-13-strong',
+              )}
+            >
+              {option.label}
+            </div>
+          ))}
+        </div>
+      ) : null}
+    </>
+  );
+}
+
+export type SelectFieldProps = {
   label: string;
   help?: string;
   error?: string;
   id?: string;
+  name?: string;
+  required?: boolean;
+  disabled?: boolean;
   options: SelectOption[];
+  value: string;
+  onValueChange: (value: string) => void;
+  className?: string;
   containerClassName?: string;
 };
 
@@ -166,11 +468,14 @@ export function SelectField({
   help,
   error,
   id,
+  name,
   required,
+  disabled,
   options,
+  value,
+  onValueChange,
   className,
   containerClassName,
-  ...props
 }: SelectFieldProps) {
   const generated = useId();
   const fieldId = id ?? generated;
@@ -183,20 +488,20 @@ export function SelectField({
       required={required}
       className={containerClassName}
     >
-      <select
+      <SelectControl
         id={fieldId}
+        listboxLabel={label}
+        value={value}
+        onValueChange={onValueChange}
+        options={options}
+        name={name}
         required={required}
-        aria-invalid={error ? true : undefined}
-        aria-describedby={error ? `${fieldId}-error` : help ? `${fieldId}-help` : undefined}
-        className={cn(controlClass, 'h-12 pr-10', error && 'border-status-danger', className)}
-        {...props}
-      >
-        {options.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-      </select>
+        disabled={disabled}
+        invalid={Boolean(error)}
+        describedBy={error ? `${fieldId}-error` : help ? `${fieldId}-help` : undefined}
+        variant="field"
+        className={className}
+      />
     </FieldShell>
   );
 }
@@ -214,23 +519,18 @@ export function SelectPill({
   options: SelectOption[];
   className?: string;
 }) {
+  const generated = useId();
   return (
-    <select
-      aria-label={ariaLabel}
+    <SelectControl
+      id={`pill-${generated}`}
+      listboxLabel={ariaLabel}
+      ariaLabel={ariaLabel}
       value={value}
-      onChange={(event) => onChange(event.target.value)}
-      className={cn(
-        'h-8 rounded-full border border-border-subtle bg-surface-default px-3 text-ui-10-strong text-text-primary',
-        'focus-visible:border-accent-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring',
-        className,
-      )}
-    >
-      {options.map((option) => (
-        <option key={option.value} value={option.value}>
-          {option.label}
-        </option>
-      ))}
-    </select>
+      onValueChange={onChange}
+      options={options}
+      variant="pill"
+      className={className}
+    />
   );
 }
 

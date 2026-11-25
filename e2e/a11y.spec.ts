@@ -1,6 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
-import { seedDemo } from './helpers';
+import { chooseOption, seedDemo } from './helpers';
 
 const routes = [
   '/',
@@ -32,7 +32,7 @@ test.describe('accesibilidad', () => {
   test('el tema oscuro mantiene la accesibilidad', async ({ page }) => {
     await seedDemo(page);
     await page.goto('/ajustes');
-    await page.getByLabel('Tema').selectOption('dark');
+    await chooseOption(page, 'Tema', 'Oscuro');
     await page.goto('/');
     const results = await new AxeBuilder({ page })
       .withTags(['wcag2a', 'wcag2aa'])

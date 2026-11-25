@@ -83,14 +83,14 @@ export function AccountForm({ account }: { account?: Account }) {
             <SelectField
               label="Tipo"
               value={type}
-              onChange={(event) => setType(event.target.value as AccountType)}
+              onValueChange={(value) => setType(value as AccountType)}
               options={accountTypeOptions}
               help="La cuenta conjunta podrá compartirse en una fase posterior."
             />
             <SelectField
               label="Divisa"
               value={currency}
-              onChange={(event) => setCurrency(event.target.value)}
+              onValueChange={setCurrency}
               options={currencyOptions}
             />
           </div>

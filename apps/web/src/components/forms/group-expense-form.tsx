@@ -183,13 +183,13 @@ export function GroupExpenseForm({
           <SelectField
             label="Pagó"
             value={payerMemberId}
-            onChange={(event) => setPayerMemberId(event.target.value)}
+            onValueChange={setPayerMemberId}
             options={group.members.map((member) => ({ value: member.id, label: member.name }))}
           />
           <SelectField
             label="Divisa del gasto"
             value={currency}
-            onChange={(event) => setCurrency(event.target.value)}
+            onValueChange={setCurrency}
             options={currencyChoices}
           />
           {currency !== group.currency ? (
@@ -205,7 +205,7 @@ export function GroupExpenseForm({
           <SelectField
             label="Cuenta de origen"
             value={accountId}
-            onChange={(event) => setAccountId(event.target.value)}
+            onValueChange={setAccountId}
             options={[
               { value: '', label: 'Sin cuenta (solo grupo)' },
               ...accounts.map((account) => ({ value: account.id, label: account.name })),

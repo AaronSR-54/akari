@@ -55,6 +55,7 @@ Este documento relaciona el diseño aprobado, las specs `producto/*` y la implem
 | Variantes y estados interactivos | `buttons.tsx` | `buttons.test.tsx` |
 | Accesibilidad de componentes | foco, `aria-*`, 44 px en `ui` | `feedback.test.tsx`, `accessibility.test.tsx`, axe E2E |
 | Formularios con validación visible | `fields.tsx` | `fields.test.tsx` |
+| Selector de opción única con panel propio | `fields.tsx` (`SelectField`, `SelectPill`), `icons.tsx` | `fields.test.tsx`, `accessibility.test.tsx`, E2E |
 | Presentación de importes | `data-display.tsx`, `money.ts` | `data-display.test.tsx`, `money.test.ts` |
 | Feedback y overlays con salida | `feedback.tsx` | `feedback.test.tsx` |
 | Sin estilos ni componentes duplicados | convención + revisión de librería | `docs/desarrollo/convenciones.md`, revisión de PR |
