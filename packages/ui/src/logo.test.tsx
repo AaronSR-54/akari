@@ -18,6 +18,29 @@ describe('brand and icons', () => {
     expect(container.firstElementChild).toHaveClass('bg-accent-default');
   });
 
+  it('el círculo hace de punto final apoyado en la línea base', () => {
+    for (const format of ['initial', 'expanded'] as const) {
+      const { unmount } = render(<Logo format={format} size="M" />);
+      const logo = screen.getByRole('img', { name: 'akari' });
+      const adornos = Array.from(logo.children).filter(
+        (child) => child.getAttribute('aria-hidden') === 'true',
+      );
+      const circle = adornos.at(-1);
+
+      expect(adornos).toHaveLength(2);
+      expect(logo.lastElementChild).toBe(circle);
+      expect(circle).toHaveClass('bg-accent-default');
+      expect(circle).toHaveClass('translate-y-[1px]');
+      expect(circle).not.toHaveClass('mt-[0.18em]');
+      expect(circle).not.toHaveClass('-translate-y-1/2');
+      expect(circle).not.toHaveClass('mb-[0.12em]');
+      expect(logo).toHaveClass('items-baseline');
+      expect(logo).not.toHaveClass('items-start');
+      expect(logo).not.toHaveClass('items-end');
+      unmount();
+    }
+  });
+
   it('cada icono acepta nombre accesible y es decorativo si no lo tiene', () => {
     for (const [name, Component] of Object.entries(icons)) {
       const { unmount } = render(<Component label={`Icono ${name}`} />);

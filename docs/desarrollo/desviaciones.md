@@ -164,3 +164,11 @@ Quedan fuera, además de las superficies nativas: la creación de planes de plaz
 - **Cierre:** solo si la persona usuaria reabre la fase de diseño; hasta entonces la implementación se mantiene y la trazabilidad vive en `producto/shell-web` y `producto/dashboard-hero`.
 
 **Extensión al resto de pantallas (mismo change).** Las páginas que siguen en la barra de navegación —Resumen, Movimientos y Grupos— dejan de mostrar su título en el contenido en móvil, porque la navegación ya nombra el destino; sus acciones se mantienen visibles en un bloque propio. Las pantallas a las que se entra desde otro sitio (cuentas, grupos, formularios, Preguntas rápidas y, desde `user-button-settings`, Ajustes a través del avatar) conservan el título en todos los breakpoints. En todas ellas el subtítulo desaparece de la cabecera y su información pasa al cuerpo con el mismo estilo: etiqueta en negrita y dato en cursiva con peso normal. El texto sobre perfil y datos locales de Ajustes se mantiene en el cuerpo junto al banner informativo.
+
+## 23. Punto del logotipo en la línea base y favicon compacto (change `logo-dot-favicon`)
+
+- **Diseño:** `docs/diseno/componentes.md` §0 describe el círculo ámbar como «punto final» tras la marca sin fijar su altura, y reserva el monograma reducido «a» para app icon y favicon.
+- **Implementación:** el círculo de `Logo` (`initial` y `expanded`) se dibuja con `items-baseline` y un ajuste visual de `translate-y-[1px]`, de modo que actúa como punto final de frase sobre la línea base; el alto del logotipo no cambia (32 px en navegación). El favicon (`apps/web/app/icon.svg`) pasa a ser el icono compacto sin fondo: trazo de la «ı» con color adaptativo a claro/oscuro y círculo ámbar a su derecha.
+- **Motivo:** las tarjetas `vnvtvx5wa8wv` y `d3hgfwy1ldfw` piden alinear el punto con el texto a nivel de línea base y llevar el icono compacto al favicon; el usuario confirmó la posición a la derecha y apoyada en la base.
+- **Consecuencia:** el círculo ya no flota por encima de la base y el favicon deja de ser el monograma «a». El diseño está congelado: no se han modificado FigCraft, `design/` ni `docs/diseno/`.
+- **Cierre:** solo si la persona usuaria reabre la fase de diseño; hasta entonces la implementación se mantiene y la trazabilidad vive en `producto/componentes`.

@@ -30,7 +30,7 @@ export function Logo({ format = 'expanded', size = 'M', className, tone = 'defau
   if (format === 'initial') {
     return (
       <span
-        className={cn('inline-flex items-end gap-0.5', color, className)}
+        className={cn('inline-flex items-baseline gap-0.5', color, className)}
         role="img"
         aria-label="akari"
       >
@@ -39,7 +39,7 @@ export function Logo({ format = 'expanded', size = 'M', className, tone = 'defau
         </span>
         <span
           aria-hidden="true"
-          className="mb-[0.12em] inline-block h-2.5 w-2.5 rounded-full bg-accent-default"
+          className="inline-block h-2.5 w-2.5 translate-y-[1px] rounded-full bg-accent-default"
         />
       </span>
     );
@@ -63,14 +63,14 @@ export function Logo({ format = 'expanded', size = 'M', className, tone = 'defau
   const spec = expandedSizes[safeSize];
   return (
     <span
-      className={cn('inline-flex items-end font-bold tracking-[-0.03em]', spec.text, spec.gap, color, className)}
+      className={cn('inline-flex items-baseline font-bold tracking-[-0.03em]', spec.text, spec.gap, color, className)}
       role="img"
       aria-label="akari"
     >
       <span aria-hidden="true">akarı</span>
       <span
         aria-hidden="true"
-        className={cn('mb-[0.12em] inline-block rounded-full bg-accent-default', spec.circle)}
+        className={cn('inline-block translate-y-[1px] rounded-full bg-accent-default', spec.circle)}
       />
     </span>
   );
