@@ -1,0 +1,12 @@
+{
+  "changeId": "difuminar-fondo-modales",
+  "branch": "feat/difuminar-fondo-modales",
+  "cards": [
+    {
+      "publicId": "wgqrx4qnq4ed",
+      "title": "feat: difuminar fondo cuando las modales se abren y evitar el scroll de la página principal"
+    }
+  ],
+  "prUrl": null,
+  "claimedAt": "2026-11-25T11:07:16.682Z"
+}
