@@ -50,7 +50,12 @@ test.describe('preguntas y ajustes', () => {
     ).toBeVisible();
 
     await page.goto('/');
-    await expect(page.getByRole('heading', { name: /, Ana Ruiz$/ }).first()).toBeVisible();
+    const greeting = page.getByRole('heading', { name: /, Ana Ruiz$/ });
+    if ((page.viewportSize()?.width ?? 0) >= 768) {
+      await expect(greeting).toBeVisible();
+    } else {
+      await expect(greeting).toHaveCount(0);
+    }
   });
 
   test('cambia tema y shell y persiste el tema', async ({ page }) => {

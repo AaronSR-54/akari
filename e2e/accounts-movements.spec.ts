@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { chooseOption, seedDemo, startEmpty } from './helpers';
+import { chooseOption, expectHeadingForViewport, seedDemo, startEmpty } from './helpers';
 
 function visible(page: Page, text: string | RegExp) {
   return page.getByText(text).filter({ visible: true }).first();
@@ -50,7 +50,7 @@ test.describe('cuentas y movimientos', () => {
   test('filtra, ordena y edita movimientos', async ({ page }) => {
     await seedDemo(page);
     await page.goto('/movimientos');
-    await expect(page.getByRole('heading', { name: 'Movimientos' })).toBeVisible();
+    await expectHeadingForViewport(page, 'Movimientos');
 
     await page.getByRole('searchbox', { name: 'Buscar movimientos' }).fill('Cena');
     await expect(visible(page, 'Cena con amigos')).toBeVisible();

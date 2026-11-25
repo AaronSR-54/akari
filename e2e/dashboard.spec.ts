@@ -1,5 +1,11 @@
 import { expect, test } from '@playwright/test';
-import { chooseOption, seedDemo, startEmpty } from './helpers';
+import {
+  chooseOption,
+  expectGreetingForViewport,
+  expectHeadingForViewport,
+  seedDemo,
+  startEmpty,
+} from './helpers';
 
 const toNumber = (text: string | null) => {
   const value = Number((text ?? '0').replace(/[^\d,]/g, '').replace(',', '.'));
@@ -7,6 +13,24 @@ const toNumber = (text: string | null) => {
 };
 
 test.describe('dashboard hero', () => {
+  test('el saludo del resumen se adapta al breakpoint', async ({ page }) => {
+    await seedDemo(page);
+    await expectGreetingForViewport(page);
+
+    const width = page.viewportSize()?.width ?? 0;
+    if (width >= 1024) {
+      const header = page.locator('header.h-\\[72px\\]');
+      await expect(header.getByRole('heading', { level: 1 })).toHaveCount(1);
+      await expect(header).not.toContainText('domingo, 29 de noviembre');
+    }
+    await expect(page.locator('[data-hero="balance"]')).toContainText(
+      'Saldo total · domingo, 29 de noviembre',
+    );
+    await expect(page.locator('section[aria-labelledby="cuentas"]')).toContainText(
+      'Cuentas · 3 cuentas en este dispositivo',
+    );
+  });
+
   test('saldo del mes con base y detalle diario, y balance en tarjeta', async ({ page }) => {
     await seedDemo(page);
 
@@ -15,7 +39,7 @@ test.describe('dashboard hero', () => {
     const quick = page.locator('[data-hero="quick"]');
     const recent = page.locator('[data-hero="recent"]');
     const summary = page.locator('[data-hero="month-summary"]');
-    await expect(balance).toContainText('Saldo total');
+    await expect(balance).toContainText('Saldo total · domingo, 29 de noviembre');
     await expect(monthBlock).toBeVisible();
     await expect(monthBlock).not.toContainText('Base 1 nov');
     await expect(recent).toContainText('Últimos movimientos');
@@ -281,7 +305,7 @@ test.describe('dashboard hero', () => {
     await chooseOption(page, 'Categoría', 'Ocio');
     await page.getByRole('button', { name: 'Guardar movimiento' }).click();
     await expect(page).toHaveURL(/\/movimientos$/);
-    await expect(page.getByRole('heading', { name: 'Movimientos' })).toBeVisible();
+    await expectHeadingForViewport(page, 'Movimientos');
 
     await page.goto('/');
     await expect(total).toBeVisible();
@@ -325,7 +349,7 @@ test.describe('dashboard hero', () => {
     await expect(accounts).toBeVisible();
     const panel = accounts.locator('[data-panel="accounts"]');
     await expect(panel).toHaveCount(1);
-    await expect(panel.getByRole('heading', { name: 'Cuentas', exact: true })).toBeVisible();
+    await expect(panel.getByRole('heading', { name: 'Cuentas · 3 cuentas en este dispositivo' })).toBeVisible();
     const manage = panel.getByRole('link', { name: 'Gestionar cuentas' });
     await expect(manage).toHaveAttribute('href', '/cuentas/nueva');
     const blocks = accounts.locator('a[data-account]');

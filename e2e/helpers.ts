@@ -4,7 +4,25 @@ export async function seedDemo(page: Page) {
   await page.goto('/onboarding');
   await page.getByRole('button', { name: 'Ver con datos de ejemplo' }).click();
   await page.waitForURL(/\/$/);
-  await expect(page.getByRole('heading', { name: /Buen[oa]s/ })).toBeVisible();
+  await expect(page.locator('[data-hero="balance"]')).toBeVisible();
+}
+
+export async function expectGreetingForViewport(page: Page) {
+  const greeting = page.getByRole('heading', { name: /Buen[oa]s/ });
+  if ((page.viewportSize()?.width ?? 0) >= 768) {
+    await expect(greeting).toBeVisible();
+  } else {
+    await expect(greeting).toHaveCount(0);
+  }
+}
+
+export async function expectHeadingForViewport(page: Page, name: string) {
+  const heading = page.getByRole('heading', { name, exact: true });
+  if ((page.viewportSize()?.width ?? 0) >= 768) {
+    await expect(heading).toBeVisible();
+  } else {
+    await expect(heading).toHaveCount(0);
+  }
 }
 
 export async function startEmpty(page: Page) {

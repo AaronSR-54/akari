@@ -25,6 +25,7 @@ import { GroupExpenseForm } from '../../components/forms/group-expense-form';
 import { useAccounts, useGroupSummary } from '../../components/hooks';
 import { PageTitle } from '../../components/page-title';
 import { PageHeaderResponsive } from '../../components/page-header-responsive';
+import { HeadingMeta } from '../../components/heading-meta';
 import { useData } from '../../components/providers';
 import { ActionLink } from '../../components/action-link';
 import { GroupStatusBadge } from '../../components/group-status-badge';
@@ -115,9 +116,6 @@ export function GroupDetailScreen({ groupId }: { groupId: string }) {
               Grupos <span className="px-1">/</span> {group.name}
             </span>
           }
-          meta={`${group.members.length} miembros · ${group.currency}${
-            settlementAccountName ? ` · cobro en ${settlementAccountName}` : ''
-          }`}
           actions={
             <>
               <GroupStatusBadge status={summary.status} />
@@ -126,6 +124,10 @@ export function GroupDetailScreen({ groupId }: { groupId: string }) {
               </ActionLink>
             </>
           }
+        />
+        <HeadingMeta
+          label={`${group.members.length} miembros`}
+          detail={`${group.currency}${settlementAccountName ? ` · cobro en ${settlementAccountName}` : ''}`}
         />
 
         {summary.status === 'settled' ? (

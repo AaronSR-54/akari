@@ -15,6 +15,7 @@ import {
 import { useQuickAnswers } from '../../components/hooks';
 import { PageTitle } from '../../components/page-title';
 import { PageHeaderResponsive } from '../../components/page-header-responsive';
+import { HeadingMeta } from '../../components/heading-meta';
 import { PageSkeleton } from '../../components/page-skeleton';
 import {
   formatLongDate,
@@ -121,10 +122,8 @@ export function QuestionsScreen() {
     <div>
       <PageTitle title="Preguntas rápidas" />
       <Stack gap={5}>
-        <PageHeaderResponsive
-          title="Preguntas rápidas"
-          meta={`Respuestas directas sobre tus datos · ${formatMonthYear()}`}
-        />
+        <PageHeaderResponsive title="Preguntas rápidas" />
+        <HeadingMeta label="Respuestas directas sobre tus datos" detail={formatMonthYear()} />
 
         <SegmentedControl
           ariaLabel="Pregunta"
