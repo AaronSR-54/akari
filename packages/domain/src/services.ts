@@ -41,6 +41,7 @@ import type {
   MemberRole,
   Movement,
   MovementInput,
+  Settings,
   Transfer,
 } from './types.js';
 
@@ -54,6 +55,20 @@ export function createId(prefix = 'id'): string {
 
 function nowIso(): string {
   return new Date().toISOString();
+}
+
+export async function updateProfileName(
+  repositories: Repositories,
+  value: string,
+): Promise<Settings> {
+  const displayName = value.trim();
+  if (!displayName) {
+    throw new ValidationError('El nombre del perfil es obligatorio', 'displayName');
+  }
+  if (displayName.length > 40) {
+    throw new ValidationError('El nombre del perfil no puede superar 40 caracteres', 'displayName');
+  }
+  return repositories.settings.update({ displayName });
 }
 
 function validateDate(value: string): void {

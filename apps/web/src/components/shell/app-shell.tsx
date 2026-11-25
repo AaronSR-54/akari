@@ -7,6 +7,7 @@ import { useData, useDataRetry } from '../providers';
 import { useSettings } from '../hooks';
 import { PageTitleProvider, usePageTitle } from '../page-title';
 import { routeTitles } from '../nav';
+import { defaultProfile } from '../../lib/profile';
 import {
   DesktopHeader,
   HeaderNav,
@@ -56,6 +57,7 @@ function AppShellInner({ children }: { children: ReactNode }) {
   const sidebarMode = settings?.shellMode !== 'header';
   const showApp = ready && settings?.onboardingCompleted;
   const headerTitle = title || routeTitles[pathname ?? ''] || '';
+  const displayName = settings?.displayName ?? defaultProfile.displayName;
 
   return (
     <div className="min-h-screen bg-surface-canvas lg:p-4">
@@ -72,13 +74,15 @@ function AppShellInner({ children }: { children: ReactNode }) {
               className={cn('hidden shrink-0 lg:block', sidebarPinned ? 'w-60' : 'w-[76px]')}
               aria-hidden="true"
             />
-            <Sidebar pinned={sidebarPinned} onPinnedChange={setSidebarPinned} />
+            <Sidebar pinned={sidebarPinned} onPinnedChange={setSidebarPinned} displayName={displayName} />
           </>
         ) : null}
         <div className="flex min-w-0 flex-1 flex-col">
-          {sidebarMode ? null : <HeaderNav onOpenSearch={() => setSearchOpen(true)} />}
-          <TabletHeader />
-          <MobileTopBar onOpenSearch={() => setSearchOpen(true)} />
+          {sidebarMode ? null : (
+            <HeaderNav onOpenSearch={() => setSearchOpen(true)} displayName={displayName} />
+          )}
+          <TabletHeader displayName={displayName} />
+          <MobileTopBar onOpenSearch={() => setSearchOpen(true)} displayName={displayName} />
           {sidebarMode ? (
             <DesktopHeader title={headerTitle} meta={meta} onOpenSearch={() => setSearchOpen(true)} />
           ) : null}

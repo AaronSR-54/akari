@@ -128,6 +128,8 @@ export type Settings = {
   shellMode: ShellMode;
   onboardingCompleted: boolean;
   demoLoaded: boolean;
+  /** Nombre editable del perfil; se resuelve con el valor por defecto si falta. */
+  displayName?: string;
   /** Versión del seed de ejemplo; permite refrescar demos antiguas. */
   demoSeedVersion?: number;
 };
@@ -138,6 +140,7 @@ export const defaultSettings: Settings = {
   shellMode: 'sidebar',
   onboardingCompleted: false,
   demoLoaded: false,
+  displayName: 'Marta',
 };
 
 export type AccountInput = {
