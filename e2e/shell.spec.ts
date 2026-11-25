@@ -233,6 +233,34 @@ test.describe('shell web', () => {
     await expect.poll(logoHeight).toBe(32);
   });
 
+  test('el punto del logotipo compacto hace de punto final en la línea base', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await seedDemo(page);
+    const logo = page.locator('aside [role="img"][aria-label="akari"]:visible').first();
+    await expect
+      .poll(async () => Math.round((await logo.boundingBox())?.height ?? 0))
+      .toBe(32);
+
+    const glyph = logo.locator('span[aria-hidden="true"]').first();
+    const dot = logo.locator('span[aria-hidden="true"]').last();
+    await expect
+      .poll(async () => {
+        const glyphBox = await glyph.boundingBox();
+        const dotBox = await dot.boundingBox();
+        if (!glyphBox || !dotBox) return false;
+        const dotCenterY = dotBox.y + dotBox.height / 2;
+        const glyphCenterY = glyphBox.y + glyphBox.height / 2;
+        const baselineGap = glyphBox.y + glyphBox.height - (dotBox.y + dotBox.height);
+        return (
+          dotCenterY > glyphCenterY &&
+          dotBox.x > glyphBox.x + glyphBox.width &&
+          baselineGap >= 1 &&
+          baselineGap <= 12
+        );
+      })
+      .toBe(true);
+  });
+
   test('la sidebar se expande sobre el contenido sin redimensionarlo', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await seedDemo(page);

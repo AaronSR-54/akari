@@ -154,3 +154,11 @@ Quedan fuera, además de las superficies nativas: la creación de planes de plaz
 - **Motivo:** la tarjeta `syq5yifbebmi` pide mover el acceso al panel de ajustes al botón del usuario; el usuario pidió unificar perfil y ajustes en una sola superficie, añadir una afordancia visual al avatar y permitir editar el nombre (sin foto).
 - **Consecuencia:** desaparece el destino «Ajustes» de la barra de navegación, cambia el título de la pantalla y el nombre editable se refleja también en las iniciales del avatar, respecto al frame aprobado. El diseño está congelado: no se han modificado FigCraft, `design/` ni `docs/diseno/`.
 - **Cierre:** solo si la persona usuaria reabre la fase de diseño; hasta entonces la implementación se mantiene y la trazabilidad vive en `producto/shell-web`.
+
+## 22. Punto del logotipo en la línea base y favicon compacto (change `logo-dot-favicon`)
+
+- **Diseño:** `docs/diseno/componentes.md` §0 describe el círculo ámbar como «punto final» tras la marca sin fijar su altura, y reserva el monograma reducido «a» para app icon y favicon.
+- **Implementación:** el círculo de `Logo` (`initial` y `expanded`) se dibuja con `items-baseline` y un ajuste visual de `translate-y-[1px]`, de modo que actúa como punto final de frase sobre la línea base; el alto del logotipo no cambia (32 px en navegación). El favicon (`apps/web/app/icon.svg`) pasa a ser el icono compacto sin fondo: trazo de la «ı» con color adaptativo a claro/oscuro y círculo ámbar a su derecha.
+- **Motivo:** las tarjetas `vnvtvx5wa8wv` y `d3hgfwy1ldfw` piden alinear el punto con el texto a nivel de línea base y llevar el icono compacto al favicon; el usuario confirmó la posición a la derecha y apoyada en la base.
+- **Consecuencia:** el círculo ya no flota por encima de la base y el favicon deja de ser el monograma «a». El diseño está congelado: no se han modificado FigCraft, `design/` ni `docs/diseno/`.
+- **Cierre:** solo si la persona usuaria reabre la fase de diseño; hasta entonces la implementación se mantiene y la trazabilidad vive en `producto/componentes`.
