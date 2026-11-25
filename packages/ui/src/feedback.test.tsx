@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -18,6 +18,26 @@ function ModalHarness() {
         footer={<button type="button">Guardar</button>}
       >
         ¿Seguro?
+      </Modal>
+    </>
+  );
+}
+
+function StackedModalHarness() {
+  const [first, setFirst] = useState(false);
+  const [second, setSecond] = useState(false);
+  return (
+    <>
+      <button type="button" onClick={() => setFirst(true)}>
+        Abrir
+      </button>
+      <Modal open={first} onClose={() => setFirst(false)} title="Primero">
+        <button type="button" onClick={() => setSecond(true)}>
+          Abrir segundo
+        </button>
+      </Modal>
+      <Modal open={second} onClose={() => setSecond(false)} title="Segundo">
+        Contenido
       </Modal>
     </>
   );
@@ -62,6 +82,50 @@ describe('feedback', () => {
     const overlay = screen.getByRole('dialog').parentElement!;
     fireEvent.mouseDown(overlay);
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('atenúa y difumina el fondo del modal', async () => {
+    const user = userEvent.setup();
+    render(<ModalHarness />);
+    await user.click(screen.getByRole('button', { name: 'Abrir' }));
+    const overlay = screen.getByRole('dialog').parentElement!;
+    expect(overlay.className).toContain('bg-overlay-scrim/50');
+    expect(overlay.className).toContain('backdrop-blur-sm');
+  });
+
+  it('bloquea el scroll de body y html y lo restaura al cerrar', async () => {
+    const user = userEvent.setup();
+    render(<ModalHarness />);
+    expect(document.body.style.overflow).toBe('');
+    expect(document.documentElement.style.overflow).toBe('');
+
+    await user.click(screen.getByRole('button', { name: 'Abrir' }));
+    expect(document.body.style.overflow).toBe('hidden');
+    expect(document.documentElement.style.overflow).toBe('hidden');
+
+    await user.keyboard('{Escape}');
+    expect(document.body.style.overflow).toBe('');
+    expect(document.documentElement.style.overflow).toBe('');
+  });
+
+  it('mantiene el bloqueo de scroll mientras quede un overlay abierto', async () => {
+    const user = userEvent.setup();
+    render(<StackedModalHarness />);
+    await user.click(screen.getByRole('button', { name: 'Abrir' }));
+    const first = screen.getByRole('dialog', { name: 'Primero' });
+    await user.click(within(first).getByRole('button', { name: 'Abrir segundo' }));
+
+    const second = screen.getByRole('dialog', { name: 'Segundo' });
+    expect(document.documentElement.style.overflow).toBe('hidden');
+
+    await user.click(within(second).getByRole('button', { name: 'Cerrar' }));
+    expect(screen.queryByRole('dialog', { name: 'Segundo' })).not.toBeInTheDocument();
+    expect(document.body.style.overflow).toBe('hidden');
+    expect(document.documentElement.style.overflow).toBe('hidden');
+
+    await user.click(within(first).getByRole('button', { name: 'Cerrar' }));
+    expect(document.body.style.overflow).toBe('');
+    expect(document.documentElement.style.overflow).toBe('');
   });
 
   it('el toast confirma, ofrece deshacer y desaparece a los 5 s', () => {

@@ -39,7 +39,9 @@ export function Modal({ open, onClose, title, children, footer, className }: Mod
     const focusables = panel ? Array.from(panel.querySelectorAll<HTMLElement>(FOCUSABLE)) : [];
     (panel?.querySelector<HTMLElement>('[data-autofocus]') ?? focusables[0] ?? panel)?.focus();
     const previousOverflow = document.body.style.overflow;
+    const previousRootOverflow = document.documentElement.style.overflow;
     document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
@@ -71,6 +73,7 @@ export function Modal({ open, onClose, title, children, footer, className }: Mod
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
       document.body.style.overflow = previousOverflow;
+      document.documentElement.style.overflow = previousRootOverflow;
       previous?.focus();
     };
   }, [open]);
@@ -79,7 +82,7 @@ export function Modal({ open, onClose, title, children, footer, className }: Mod
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-overlay-scrim/50 p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-overlay-scrim/50 p-4 backdrop-blur-sm"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) onClose();
       }}

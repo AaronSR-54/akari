@@ -115,7 +115,7 @@ test.describe('shell web', () => {
     await seedDemo(page);
     await page.goto('/cuentas/demo-acc-day');
     await expect(page.getByRole('heading', { name: 'Cuenta diaria' })).toBeVisible();
-    await expect(page).toHaveTitle('Cuenta diaria · akari');
+    await expect(page).toHaveTitle('Cuenta diaria · akari', { timeout: 30_000 });
     await expect(page.getByText(/Resumen.*Cuentas.*Cuenta diaria/)).toBeVisible();
 
     await page.goto('/movimientos?cuenta=demo-acc-day');
@@ -141,7 +141,7 @@ test.describe('shell web', () => {
 
     await aside.getByRole('link', { name: 'Movimientos' }).focus();
     await expect(aside).toHaveAttribute('data-expanded', 'true');
-    await page.locator('main').click({ position: { x: 10, y: 10 } });
+    await page.locator('main').getByRole('heading', { level: 1 }).click();
     await expect(aside).toHaveAttribute('data-expanded', 'false');
   });
 

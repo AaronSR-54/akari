@@ -35,10 +35,19 @@ const weightValue: Record<number, number> = {
   700: 700,
 };
 
+function rgbChannels(hex: string): string {
+  const value = hex.replace('#', '');
+  const red = Number.parseInt(value.slice(0, 2), 16);
+  const green = Number.parseInt(value.slice(2, 4), 16);
+  const blue = Number.parseInt(value.slice(4, 6), 16);
+  return `${red} ${green} ${blue}`;
+}
+
 function themeBlock(theme: 'light' | 'dark') {
   const lines: string[] = [];
   for (const [name, values] of Object.entries(semanticColors)) {
     lines.push(`  --color-${kebab(name)}: ${values[theme]};`);
+    lines.push(`  --color-${kebab(name)}-rgb: ${rgbChannels(values[theme])};`);
   }
   return lines.join('\n');
 }
@@ -166,7 +175,7 @@ function nestedSemanticColors() {
     const group = parts[0]!;
     const key = parts.slice(1).join('-');
     const bucket = colors[group] ?? {};
-    bucket[key] = `var(--color-${kebab(name)})`;
+    bucket[key] = `rgb(var(--color-${kebab(name)}-rgb) / <alpha-value>)`;
     colors[group] = bucket;
   }
   return colors;
