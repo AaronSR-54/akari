@@ -90,3 +90,11 @@ Quedan fuera, además de las superficies nativas: la creación de planes de plaz
 2. Indica el motivo, la consecuencia para la persona usuaria y el cambio que la cerrará.
 3. Enlaza la spec afectada.
 4. Si la desviación cambia el comportamiento esperado, actualiza la spec `producto/*` en el mismo cambio; si solo es una fase, mantén la spec y anota aquí el aplazamiento.
+
+## 14. Desenfoque del fondo en overlays (change `difuminar-fondo-modales`)
+
+- **Diseño:** el scrim de modales y hojas se define solo por color (`overlay/scrim`) con opacidad 40–60 %; no se especifica desenfoque.
+- **Implementación:** el scrim atenúa el fondo con `overlay/scrim` al 50 % y añade `backdrop-filter: blur(4px)`.
+- **Motivo:** la tarjeta `wgqrx4qnq4ed` pide difuminar el fondo al abrir las modales.
+- **Consecuencia:** el fondo se ve desenfocado, un efecto que el diseño congelado no recoge.
+- **Cierre:** solo si la persona usuaria reabre la fase de diseño; hasta entonces la implementación se mantiene y la spec afectada es `producto/componentes`.
