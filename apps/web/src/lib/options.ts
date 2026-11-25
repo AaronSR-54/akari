@@ -1,4 +1,4 @@
-import type { AccountType, Frequency, MemberRole, SplitMode } from '@akari/domain';
+import { bankCatalog, type AccountType, type Frequency, type MemberRole, type SplitMode } from '@akari/domain';
 
 export const currencyOptions = [
   { value: 'EUR', label: 'Euro (EUR)' },
@@ -12,6 +12,8 @@ export const accountTypeOptions: Array<{ value: AccountType; label: string }> = 
   { value: 'joint', label: 'Conjunta' },
   { value: 'deposit', label: 'Depósito' },
 ];
+
+export const bankOptions = bankCatalog.map((bank) => ({ value: bank.id, label: bank.name }));
 
 export const movementCategories = [
   'Alimentación',

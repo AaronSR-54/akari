@@ -19,6 +19,7 @@ import { useAccounts, useMovements } from '../../components/hooks';
 import { PageTitle } from '../../components/page-title';
 import { PageHeaderResponsive } from '../../components/page-header-responsive';
 import { MovementDetailDialog } from '../../components/movement-detail-dialog';
+import { BankIcon } from '../../components/bank-icon';
 import { MovementDialog } from '../../components/movement-dialog';
 import { PageSkeleton } from '../../components/page-skeleton';
 import { downloadCsv, movementsToCsv } from '../../lib/csv';
@@ -81,6 +82,8 @@ export function MovementsScreen() {
   const pageItems = filtered.slice(start, start + pageSize);
   const mobileItems = filtered.slice(0, visible);
   const accountName = (id: string) => accounts.find((account) => account.id === id)?.name ?? '—';
+  const bankIdFor = (id: string) => accounts.find((account) => account.id === id)?.bankId;
+  const accountFilterActive = Boolean(accountId);
   const hasFilters = Boolean(query || type !== 'all' || category !== 'all' || accountId);
 
   const clearFilters = () => {
@@ -154,7 +157,14 @@ export function MovementsScreen() {
                 setAccountId(value);
                 setPage(1);
               }}
-              options={[{ value: '', label: 'Todas las cuentas' }, ...accounts.map((account) => ({ value: account.id, label: account.name }))]}
+              options={[
+                { value: '', label: 'Todas las cuentas' },
+                ...accounts.map((account) => ({
+                  value: account.id,
+                  label: account.name,
+                  icon: <BankIcon bankId={account.bankId} size={16} />,
+                })),
+              ]}
             />
             <SelectPill
               ariaLabel="Orden"
@@ -222,7 +232,12 @@ export function MovementsScreen() {
                           onClick={() => setDetailId(movement.id)}
                           className="text-left"
                         >
-                          {movement.concept}
+                          <span className="inline-flex items-center gap-2">
+                            {!accountFilterActive ? (
+                              <BankIcon bankId={bankIdFor(movement.accountId)} />
+                            ) : null}
+                            {movement.concept}
+                          </span>
                         </button>
                       </td>
                       <td className="px-3 text-ui-10 text-text-secondary">{movement.category}</td>
@@ -298,6 +313,8 @@ export function MovementsScreen() {
                       amountMinor={movement.amountMinor}
                       currency={movement.currency}
                       type={movement.type}
+                      icon={accountFilterActive ? null : <BankIcon bankId={bankIdFor(movement.accountId)} />}
+                      iconTone="plain"
                       onClick={() => setDetailId(movement.id)}
                     />
                   ))}
@@ -319,6 +336,7 @@ export function MovementsScreen() {
         movementId={detailId}
         open={Boolean(detailId)}
         onClose={() => setDetailId(null)}
+        showBankIcon={!accountId}
       />
     </div>
   );

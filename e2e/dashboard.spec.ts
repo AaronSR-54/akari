@@ -19,6 +19,11 @@ test.describe('dashboard hero', () => {
     await expect(monthBlock).toBeVisible();
     await expect(monthBlock).not.toContainText('Base 1 nov');
     await expect(recent).toContainText('Últimos movimientos');
+    const recentLogo = recent.locator('[data-bank]').first();
+    await expect(recentLogo).toBeVisible();
+    const logoBox = await recentLogo.boundingBox();
+    expect(logoBox?.width).toBe(32);
+    expect(logoBox?.height).toBe(32);
     await expect(recent.getByRole('link', { name: 'Ver todos' })).toHaveAttribute(
       'href',
       '/movimientos',
@@ -341,6 +346,9 @@ test.describe('dashboard hero', () => {
 
     for (const name of ['Cuenta diaria', 'Depósito a plazo', 'Cuenta conjunta']) {
       await expect(accounts.getByText(name)).toBeVisible();
+    }
+    for (const bank of ['bbva', 'caixabank', 'santander']) {
+      await expect(accounts.locator(`a[data-account] [data-bank="${bank}"]`)).toHaveCount(1);
     }
     await expect(accounts.locator('[data-accounts-header]')).toHaveCount(0);
 

@@ -16,6 +16,7 @@ import {
   StatePage,
 } from '@akari/ui';
 import { useOverview, useSettings } from '../hooks';
+import { BankIcon } from '../bank-icon';
 import { PageTitle } from '../page-title';
 import { PageHeaderResponsive } from '../page-header-responsive';
 import { ActionLink } from '../action-link';
@@ -47,6 +48,8 @@ const accountTypeLabel: Record<AccountType, string> = {
 
 function OverviewBody({ overview }: { overview: Overview }) {
   const [detailId, setDetailId] = useState<string | null>(null);
+  const bankIdFor = (accountId: string) =>
+    overview.accounts.find((account) => account.id === accountId)?.bankId;
   const leftRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<HTMLDivElement>(null);
   const balanceRef = useRef<HTMLDivElement>(null);
@@ -178,6 +181,8 @@ function OverviewBody({ overview }: { overview: Overview }) {
                     amountMinor={movement.amountMinor}
                     currency={movement.currency}
                     type={movement.type}
+                    icon={<BankIcon bankId={bankIdFor(movement.accountId)} size={32} />}
+                    iconTone="plain"
                     onClick={() => setDetailId(movement.id)}
                   />
                 ))}
@@ -288,9 +293,12 @@ function OverviewBody({ overview }: { overview: Overview }) {
                 className="flex h-full min-w-0 flex-col gap-2.5 rounded-xl bg-surface-sunken p-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
               >
                 <div className="flex items-start justify-between gap-2">
-                  <p className="min-w-0 truncate text-ui-13-strong text-text-primary">
-                    {account.name}
-                  </p>
+                  <span className="flex min-w-0 items-center gap-2">
+                    <BankIcon bankId={account.bankId} size={20} />
+                    <p className="min-w-0 truncate text-ui-13-strong text-text-primary">
+                      {account.name}
+                    </p>
+                  </span>
                   <Badge tone={account.includeInTotal ? 'positive' : 'neutral'}>
                     {account.includeInTotal ? 'Al día' : 'Excluida'}
                   </Badge>

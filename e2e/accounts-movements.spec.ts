@@ -38,6 +38,60 @@ test.describe('cuentas y movimientos', () => {
     await expect(page.getByText(/550,00/).first()).toBeVisible();
   });
 
+  test('asocia un banco a la cuenta y conserva la elección al editar', async ({ page }) => {
+    await startEmpty(page);
+    await page.goto('/cuentas/nueva');
+    await page.getByLabel('Nombre de la cuenta').fill('Cuenta BBVA');
+    await page.getByLabel('Saldo inicial').fill('500');
+    const bankTrigger = page.getByLabel('Banco');
+    await expect(bankTrigger.locator('[data-bank="other"]')).toBeVisible();
+    await bankTrigger.click();
+    await expect(
+      page.getByRole('option', { name: 'BBVA' }).locator('[data-bank="bbva"]'),
+    ).toBeVisible();
+    await page.keyboard.press('Escape');
+    await chooseOption(page, 'Banco', 'BBVA');
+    await page.getByRole('button', { name: 'Guardar cuenta' }).click();
+    await expect(page).toHaveURL(/\/cuentas\/acc_/);
+
+    await page.getByRole('link', { name: 'Editar' }).click();
+    await expect(page).toHaveURL(/\/editar$/);
+    await page.reload();
+    await expect(page.getByLabel('Banco')).toHaveAttribute('data-value', 'bbva');
+
+    await chooseOption(page, 'Banco', 'Santander');
+    await page.getByRole('button', { name: 'Guardar cambios' }).click();
+    await expect(page).toHaveURL(/\/cuentas\/acc_[^/]+$/);
+    await page.getByRole('link', { name: 'Editar' }).click();
+    await expect(page).toHaveURL(/\/editar$/);
+    await expect(page.getByLabel('Banco')).toHaveAttribute('data-value', 'santander');
+  });
+
+  test('guarda una cuenta sin banco y mantiene el icono genérico', async ({ page }) => {
+    await startEmpty(page);
+    await page.goto('/cuentas/nueva');
+    await page.getByLabel('Nombre de la cuenta').fill('Cuenta sin banco');
+    await page.getByLabel('Saldo inicial').fill('500');
+    await chooseOption(page, 'Banco', 'Sin banco / Otro');
+    await page.getByRole('button', { name: 'Guardar cuenta' }).click();
+    await expect(page).toHaveURL(/\/cuentas\/acc_[^/]+$/);
+    const accountUrl = page.url();
+
+    await page.getByRole('link', { name: 'Editar' }).click();
+    await expect(page).toHaveURL(/\/editar$/);
+    await expect(page.getByLabel('Banco')).toHaveAttribute('data-value', 'other');
+
+    await page.goto(accountUrl);
+    await page.getByRole('link', { name: 'Añadir movimiento' }).first().click();
+    await page.getByLabel('Importe').fill('20');
+    await page.getByLabel('Concepto').fill('Café');
+    await chooseOption(page, 'Categoría', 'Alimentación');
+    await page.getByRole('button', { name: 'Guardar movimiento' }).click();
+    await expect(page).toHaveURL(/\/movimientos$/);
+    const row = page.getByRole('button', { name: /Café/ }).first();
+    await expect(row.locator('[data-bank="other"] svg')).toBeVisible();
+  });
+
   test('valida el saldo inicial obligatorio', async ({ page }) => {
     await startEmpty(page);
     await page.goto('/cuentas/nueva');
@@ -109,6 +163,42 @@ test.describe('cuentas y movimientos', () => {
     await expect(page.getByText('El saldo estimado a fin de mes es negativo')).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Recurrentes' })).toBeVisible();
     await expect(page.getByText('Alquiler extra').first()).toBeVisible();
+  });
+
+  test('muestra el banco de la cuenta en los movimientos y lo actualiza al cambiarlo', async ({ page }) => {
+    await seedDemo(page);
+    await page.goto('/movimientos');
+    const cena = () => page.getByRole('button', { name: /Cena con amigos/ }).first();
+    await expect(cena().locator('[data-bank="bbva"]')).toBeVisible();
+    const nomina = page.getByRole('button', { name: /Nómina/ }).first();
+    await expect(nomina.locator('[data-bank="bbva"]')).toBeVisible();
+    await expect(nomina.locator('[data-bank="bbva"]').locator('..')).not.toHaveClass(
+      /bg-status-positive-soft/,
+    );
+
+    await page.goto('/cuentas/demo-acc-day/editar');
+    await chooseOption(page, 'Banco', 'Revolut');
+    await page.getByRole('button', { name: 'Guardar cambios' }).click();
+    await expect(page).toHaveURL(/\/cuentas\/demo-acc-day$/);
+
+    await page.goto('/movimientos');
+    await expect(cena().locator('[data-bank="revolut"]')).toBeVisible();
+  });
+
+  test('el filtro de cuentas muestra logos y oculta el logo al filtrar', async ({ page }) => {
+    await seedDemo(page);
+    await page.goto('/movimientos');
+
+    const trigger = page.getByLabel('Cuenta');
+    await trigger.click();
+    const option = page.getByRole('option', { name: 'Cuenta diaria' });
+    await expect(option.locator('[data-bank="bbva"]')).toBeVisible();
+    await option.click();
+    await expect(trigger).toHaveAttribute('data-value', 'demo-acc-day');
+
+    const cena = page.getByRole('button', { name: /Cena con amigos/ }).first();
+    await expect(cena.locator('[data-bank]')).toHaveCount(0);
+    await expect(cena.locator('svg')).toHaveCount(0);
   });
 
   test('muestra plazos y registra una cuota vencida', async ({ page }) => {

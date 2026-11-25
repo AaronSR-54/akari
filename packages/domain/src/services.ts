@@ -18,6 +18,7 @@ import {
   projectMonthEnd,
   upcomingPayments,
 } from './accounts.js';
+import { isBankId, normalizeBankId } from './banks.js';
 import { NotFoundError, ValidationError } from './errors.js';
 import { addFrequency, nextInstallment } from './recurrence.js';
 import {
@@ -92,6 +93,9 @@ function validateAccountInput(input: AccountInput): void {
   if (input.taeBps != null && (input.taeBps < 0 || input.taeBps > 10000)) {
     throw new ValidationError('La TAE debe estar entre 0 y 100 %', 'taeBps');
   }
+  if (input.bankId != null && !isBankId(input.bankId)) {
+    throw new ValidationError('El banco seleccionado no está en el catálogo', 'bankId');
+  }
 }
 
 export async function createAccount(
@@ -107,6 +111,7 @@ export async function createAccount(
     currency: input.currency.toUpperCase(),
     initialBalanceMinor: input.initialBalanceMinor,
     taeBps: input.type === 'deposit' ? (input.taeBps ?? null) : null,
+    bankId: input.bankId ?? null,
     includeInTotal: input.includeInTotal ?? true,
     members: input.members,
     createdAt: timestamp,
@@ -129,6 +134,12 @@ export async function updateAccount(
     currency: input.currency ?? existing.currency,
     initialBalanceMinor: input.initialBalanceMinor ?? existing.initialBalanceMinor,
     taeBps: input.taeBps !== undefined ? input.taeBps : existing.taeBps,
+    bankId:
+      input.bankId !== undefined
+        ? input.bankId
+        : existing.bankId
+          ? normalizeBankId(existing.bankId)
+          : null,
     includeInTotal: input.includeInTotal ?? existing.includeInTotal,
     members: input.members ?? existing.members,
   };

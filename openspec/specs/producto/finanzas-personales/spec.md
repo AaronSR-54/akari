@@ -8,7 +8,7 @@ Define el comportamiento de las finanzas personales de akari —cuentas, movimie
 
 ### Requirement: Alta y edición de cuentas
 
-La aplicación SHALL permitir crear y editar cuentas personales, conjuntas y de depósito con nombre, tipo, divisa y saldo inicial obligatorio, y SHALL mostrar los campos condicionales de cada tipo.
+La aplicación SHALL permitir crear y editar cuentas personales, conjuntas y de depósito con nombre, tipo, divisa y saldo inicial obligatorio, SHALL mostrar los campos condicionales de cada tipo y SHALL ofrecer un selector opcional de banco del catálogo local.
 
 #### Scenario: Saldo inicial obligatorio
 
@@ -24,6 +24,11 @@ La aplicación SHALL permitir crear y editar cuentas personales, conjuntas y de 
 
 - **WHEN** se modifica el nombre, la divisa o el saldo inicial de una cuenta existente
 - **THEN** los saldos y agregados que dependen de ella se recalculan de inmediato
+
+#### Scenario: Selección de banco en el formulario
+
+- **WHEN** se abre el formulario de alta o edición de una cuenta
+- **THEN** aparece un selector con los bancos del catálogo, «Efectivo» y «Sin banco / Otro», y la cuenta se puede guardar sin elegir ninguno
 
 ### Requirement: Saldo agregado y saldo estimado
 

@@ -35,6 +35,8 @@ test.describe('accesibilidad', () => {
     await page.goto('/movimientos');
     await page.getByRole('button', { name: /Cena con amigos/ }).click();
     await expect(page.getByRole('dialog', { name: 'Cena con amigos' })).toBeVisible();
+    // Los botones animan su color al habilitarse; axe debe medir el estado estable.
+    await page.waitForTimeout(300);
     const results = await new AxeBuilder({ page })
       .withTags(['wcag2a', 'wcag2aa'])
       .exclude('nextjs-portal')

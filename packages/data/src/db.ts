@@ -10,7 +10,7 @@ import type {
   Transfer,
 } from '@akari/domain';
 
-export const SCHEMA_VERSION = 2;
+export const SCHEMA_VERSION = 3;
 
 export class AkariDB extends Dexie {
   accounts!: Table<Account, string>;
@@ -58,6 +58,18 @@ export class AkariDB extends Dexie {
         };
         await transaction.table<Settings>('settings').put(normalized);
       });
+
+    // v3 añade bankId al índice de cuentas; las filas existentes no se reescriben.
+    this.version(3).stores({
+      accounts: 'id, type, bankId, includeInTotal, archivedAt',
+      movements: 'id, accountId, date, type, category, recurrenceId, installmentPlanId, [accountId+date]',
+      recurrences: 'id, accountId, nextDate',
+      installments: 'id, accountId',
+      groups: 'id',
+      groupExpenses: 'id, groupId, date, [groupId+date]',
+      transfers: 'id, groupId, status',
+      settings: 'id',
+    });
   }
 }
 

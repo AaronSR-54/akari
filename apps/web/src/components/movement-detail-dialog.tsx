@@ -8,6 +8,7 @@ import { useAccount, useGroupExpense, useMovement } from './hooks';
 import { useData } from './providers';
 import { MovementEditDialog } from './movement-edit-dialog';
 import { errorMessage, formatLongDate } from '../lib/format';
+import { BankIcon } from './bank-icon';
 
 const typeLabel = { expense: 'Gasto', income: 'Ingreso' } as const;
 
@@ -17,10 +18,12 @@ export function MovementDetailDialog({
   movementId,
   open,
   onClose,
+  showBankIcon = true,
 }: {
   movementId: string | null;
   open: boolean;
   onClose: () => void;
+  showBankIcon?: boolean;
 }) {
   const movement = useMovement(movementId ?? '');
   const account = useAccount(movement?.accountId ?? '');
@@ -143,9 +146,12 @@ export function MovementDetailDialog({
             label="Cuenta"
             value={
               account ? (
-                <Link href={`/cuentas/${account.id}`} className={linkClass}>
-                  {account.name}
-                </Link>
+                <span className="inline-flex items-center gap-2">
+                  {showBankIcon ? <BankIcon bankId={account.bankId} /> : null}
+                  <Link href={`/cuentas/${account.id}`} className={linkClass}>
+                    {account.name}
+                  </Link>
+                </span>
               ) : (
                 '—'
               )

@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { seedDemo } from './helpers';
+import { chooseOption, seedDemo } from './helpers';
 
 test.describe('detalle de movimiento', () => {
   test('abre la modal desde el listado, muestra los datos y edita', async ({ page }) => {
@@ -24,6 +24,20 @@ test.describe('detalle de movimiento', () => {
     await expect(updated).toBeVisible();
     await updated.getByRole('button', { name: 'Cerrar' }).click();
     await expect(page.getByRole('button', { name: /Cena de equipo/ })).toBeVisible();
+  });
+
+  test('muestra el icono del banco en el detalle salvo al filtrar por cuenta', async ({ page }) => {
+    await seedDemo(page);
+    await page.goto('/movimientos');
+    await page.getByRole('button', { name: /Cena con amigos/ }).click();
+    const detail = page.getByRole('dialog', { name: 'Cena con amigos' });
+    await expect(detail.locator('[data-bank="bbva"]')).toBeVisible();
+    await detail.getByRole('button', { name: 'Cerrar' }).click();
+
+    await chooseOption(page, 'Cuenta', 'Cuenta diaria');
+    await page.getByRole('button', { name: /Cena con amigos/ }).click();
+    const filtered = page.getByRole('dialog', { name: 'Cena con amigos' });
+    await expect(filtered.locator('[data-bank]')).toHaveCount(0);
   });
 
   test('la fila completa abre la modal', async ({ page }) => {

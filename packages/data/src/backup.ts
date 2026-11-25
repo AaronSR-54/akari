@@ -1,4 +1,4 @@
-import { defaultSettings } from '@akari/domain';
+import { defaultSettings, normalizeBankId } from '@akari/domain';
 import type { AkariDB } from './db.js';
 import { SCHEMA_VERSION } from './db.js';
 
@@ -81,12 +81,19 @@ export function validateBackup(input: unknown): AkariBackup {
   if (!candidate.data || typeof candidate.data !== 'object') {
     throw new Error('La copia no contiene datos');
   }
+  const data = candidate.data as AkariBackup['data'];
   for (const name of TABLE_NAMES) {
-    if (!Array.isArray((candidate.data as Record<string, unknown>)[name])) {
+    if (!Array.isArray(data[name])) {
       throw new Error(`La sección "${name}" de la copia no es válida`);
     }
   }
-  return candidate as AkariBackup;
+  const accounts = data.accounts.map((row) => {
+    if (!row || typeof row !== 'object') return row;
+    const account = row as Record<string, unknown>;
+    if (account.bankId === undefined || account.bankId === null) return row;
+    return { ...account, bankId: normalizeBankId(account.bankId) };
+  });
+  return { ...candidate, data: { ...data, accounts } } as AkariBackup;
 }
 
 export async function importBackup(db: AkariDB, input: unknown): Promise<{ imported: number }> {
