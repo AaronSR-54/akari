@@ -33,6 +33,7 @@ import {
 import { useSettings } from '../../components/hooks';
 import { PageTitle } from '../../components/page-title';
 import { PageHeaderResponsive } from '../../components/page-header-responsive';
+import { HeadingMeta } from '../../components/heading-meta';
 import { defaultProfile, initialsFromName } from '../../lib/profile';
 import { useData } from '../../components/providers';
 import { PageSkeleton } from '../../components/page-skeleton';
@@ -167,13 +168,13 @@ export function SettingsScreen() {
       <Stack gap={5}>
         <PageHeaderResponsive
           title="Ajustes"
-          meta="Tu perfil y los datos guardados en este dispositivo. La nube es opcional y aún no está activa."
           actions={
             <Button variant="secondary" onClick={exportData}>
               Exportar copia
             </Button>
           }
         />
+        <HeadingMeta detail="Tu perfil y los datos guardados en este dispositivo. La nube es opcional y aún no está activa." />
 
         <Banner tone="info" title="Esta fase es local y sin cifrado">
           Los datos se guardan en este navegador. La sincronización, el cifrado y la contraseña local

@@ -18,6 +18,7 @@ import {
 import { useAccounts, useMovements } from '../../components/hooks';
 import { PageTitle } from '../../components/page-title';
 import { PageHeaderResponsive } from '../../components/page-header-responsive';
+import { HeadingMeta } from '../../components/heading-meta';
 import { MovementDetailDialog } from '../../components/movement-detail-dialog';
 import { MovementDialog } from '../../components/movement-dialog';
 import { PageSkeleton } from '../../components/page-skeleton';
@@ -100,18 +101,26 @@ export function MovementsScreen() {
     <div>
       <PageTitle title="Movimientos" />
       <Stack gap={5}>
-        <PageHeaderResponsive
-          title="Movimientos"
-          meta={`${filtered.length} movimientos · ${formatMonthYear()}`}
-          actions={
-            <>
-              <Button variant="secondary" onClick={exportCsv}>
-                Exportar CSV
-              </Button>
-              <Button onClick={() => setCreating(true)}>Añadir movimiento</Button>
-            </>
-          }
-        />
+        <div className="hidden md:block">
+          <PageHeaderResponsive
+            title="Movimientos"
+            actions={
+              <>
+                <Button variant="secondary" onClick={exportCsv}>
+                  Exportar CSV
+                </Button>
+                <Button onClick={() => setCreating(true)}>Añadir movimiento</Button>
+              </>
+            }
+          />
+        </div>
+        <div className="flex flex-wrap items-center gap-2.5 md:hidden">
+          <Button variant="secondary" onClick={exportCsv}>
+            Exportar CSV
+          </Button>
+          <Button onClick={() => setCreating(true)}>Añadir movimiento</Button>
+        </div>
+        <HeadingMeta label={`${filtered.length} movimientos`} detail={formatMonthYear()} />
 
         <div className="flex flex-wrap items-center gap-2.5">
           <SearchField

@@ -40,11 +40,15 @@ test.describe('shell web', () => {
     const header = page.locator('header.h-\\[72px\\]');
     await expect(header).toBeVisible();
     await expect(header).toContainText('Ajustes');
-    await expect(header).toContainText('Tu perfil y los datos guardados en este dispositivo');
+    await expect(header).not.toContainText('Tu perfil y los datos guardados en este dispositivo');
     await expect(page.getByRole('heading', { name: 'Ajustes', level: 1 })).toHaveCount(1);
     await expect(header.getByRole('heading', { name: 'Ajustes', level: 1 })).toBeVisible();
     await expect(page).toHaveTitle('Ajustes · akari', { timeout: 30_000 });
-    await expect(page.locator('main').getByText('Tu perfil y los datos guardados en este dispositivo')).toBeHidden();
+    await expect(
+      page.locator('main').getByText('Tu perfil y los datos guardados en este dispositivo', {
+        exact: false,
+      }),
+    ).toBeVisible();
     const before = { aside: await aside.boundingBox(), header: await header.boundingBox() };
     expect(before.header?.y).toBe(0);
     const contentHeader = page.locator('main header').first();
@@ -61,13 +65,16 @@ test.describe('shell web', () => {
     await expect(header).toBeVisible();
   });
 
-  test('el subtítulo dinámico del resumen va a la cabecera', async ({ page }) => {
+  test('el resumen lleva el saludo sin subtítulo en la cabecera', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await seedDemo(page);
 
     const header = page.locator('header.h-\\[72px\\]');
-    await expect(header).toContainText('domingo, 29 de noviembre');
-    await expect(page.locator('main').getByText('domingo, 29 de noviembre', { exact: false })).toBeHidden();
+    await expect(header.getByRole('heading', { name: /Buen[oa]s/ })).toBeVisible();
+    await expect(header).not.toContainText('domingo, 29 de noviembre');
+    await expect(page.locator('[data-hero="balance"]')).toContainText(
+      'Saldo total · domingo, 29 de noviembre',
+    );
     await expect(page).toHaveTitle('Resumen · akari', { timeout: 30_000 });
   });
 

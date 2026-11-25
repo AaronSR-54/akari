@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { seedDemo, startEmpty } from './helpers';
+import { expectGreetingForViewport, expectHeadingForViewport, seedDemo, startEmpty } from './helpers';
 
 test.describe('onboarding', () => {
   test('primera apertura redirige y empezar vacío no se repite', async ({ page }) => {
@@ -8,12 +8,13 @@ test.describe('onboarding', () => {
     await expect(page.getByRole('heading', { name: /Tus cuentas/ })).toBeVisible();
     await page.getByRole('button', { name: 'Empezar vacío' }).click();
     await expect(page).toHaveURL(/\/$/);
-    await expect(page.getByRole('heading', { name: /Buen[oa]s/ })).toBeVisible();
+    await expectGreetingForViewport(page);
     await expect(page.getByText('Tu resumen empieza con una cuenta')).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Añadir movimiento' }).first()).toBeVisible();
 
     await page.reload();
     await expect(page).toHaveURL(/\/$/);
-    await expect(page.getByRole('heading', { name: /Buen[oa]s/ })).toBeVisible();
+    await expectGreetingForViewport(page);
   });
 
   test('los datos de ejemplo crean cuentas y grupos', async ({ page }) => {
@@ -22,7 +23,7 @@ test.describe('onboarding', () => {
     await expect(page.getByText('Cuenta conjunta')).toBeVisible();
     await expect(page.getByText('Depósito a plazo')).toBeVisible();
     await page.getByRole('link', { name: 'Grupos', exact: true }).first().click();
-    await expect(page.getByRole('heading', { name: 'Grupos' })).toBeVisible();
+    await expectHeadingForViewport(page, 'Grupos');
     await expect(page.getByText('Piso compartido')).toBeVisible();
   });
 
@@ -62,7 +63,7 @@ test.describe('onboarding', () => {
 
     await page.reload();
     await expect(page).toHaveURL(/\/$/);
-    await expect(page.getByRole('heading', { name: /Buen[oa]s/ })).toBeVisible();
+    await expectGreetingForViewport(page);
     await expect(page.locator('[data-hero="month-summary"]')).toContainText(
       'Saldo total estimado a fin de mes',
     );

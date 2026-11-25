@@ -7,6 +7,7 @@ import { useAccounts } from '../../components/hooks';
 import { MovementForm } from '../../components/forms/movement-form';
 import { PageTitle } from '../../components/page-title';
 import { PageHeaderResponsive } from '../../components/page-header-responsive';
+import { HeadingMeta } from '../../components/heading-meta';
 import { ActionLink } from '../../components/action-link';
 import { PageSkeleton } from '../../components/page-skeleton';
 
@@ -37,13 +38,13 @@ export function NewMovementScreen() {
       <PageTitle title="Nuevo movimiento" />
       <PageHeaderResponsive
         title="Nuevo movimiento"
-        description="Un gasto o ingreso; si se repite, akari crea la suscripción."
         breadcrumbs={
           <Link href="/movimientos" className="hover:underline">
             Movimientos / Nuevo
           </Link>
         }
       />
+      <HeadingMeta detail="Un gasto o ingreso; si se repite, akari crea la suscripción." />
       <div className="max-w-2xl">
         <MovementForm accounts={accounts} defaultAccountId={defaultAccountId} />
       </div>

@@ -35,6 +35,11 @@ test.describe('accesibilidad', () => {
     await page.goto('/movimientos');
     await page.getByRole('button', { name: /Cena con amigos/ }).click();
     await expect(page.getByRole('dialog', { name: 'Cena con amigos' })).toBeVisible();
+    await page.evaluate(async () => {
+      await Promise.all(
+        document.getAnimations().map((animation) => animation.finished.catch(() => undefined)),
+      );
+    });
     const results = await new AxeBuilder({ page })
       .withTags(['wcag2a', 'wcag2aa'])
       .exclude('nextjs-portal')
