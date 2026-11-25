@@ -13,7 +13,7 @@
   kan_CURRENT_USER=tu@email.com
   ```
 
-  `kan_CURRENT_USER` es el email de un miembro activo y determina a quién se asignan las tarjetas. Si se omite, se usa la persona dueña del token. `.env` está ignorado por Git.
+  `kan_CURRENT_USER` es el email de un miembro activo y determina la identidad con la que se escriben las tarjetas y se firman los comentarios. Es obligatorio: si falta, la herramienta falla antes de escribir y no usa la persona dueña del token. `.env` está ignorado por Git.
 
 - `kan.config.json` versionado, sin secretos:
 
@@ -44,6 +44,8 @@
 | `release <change-id> [--force]` | Abandona el claim: devuelve tarjetas y limpia rama, worktree y etiquetas. |
 | `pr-body <change-id>` | Imprime un borrador de cuerpo de PR. |
 | `check <change-id>` | Avisa si la rama toca ficheros compartidos. |
+| `whoami` | Imprime el email y el miembro configurados, sin secretos. |
+| `comment <change-id> <texto>` | Comenta la tarjeta del change con el texto firmado por el email configurado. |
 | `start <change-id>` | Vía heredada para un change sin claim previo. |
 | `discover` | Enumera workspaces, tableros, listas y miembros. |
 
@@ -58,6 +60,15 @@ El JSON agrupa `todo` y `claimed`. Cada tarjeta incluye `publicId`, `title`, `li
 
 No escribe en el tablero. Los disparadores de agente («revisa la cola», «qué tareas hay», `/kan-queue`…) están en `AGENTS.md`.
 
+### Identidad del agente
+
+```bash
+node scripts/kan-sync.mjs whoami
+node scripts/kan-sync.mjs comment facturas-panel "Listo para revisar"
+```
+
+`whoami` imprime `email`, `memberPublicId` y `name` del miembro configurado en `kan_CURRENT_USER`, nunca el token. `comment` busca la tarjeta por manifiesto, marcador o título y publica el texto precedido de `[<email>]`. Así cada cambio del agente queda identificado con el correo del `.env`, sin correos fijos en el repositorio.
+
 ### Reclamar y agrupar
 
 ```bash
@@ -65,15 +76,15 @@ No escribe en el tablero. Los disparadores de agente («revisa la cola», «qué
 node scripts/kan-sync.mjs claim h4isbq13sxo7
 
 # Varias tarjetas en un solo change.
-node scripts/kan-sync.mjs claim card-a card-b --change mejorar-facturas
+node scripts/kan-sync.mjs claim card-a card-b --change facturas-panel
 
 # Añadir una tarjeta después.
-node scripts/kan-sync.mjs link mejorar-facturas --cards card-c
+node scripts/kan-sync.mjs link facturas-panel --cards card-c
 ```
 
 `claim` crea:
 
-- rama `feat/<change-id>` desde `origin/main`;
+- rama `<change-id>` desde `origin/main` (id corto, en inglés y sin prefijo);
 - worktree fuera del checkout principal;
 - `openspec/changes/<change-id>/workflow.json`;
 - `.opsx/ports.json` con los puertos de la máquina;
@@ -84,10 +95,10 @@ La primera persona que publica gana. Reintentar el mismo claim es idempotente; u
 ### Revisión, archivo y liberación
 
 ```bash
-node scripts/kan-sync.mjs review mejorar-facturas
-node scripts/kan-sync.mjs done mejorar-facturas --pr https://github.com/.../pull/123
-node scripts/kan-sync.mjs release mejorar-facturas --dry-run
-node scripts/kan-sync.mjs release mejorar-facturas
+node scripts/kan-sync.mjs review facturas-panel
+node scripts/kan-sync.mjs done facturas-panel --pr https://github.com/.../pull/123
+node scripts/kan-sync.mjs release facturas-panel --dry-run
+node scripts/kan-sync.mjs release facturas-panel
 ```
 
 `done` se ejecuta después de abrir la PR. Mueve todas las tarjetas del manifiesto, añade la URL a sus descripciones y actualiza `workflow.json`. No mergea la PR: `DONE` significa «archivado y PR abierta».
@@ -100,8 +111,8 @@ node scripts/kan-sync.mjs release mejorar-facturas
 
 ```json
 {
-  "changeId": "mejorar-facturas",
-  "branch": "feat/mejorar-facturas",
+  "changeId": "facturas-panel",
+  "branch": "facturas-panel",
   "cards": [
     { "publicId": "card-a", "title": "Mejorar facturas" }
   ],
@@ -153,7 +164,7 @@ La primera ejecución solo necesita `--base-url` (o `kan_BASE_URL`). La salida e
 | `No hay un miembro activo con el email …` | `kan_CURRENT_USER` no coincide con un miembro activo; revisa `discover --board <id>`. |
 | `No existe la lista "…"` | El nombre configurado no está en el tablero; la salida enumera las disponibles. |
 | `La tarjeta … ya está reclamada por el change …` | Otra persona ganó el claim; elige otra tarjeta o libera la anterior. |
-| `La rama feat/… ya existe` | Hay una rama de otro claim; usa otro `--change` o libera. |
+| `La rama … ya existe` | Hay una rama de otro claim; usa otro `--change` o libera. |
 | `No existe workflow.json` | Ejecuta el comando dentro del worktree del claim. |
 | `El puerto … está ocupado` | Otro servidor lo usa; el helper reasigna o pide `--dev-port`/`--e2e-port`. |
 | `release` se niega por PR abierta | Cierra la PR o usa `--force` si vas a descartar el trabajo. |

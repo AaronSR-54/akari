@@ -1,7 +1,7 @@
 ## Change
 
 - **Id:** `<!-- change-id -->`
-- **Rama:** `feat/<!-- change-id -->`
+- **Rama:** `<!-- change-id -->`
 - **Carpeta:** `openspec/changes/archive/<fecha>-<!-- change-id -->/`
 - **Tarjetas Kan:**
   - `<!-- card-public-id -->` — <!-- título -->

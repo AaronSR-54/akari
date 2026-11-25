@@ -37,8 +37,9 @@ function defaultRunGit(args, { cwd } = {}) {
  */
 export function resolveMainRoot({ cwd = process.cwd(), runGit = defaultRunGit } = {}) {
   try {
-    const commonDir = runGit(['rev-parse', '--path-format=absolute', '--git-common-dir'], { cwd });
-    if (!commonDir) return ROOT;
+    const result = runGit(['rev-parse', '--path-format=absolute', '--git-common-dir'], { cwd });
+    const commonDir = typeof result === 'string' ? result : result?.stdout;
+    if (!commonDir || typeof commonDir !== 'string') return ROOT;
     const absolute = resolve(cwd, commonDir);
     return dirname(absolute);
   } catch {

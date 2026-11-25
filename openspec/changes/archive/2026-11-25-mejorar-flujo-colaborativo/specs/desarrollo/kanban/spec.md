@@ -127,6 +127,30 @@ Un fallo de Kan.bn SHALL NOT interrumpir el flujo de OpenSpec una vez creado el 
 - **WHEN** `claim` no puede leer el tablero durante el preflight
 - **THEN** no crea rama, etiquetas ni worktree y termina con un error que indica que la cola no está disponible
 
+### Requirement: Reclamación atómica
+
+`claim` SHALL crear la rama `<change-id>` y una etiqueta `claims/<card-id>/<change-id>` por tarjeta, y SHALL publicarlas en un único push atómico. Si cualquiera existe, SHALL no crear ni mover nada y SHALL indicar el change que la posee. Repetir el mismo claim SHALL ser idempotente.
+
+#### Scenario: Primera reclamación
+
+- **WHEN** dos personas reclaman la misma tarjeta con changes distintos y ambas intentan publicar su claim
+- **THEN** solo una publicación tiene éxito y la otra falla sin mover ni asignar la tarjeta
+
+#### Scenario: Colisión de rama
+
+- **WHEN** la rama `<change-id>` ya existe en el remoto y no pertenece al mismo claim
+- **THEN** la herramienta no reutiliza la rama y pide elegir otro id o liberar el claim anterior
+
+#### Scenario: Fallo parcial de publicación
+
+- **WHEN** el push atómico falla después de crear la rama y las etiquetas locales
+- **THEN** la herramienta elimina el worktree y la rama local y no mueve ninguna tarjeta
+
+#### Scenario: Reintento idempotente
+
+- **WHEN** se repite `claim` para el mismo change y las mismas tarjetas ya publicadas
+- **THEN** la herramienta reconoce el claim existente, sincroniza el estado de las tarjetas y no duplica ramas ni etiquetas
+
 ## ADDED Requirements
 
 ### Requirement: Cola de trabajo
@@ -163,29 +187,29 @@ La herramienta SHALL ofrecer una consulta de la cola que enumere las tarjetas de
 - **WHEN** se intenta reclamar una tarjeta que está en In Progress, Review o Done
 - **THEN** la herramienta rechaza el claim e indica la lista en la que se encuentra
 
-### Requirement: Reclamación atómica
+### Requirement: Identidad configurada en el entorno
 
-`claim` SHALL crear la rama `feat/<change-id>` y una etiqueta `claims/<card-id>/<change-id>` por tarjeta, y SHALL publicarlas en un único push atómico. Si cualquiera existe, SHALL no crear ni mover nada y SHALL indicar el change que la posee. Repetir el mismo claim SHALL ser idempotente.
+La herramienta SHALL usar el email de `kan_CURRENT_USER` del `.env` del checkout principal como única identidad para escribir en Kan, y SHALL fallar antes de cualquier petición de escritura si falta o no corresponde a un miembro activo del workspace. El email SHALL preceder al texto de cada comentario escrito por el agente. Ningún correo concreto SHALL aparecer en código, manifiestos, documentación ni mensajes de commit; los ejemplos SHALL usar `persona@example.com`.
 
-#### Scenario: Primera reclamación
+#### Scenario: whoami sin secretos
 
-- **WHEN** dos personas reclaman la misma tarjeta con changes distintos y ambas intentan publicar su claim
-- **THEN** solo una publicación tiene éxito y la otra falla sin mover ni asignar la tarjeta
+- **WHEN** se ejecuta `node scripts/kan-sync.mjs whoami` con `kan_CURRENT_USER` configurado
+- **THEN** imprime el email, el `publicId` del miembro y su nombre, y no imprime `kan_API_KEY` ni el token
 
-#### Scenario: Colisión de rama
+#### Scenario: Identidad ausente
 
-- **WHEN** la rama `feat/<change-id>` ya existe en el remoto y no pertenece al mismo claim
-- **THEN** la herramienta no reutiliza la rama y pide elegir otro id o liberar el claim anterior
+- **WHEN** falta `kan_CURRENT_USER` y se ejecuta una operación que escribe en Kan
+- **THEN** la herramienta falla con un mensaje que indica cómo definirlo y no usa la persona dueña del token
 
-#### Scenario: Fallo parcial de publicación
+#### Scenario: Comentario identificado
 
-- **WHEN** el push atómico falla después de crear la rama y las etiquetas locales
-- **THEN** la herramienta elimina el worktree y la rama local y no mueve ninguna tarjeta
+- **WHEN** se ejecuta `comment <change-id> <texto>`
+- **THEN** la tarjeta del change recibe un comentario que empieza por `[<email>]` y el texto indicado
 
-#### Scenario: Reintento idempotente
+#### Scenario: Email no configurable en el repositorio
 
-- **WHEN** se repite `claim` para el mismo change y las mismas tarjetas ya publicadas
-- **THEN** la herramienta reconoce el claim existente, sincroniza el estado de las tarjetas y no duplica ramas ni etiquetas
+- **WHEN** se inspecciona el repositorio buscando un correo real
+- **THEN** solo aparece en el `.env` ignorado por Git y en la documentación como ejemplo genérico
 
 ### Requirement: Agrupación de tarjetas
 

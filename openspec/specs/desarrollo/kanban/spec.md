@@ -200,7 +200,7 @@ La herramienta SHALL ofrecer una consulta de la cola que enumere las tarjetas de
 
 ### Requirement: Reclamación atómica
 
-`claim` SHALL crear la rama `feat/<change-id>` y una etiqueta `claims/<card-id>/<change-id>` por tarjeta, y SHALL publicarlas en un único push atómico. Si cualquiera existe, SHALL no crear ni mover nada y SHALL indicar el change que la posee. Repetir el mismo claim SHALL ser idempotente.
+`claim` SHALL crear la rama `<change-id>` y una etiqueta `claims/<card-id>/<change-id>` por tarjeta, y SHALL publicarlas en un único push atómico. Si cualquiera existe, SHALL no crear ni mover nada y SHALL indicar el change que la posee. Repetir el mismo claim SHALL ser idempotente.
 
 #### Scenario: Primera reclamación
 
@@ -209,7 +209,7 @@ La herramienta SHALL ofrecer una consulta de la cola que enumere las tarjetas de
 
 #### Scenario: Colisión de rama
 
-- **WHEN** la rama `feat/<change-id>` ya existe en el remoto y no pertenece al mismo claim
+- **WHEN** la rama `<change-id>` ya existe en el remoto y no pertenece al mismo claim
 - **THEN** la herramienta no reutiliza la rama y pide elegir otro id o liberar el claim anterior
 
 #### Scenario: Fallo parcial de publicación
@@ -337,3 +337,27 @@ Cada claim SHALL escribir `openspec/changes/<change-id>/workflow.json` con el ch
 
 - **WHEN** se archiva un change cuyas tarjetas están en `REVIEW`
 - **THEN** `done` las mueve a Done y no las deja en `REVIEW`
+
+### Requirement: Identidad configurada en el entorno
+
+La herramienta SHALL usar el email de `kan_CURRENT_USER` del `.env` del checkout principal como única identidad para escribir en Kan, y SHALL fallar antes de cualquier petición de escritura si falta o no corresponde a un miembro activo del workspace. El email SHALL preceder al texto de cada comentario escrito por el agente. Ningún correo concreto SHALL aparecer en código, manifiestos, documentación ni mensajes de commit; los ejemplos SHALL usar `persona@example.com`.
+
+#### Scenario: whoami sin secretos
+
+- **WHEN** se ejecuta `node scripts/kan-sync.mjs whoami` con `kan_CURRENT_USER` configurado
+- **THEN** imprime el email, el `publicId` del miembro y su nombre, y no imprime `kan_API_KEY` ni el token
+
+#### Scenario: Identidad ausente
+
+- **WHEN** falta `kan_CURRENT_USER` y se ejecuta una operación que escribe en Kan
+- **THEN** la herramienta falla con un mensaje que indica cómo definirlo y no usa la persona dueña del token
+
+#### Scenario: Comentario identificado
+
+- **WHEN** se ejecuta `comment <change-id> <texto>`
+- **THEN** la tarjeta del change recibe un comentario que empieza por `[<email>]` y el texto indicado
+
+#### Scenario: Email no configurable en el repositorio
+
+- **WHEN** se inspecciona el repositorio buscando un correo real
+- **THEN** solo aparece en el `.env` ignorado por Git y en la documentación como ejemplo genérico

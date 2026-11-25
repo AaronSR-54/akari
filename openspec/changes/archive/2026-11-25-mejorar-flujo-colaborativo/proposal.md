@@ -8,7 +8,7 @@ Este change convierte Kan.bn en la cola de entrada, reserva cada tarjeta de form
 
 ## What Changes
 
-- **Cola y claim atómico.** Nuevo comando `node scripts/kan-sync.mjs claim` que toma una o varias tarjetas de `TO DO`, valida que estén libres, crea la rama `feat/<change-id>` y una etiqueta Git por tarjeta (`claims/<card-id>/<change-id>`), y las publica en un único `git push --atomic`. La primera persona que publica gana; el resto recibe un error con el change que ya la tiene.
+- **Cola y claim atómico.** Nuevo comando `node scripts/kan-sync.mjs claim` que toma una o varias tarjetas de `TO DO`, valida que estén libres, crea la rama `<change-id>` y una etiqueta Git por tarjeta (`claims/<card-id>/<change-id>`), y las publica en un único `git push --atomic`. La primera persona que publica gana; el resto recibe un error con el change que ya la tiene.
 - **Consulta de la cola para agentes.** `node scripts/kan-sync.mjs queue --json` devuelve las tarjetas libres y reclamadas con `publicId`, título, lista, asignación, change, rama y si son reclamables. `AGENTS.md` reconoce frases como «revisa la cola», «qué tareas hay» o «busca trabajo», y el atajo `/kan-queue` de OpenCode ejecuta la misma consulta sin escribir en el tablero.
 - **Agrupación de tarjetas.** `claim --cards a,b,c` permite unificar varias tarjetas en un solo change, rama, worktree y PR. `link <change-id> --cards ...` añade tarjetas a un claim existente antes de archivarlo. Todas las tarjetas del grupo comparten el mismo `workflow.json` y se mueven juntas.
 - **Worktree y sesión por tarea.** Cada claim crea un worktree fuera del checkout principal (por defecto, un directorio hermano `akari-worktrees/<change-id>`) y deja `main` intacto. Cada worktree se abre con `opencode <ruta>` o moviendo la sesión actual; varias sesiones pueden trabajar en paralelo, cada una en su rama.
@@ -18,6 +18,10 @@ Este change convierte Kan.bn en la cola de entrada, reserva cada tarjeta de form
 - **Manifiesto por change.** `openspec/changes/<change-id>/workflow.json` registra el change, la rama, las tarjetas vinculadas y la PR. No contiene tokens, correos ni datos personales; es la fuente de verdad para `done`, `review`, `release` y la plantilla de PR.
 - **CI y PR reproducibles.** `.github/workflows/ci.yml` ejecuta `typecheck`, `lint`, `test`, `build` y E2E en cada PR; `.github/pull_request_template.md` recoge change, tarjetas, deltas de specs y verificaciones. El puerto de E2E sigue siendo configurable con `E2E_PORT` para CI y para `e2e:worktree`. La protección de `main` y los checks obligatorios se documentan como pasos de administración de GitHub.
 - **Documentación y reglas de convivencia.** `AGENTS.md`, `docs/desarrollo/kanban.md`, un nuevo `docs/desarrollo/flujo-colaborativo.md` y el `README.md` describen el flujo, la selección de tareas, la agrupación, la resolución de conflictos de archivado y la limpieza de worktrees.
+- **Convención de nombres.** La rama SHALL llamarse exactamente como el id del change de OpenSpec, sin prefijo `feat/`. El id SHALL ser corto (≤30 caracteres), en inglés y con guiones; los mensajes de commit SHALL estar en inglés. Se actualizan la validación de ids, los mensajes que escribe `kan-sync` y la documentación.
+- **Puerto por defecto compartido.** El primer change usa el puerto 3100 tanto para desarrollo como para E2E. Si otro worktree lo encuentra ocupado al arrancar, toma el siguiente puerto libre (3101, 3102…), sin hash previo ni rangos separados. `--dev-port` y `--e2e-port` siguen permitiendo forzar un valor.
+- **Frontal de revisión automático.** Al aplicar un change, el agente arranca el frontal en segundo plano y deja la URL lista para revisar; al archivar, se detiene. Es un paso del agente, no una tarea manual de quien desarrolla: `npm run preview:worktree` gestiona el proceso y guarda la URL en `.opsx/preview.json`. E2E pausa y reanuda el frontal para no compartir `.next`.
+- **Identidad explícita en Kan.** `kan-sync whoami` imprime el email y el miembro configurado sin secretos, y `kan-sync comment <change> <texto>` escribe comentarios identificados con ese email. Toda escritura en Kan usa `kan_CURRENT_USER` del `.env`; no hay correos fijos en código ni documentación y no se recurre al dueño del token como identidad por defecto.
 - **Compatibilidad.** `start`, `done` y `discover` siguen funcionando; `start` queda como vía heredada para un change que ya existe sin tarjeta previa. No cambia el modelo de datos, la interfaz de producto ni el diseño congelado.
 
 ## Capabilities
@@ -28,7 +32,7 @@ Este change convierte Kan.bn en la cola de entrada, reserva cada tarjeta de form
 
 ### Modified Capabilities
 
-- `desarrollo/kanban`: la cola de tarjetas, la reclamación atómica, la agrupación, el manifiesto, los estados `REVIEW`/`DONE` y la liberación de claims cambian el comportamiento exigido a la herramienta de sincronización.
+- `desarrollo/kanban`: la cola de tarjetas, la reclamación atómica, la agrupación, el manifiesto, los estados `REVIEW`/`DONE`, la liberación de claims, la identidad configurada en el `.env`, `whoami` y `comment` cambian el comportamiento exigido a la herramienta de sincronización.
 
 ## Impact
 
@@ -37,7 +41,7 @@ Este change convierte Kan.bn en la cola de entrada, reserva cada tarjeta de form
 - **Git y GitHub**: nueva rama por claim, etiquetas `claims/*`, `.github/workflows/ci.yml`, `.github/pull_request_template.md`, `playwright.config.ts` con `E2E_PORT`, y pasos documentados de protección de rama.
 - **Documentación y atajos**: `AGENTS.md`, `README.md`, `docs/desarrollo/kanban.md`, nuevo `docs/desarrollo/flujo-colaborativo.md` y `.opencode/commands/kan-queue.md`.
 - **Sistemas externos**: API REST de Kan.bn, Git remoto y GitHub Actions. No se añaden dependencias de runtime ni se toca `packages/*` o `apps/web`.
-- **Riesgos**: las etiquetas de claim pueden quedar obsoletas si alguien abandona una tarea; `release` y la documentación lo cubren. Las PR de archivado pueden competir por los mismos ficheros de specs; se serializa el aterrizaje y se rebasa antes de abrir la PR.
+- **Riesgos**: las etiquetas de claim pueden quedar obsoletas si alguien abandona una tarea; `release` y la documentación lo cubren. Las PR de archivado pueden competir por los mismos ficheros de specs; se serializa el aterrizaje y se rebasa antes de abrir la PR. El frontal en segundo plano consume un puerto mientras el change está en curso; `preview:worktree stop` y el archivado lo liberan, y E2E lo pausa para no compartir `.next`.
 
 ## Supuestos
 
