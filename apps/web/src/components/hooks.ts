@@ -8,6 +8,7 @@ import {
   projectMonthEnd,
   type Account,
   type Group,
+  type GroupExpense,
   type InstallmentPlan,
   type Movement,
   type Recurrence,
@@ -58,6 +59,24 @@ export function useMovements(accountId?: string): Movement[] | undefined {
     if (!ready) return undefined;
     return accountId ? repositories.movements.listByAccount(accountId) : repositories.movements.list();
   }, [repositories, ready, accountId]);
+}
+
+export function useMovement(id: string): Movement | undefined | null {
+  const { repositories, ready } = useData();
+  return useLiveQuery(async () => {
+    if (!ready) return undefined;
+    if (!id) return null;
+    return (await repositories.movements.get(id)) ?? null;
+  }, [repositories, ready, id]);
+}
+
+export function useGroupExpense(id: string): GroupExpense | undefined | null {
+  const { repositories, ready } = useData();
+  return useLiveQuery(async () => {
+    if (!ready) return undefined;
+    if (!id) return null;
+    return (await repositories.groupExpenses.get(id)) ?? null;
+  }, [repositories, ready, id]);
 }
 
 export function useRecurrences(accountId?: string): Recurrence[] | undefined {

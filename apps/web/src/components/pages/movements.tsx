@@ -2,7 +2,6 @@
 
 import { useSearchParams } from 'next/navigation';
 import { useMemo, useState } from 'react';
-import type { Movement } from '@akari/domain';
 import {
   Amount,
   Button,
@@ -19,7 +18,7 @@ import {
 import { useAccounts, useMovements } from '../../components/hooks';
 import { PageTitle } from '../../components/page-title';
 import { PageHeaderResponsive } from '../../components/page-header-responsive';
-import { MovementEditDialog } from '../../components/movement-edit-dialog';
+import { MovementDetailDialog } from '../../components/movement-detail-dialog';
 import { ActionLink } from '../../components/action-link';
 import { PageSkeleton } from '../../components/page-skeleton';
 import { downloadCsv, movementsToCsv } from '../../lib/csv';
@@ -47,7 +46,7 @@ export function MovementsScreen() {
   const [sort, setSort] = useState('date-desc');
   const [page, setPage] = useState(1);
   const [visible, setVisible] = useState(10);
-  const [editing, setEditing] = useState<Movement | null>(null);
+  const [detailId, setDetailId] = useState<string | null>(null);
 
   const filtered = useMemo(() => {
     if (!movements) return [];
@@ -194,7 +193,7 @@ export function MovementsScreen() {
           />
         ) : (
           <>
-            <Card padding="none" className="hidden overflow-hidden p-2 md:block">
+            <Card padding="none" className="hidden overflow-hidden md:block">
               <table className="w-full border-collapse text-left">
                 <thead>
                   <tr className="h-10 border-b border-border-subtle text-ui-9-strong text-text-secondary">
@@ -203,17 +202,28 @@ export function MovementsScreen() {
                     <th className="w-[170px] px-3 font-semibold">Categoría</th>
                     <th className="w-[190px] px-3 font-semibold">Cuenta</th>
                     <th className="w-[120px] px-3 text-right font-semibold">Importe</th>
-                    <th className="w-[80px] px-3 text-right font-semibold">Acciones</th>
                   </tr>
                 </thead>
                 <tbody>
                   {pageItems.map((movement) => (
                     <tr
                       key={movement.id}
-                      className="h-14 border-b border-border-subtle last:border-0 hover:bg-surface-sunken/60"
+                      onClick={(event) => {
+                        if ((event.target as Element).closest('button, a')) return;
+                        setDetailId(movement.id);
+                      }}
+                      className="h-14 cursor-pointer border-b border-border-subtle transition-colors last:border-0 hover:bg-surface-sunken"
                     >
                       <td className="px-3 text-ui-10 text-text-secondary">{formatShortDate(movement.date)}</td>
-                      <td className="px-3 text-ui-11-strong text-text-primary">{movement.concept}</td>
+                      <td className="px-3 text-ui-11-strong text-text-primary">
+                        <button
+                          type="button"
+                          onClick={() => setDetailId(movement.id)}
+                          className="text-left"
+                        >
+                          {movement.concept}
+                        </button>
+                      </td>
                       <td className="px-3 text-ui-10 text-text-secondary">{movement.category}</td>
                       <td className="px-3 text-ui-10 text-text-secondary">{accountName(movement.accountId)}</td>
                       <td className="px-3 text-right">
@@ -224,11 +234,6 @@ export function MovementsScreen() {
                           signed
                           className="text-ui-11-strong"
                         />
-                      </td>
-                      <td className="px-3 text-right">
-                        <Button variant="tertiary" size="sm" onClick={() => setEditing(movement)}>
-                          Editar
-                        </Button>
                       </td>
                     </tr>
                   ))}
@@ -284,26 +289,16 @@ export function MovementsScreen() {
               <Card padding="sm">
                 <Stack gap={2}>
                   {mobileItems.map((movement) => (
-                    <div key={movement.id} className="flex items-center gap-1">
-                      <div className="min-w-0 flex-1">
-                        <MovementRow
-                          concept={movement.concept}
-                          category={movement.category}
-                          dateLabel={formatShortDate(movement.date)}
-                          amountMinor={movement.amountMinor}
-                          currency={movement.currency}
-                          type={movement.type}
-                        />
-                      </div>
-                      <Button
-                        variant="tertiary"
-                        size="sm"
-                        onClick={() => setEditing(movement)}
-                        aria-label={`Editar ${movement.concept}`}
-                      >
-                        Editar
-                      </Button>
-                    </div>
+                    <MovementRow
+                      key={movement.id}
+                      concept={movement.concept}
+                      category={movement.category}
+                      dateLabel={formatShortDate(movement.date)}
+                      amountMinor={movement.amountMinor}
+                      currency={movement.currency}
+                      type={movement.type}
+                      onClick={() => setDetailId(movement.id)}
+                    />
                   ))}
                 </Stack>
               </Card>
@@ -318,11 +313,10 @@ export function MovementsScreen() {
           </>
         )}
       </Stack>
-      <MovementEditDialog
-        key={editing?.id ?? 'none'}
-        movement={editing}
-        open={Boolean(editing)}
-        onClose={() => setEditing(null)}
+      <MovementDetailDialog
+        movementId={detailId}
+        open={Boolean(detailId)}
+        onClose={() => setDetailId(null)}
       />
     </div>
   );
