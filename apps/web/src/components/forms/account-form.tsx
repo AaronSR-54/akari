@@ -10,10 +10,12 @@ import {
   updateAccount,
   type Account,
   type AccountType,
+  type BankId,
 } from '@akari/domain';
 import { Button, Card, Stack, TextField, SelectField, AmountField, Switch, useToast } from '@akari/ui';
+import { BankIcon } from '../bank-icon';
 import { useData } from '../providers';
-import { accountTypeOptions, currencyOptions } from '../../lib/options';
+import { accountTypeOptions, bankOptions, currencyOptions } from '../../lib/options';
 import { errorMessage } from '../../lib/format';
 
 export function AccountForm({ account }: { account?: Account }) {
@@ -22,6 +24,7 @@ export function AccountForm({ account }: { account?: Account }) {
   const { toast } = useToast();
   const [name, setName] = useState(account?.name ?? '');
   const [type, setType] = useState<AccountType>(account?.type ?? 'personal');
+  const [bankId, setBankId] = useState<BankId>(account?.bankId ?? 'other');
   const [currency, setCurrency] = useState(account?.currency ?? 'EUR');
   const [balance, setBalance] = useState(
     account ? decimalString(money(account.initialBalanceMinor, account.currency)).replace('.', ',') : '',
@@ -50,6 +53,7 @@ export function AccountForm({ account }: { account?: Account }) {
       const input = {
         name,
         type,
+        bankId,
         currency,
         initialBalanceMinor: minor!,
         taeBps,
@@ -94,6 +98,16 @@ export function AccountForm({ account }: { account?: Account }) {
               options={currencyOptions}
             />
           </div>
+          <SelectField
+            label="Banco"
+            value={bankId}
+            onValueChange={(value) => setBankId(value as BankId)}
+            options={bankOptions.map((option) => ({
+              ...option,
+              icon: <BankIcon bankId={option.value as BankId} size={20} />,
+            }))}
+            help="El icono del banco aparecerá en los movimientos de esta cuenta."
+          />
           <AmountField
             label="Saldo inicial"
             value={balance}

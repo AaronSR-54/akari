@@ -29,6 +29,7 @@ export function demoAccounts(today = new Date()): Account[] {
       name: 'Cuenta diaria',
       type: 'personal',
       currency: 'EUR',
+      bankId: 'bbva',
       initialBalanceMinor: 120000,
       includeInTotal: true,
       createdAt,
@@ -39,6 +40,7 @@ export function demoAccounts(today = new Date()): Account[] {
       name: 'Cuenta conjunta',
       type: 'joint',
       currency: 'EUR',
+      bankId: 'caixabank',
       initialBalanceMinor: 80000,
       includeInTotal: true,
       members: [
@@ -53,6 +55,7 @@ export function demoAccounts(today = new Date()): Account[] {
       name: 'Depósito a plazo',
       type: 'deposit',
       currency: 'EUR',
+      bankId: 'santander',
       initialBalanceMinor: 1000000,
       taeBps: 250,
       includeInTotal: true,

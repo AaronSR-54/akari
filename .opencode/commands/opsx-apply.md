@@ -97,6 +97,8 @@ In both branches, never create the root as a side effect: do not run `openspec i
 
 6. **Implement tasks (loop until done or blocked)**
 
+   Before the first task, run `npm run preview:worktree` in the change's worktree. It starts the frontend in the background and prints its URL; report that URL so the change can be reviewed without the developer starting anything. `npm run e2e:worktree` pauses and resumes the frontend automatically.
+
    For each pending task:
    - Show which task is being worked on
    - Make the code changes required

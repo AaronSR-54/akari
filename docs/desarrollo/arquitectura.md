@@ -1,6 +1,6 @@
 # Arquitectura
 
-Akari es un monorepo con una aplicación web local-first y paquetes reutilizables. El diseño visual vive en `design/` y `docs/diseno/`; el contrato de comportamiento vive en `openspec/specs/`; el código implementa ambos.
+Akari es un monorepo con una aplicación web local-first y paquetes reutilizables. El código es la fuente de verdad para el comportamiento y para lo visual: la interfaz se mejora directamente en código. `design/` y `docs/diseno/` son referencia histórica y no bloquean los cambios; el contrato de comportamiento viviente está en `openspec/specs/producto/`.
 
 ## Estructura
 
@@ -61,14 +61,14 @@ La app importa `@akari/tokens/css` y usa el preset en `apps/web/tailwind.config.
 
 Los importes se guardan como enteros en la unidad menor de su divisa (`minor`). Nunca se usa coma flotante para dinero. Las entidades están en `packages/domain/src/types.ts`:
 
-- `Account`: cuenta personal, conjunta o de depósito; saldo inicial, TAE e inclusión en el total.
+- `Account`: cuenta personal, conjunta o de depósito; saldo inicial, TAE e inclusión en el total. Su `bankId` es opcional y apunta al catálogo `bankCatalog` de `packages/domain/src/banks.ts`; los iconos se sirven desde `apps/web/public/banks/`.
 - `Movement`: gasto o ingreso; puede enlazar una recurrencia, un plan de plazos o un gasto grupal, y guarda el miembro autor cuando la cuenta es conjunta.
 - `Recurrence`: suscripción o ingreso periódico; próxima fecha y fin opcional.
 - `InstallmentPlan`: plan de cuotas con progreso y estado.
 - `Group`, `GroupExpense`, `Transfer`: grupos, repartos y liquidaciones.
 - `Settings`: tema, shell, onboarding y datos de ejemplo.
 
-El esquema Dexie está versionado en `packages/data/src/db.ts`; la versión 2 añade índices compuestos y normaliza ajustes, y la versión 3 incorpora el autor del movimiento sin borrar datos. Las migraciones conservan los datos.
+El esquema Dexie está versionado en `packages/data/src/db.ts`; la versión 2 añade índices compuestos y normaliza ajustes, y la versión 3 incorpora `bankId` en el índice de cuentas y el autor del movimiento sin borrar datos. Las migraciones conservan los datos.
 
 ## Rutas
 
@@ -79,12 +79,14 @@ El esquema Dexie está versionado en `packages/data/src/db.ts`; la versión 2 a�
 | `/cuentas/nueva` | `M06` en shell web | A · Alta de cuenta |
 | `/cuentas/[id]` | `W02` | E · Detalle |
 | `/cuentas/[id]/editar` | `M06` edición | A · Edición |
-| `/movimientos` | `W03` | B/E · Movimientos |
-| `/movimientos/nuevo` | `M09` en shell web | B · Registro |
+| `/movimientos` | `W03` + modal de alta y edición | B/E · Movimientos |
+| `/movimientos/nuevo` | `M09` en shell web (enlace directo) | B · Registro |
 | `/grupos` | índice de grupos | C/F · Grupos |
 | `/grupos/[id]` | `W04` + `M12` | C · Gasto y liquidación |
 | `/preguntas` | `W05` | D · Preguntas |
 | `/ajustes` | `W06` | F · Datos |
+
+El alta desde `/movimientos` y la edición de un movimiento comparten un modal que reutiliza el formulario de `M09`; la ruta `/movimientos/nuevo` sigue disponible como enlace directo.
 
 `W07` se verifica como comportamiento responsive y `W08` con el modo `header` del mismo shell.
 
@@ -111,6 +113,7 @@ El esquema Dexie está versionado en `packages/data/src/db.ts`; la versión 2 a�
 
 ## Documentos relacionados
 
+- [Iconos de bancos](./iconos-bancos.md)
 - [Puesta en marcha](./puesta-en-marcha.md)
 - [Convenciones](./convenciones.md)
 - [Mapa diseño → código](./mapa-diseno-codigo.md)

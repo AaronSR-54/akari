@@ -1,5 +1,11 @@
 import { expect, test } from '@playwright/test';
-import { chooseOption, seedDemo, startEmpty } from './helpers';
+import {
+  chooseOption,
+  expectGreetingForViewport,
+  expectHeadingForViewport,
+  seedDemo,
+  startEmpty,
+} from './helpers';
 
 const toNumber = (text: string | null) => {
   const value = Number((text ?? '0').replace(/[^\d,]/g, '').replace(',', '.'));
@@ -7,6 +13,24 @@ const toNumber = (text: string | null) => {
 };
 
 test.describe('dashboard hero', () => {
+  test('el saludo del resumen se adapta al breakpoint', async ({ page }) => {
+    await seedDemo(page);
+    await expectGreetingForViewport(page);
+
+    const width = page.viewportSize()?.width ?? 0;
+    if (width >= 1024) {
+      const header = page.locator('header.h-\\[72px\\]');
+      await expect(header.getByRole('heading', { level: 1 })).toHaveCount(1);
+      await expect(header).not.toContainText('domingo, 29 de noviembre');
+    }
+    await expect(page.locator('[data-hero="balance"]')).toContainText(
+      'Saldo total · domingo, 29 de noviembre',
+    );
+    await expect(page.locator('section[aria-labelledby="cuentas"]')).toContainText(
+      'Cuentas · 3 cuentas en este dispositivo',
+    );
+  });
+
   test('saldo del mes con base y detalle diario, y balance en tarjeta', async ({ page }) => {
     await seedDemo(page);
 
@@ -15,10 +39,15 @@ test.describe('dashboard hero', () => {
     const quick = page.locator('[data-hero="quick"]');
     const recent = page.locator('[data-hero="recent"]');
     const summary = page.locator('[data-hero="month-summary"]');
-    await expect(balance).toContainText('Saldo total');
+    await expect(balance).toContainText('Saldo total · domingo, 29 de noviembre');
     await expect(monthBlock).toBeVisible();
     await expect(monthBlock).not.toContainText('Base 1 nov');
     await expect(recent).toContainText('Últimos movimientos');
+    const recentLogo = recent.locator('[data-bank]').first();
+    await expect(recentLogo).toBeVisible();
+    const logoBox = await recentLogo.boundingBox();
+    expect(logoBox?.width).toBe(32);
+    expect(logoBox?.height).toBe(32);
     await expect(recent.getByRole('link', { name: 'Ver todos' })).toHaveAttribute(
       'href',
       '/movimientos',
@@ -191,6 +220,52 @@ test.describe('dashboard hero', () => {
     await expect(page).toHaveURL(/\/cuentas\/demo-acc-day/);
   });
 
+  test('el gráfico deja espacio lateral y el detalle iguala el fondo de las cuentas', async ({ page }) => {
+    await seedDemo(page);
+    const month = page.locator('[data-hero="month"]');
+    const monthBox = await month.boundingBox();
+    const svgBox = await month.locator('svg').first().boundingBox();
+    expect(monthBox).not.toBeNull();
+    expect(svgBox).not.toBeNull();
+    if (monthBox && svgBox) {
+      expect(svgBox.x - monthBox.x).toBeCloseTo(8, 0);
+      expect(monthBox.x + monthBox.width - (svgBox.x + svgBox.width)).toBeCloseTo(8, 0);
+    }
+
+    const bar = month.getByRole('group', { name: /Saldo del mes por día/ });
+    await bar.focus();
+    const detail = month.getByTestId('month-balance-detail');
+    await expect(detail).toBeVisible();
+    const detailBackground = await detail.evaluate(
+      (element) => getComputedStyle(element).backgroundColor,
+    );
+    const accountBackground = await page
+      .locator('a[data-account]')
+      .first()
+      .evaluate((element) => getComputedStyle(element).backgroundColor);
+    expect(detailBackground).toBe(accountBackground);
+  });
+
+  test('la línea de la gráfica usa el acento mostaza en ambos temas', async ({ page }) => {
+    await seedDemo(page);
+    const line = page.locator('[data-hero="month"] svg path[fill="none"]');
+    const expectAcento = async () => {
+      const expected = await page.evaluate(() => {
+        const hex = getComputedStyle(document.documentElement)
+          .getPropertyValue('--color-accent-default')
+          .trim()
+          .replace('#', '');
+        return `rgb(${parseInt(hex.slice(0, 2), 16)}, ${parseInt(hex.slice(2, 4), 16)}, ${parseInt(hex.slice(4, 6), 16)})`;
+      });
+      const actual = await line.evaluate((element) => getComputedStyle(element).stroke);
+      expect(actual).toBe(expected);
+    };
+
+    await expectAcento();
+    await page.evaluate(() => document.documentElement.setAttribute('data-theme', 'dark'));
+    await expectAcento();
+  });
+
   test('recorre los días con el teclado y muestra movimientos y saldo', async ({ page }) => {
     await seedDemo(page);
 
@@ -235,7 +310,7 @@ test.describe('dashboard hero', () => {
     await chooseOption(page, 'Categoría', 'Ocio');
     await page.getByRole('button', { name: 'Guardar movimiento' }).click();
     await expect(page).toHaveURL(/\/movimientos$/);
-    await expect(page.getByRole('heading', { name: 'Movimientos' })).toBeVisible();
+    await expectHeadingForViewport(page, 'Movimientos');
 
     await page.goto('/');
     await expect(total).toBeVisible();
@@ -279,7 +354,7 @@ test.describe('dashboard hero', () => {
     await expect(accounts).toBeVisible();
     const panel = accounts.locator('[data-panel="accounts"]');
     await expect(panel).toHaveCount(1);
-    await expect(panel.getByRole('heading', { name: 'Cuentas', exact: true })).toBeVisible();
+    await expect(panel.getByRole('heading', { name: 'Cuentas · 3 cuentas en este dispositivo' })).toBeVisible();
     const manage = panel.getByRole('link', { name: 'Gestionar cuentas' });
     await expect(manage).toHaveAttribute('href', '/cuentas/nueva');
     const blocks = accounts.locator('a[data-account]');
@@ -295,6 +370,9 @@ test.describe('dashboard hero', () => {
 
     for (const name of ['Cuenta diaria', 'Depósito a plazo', 'Cuenta conjunta']) {
       await expect(accounts.getByText(name)).toBeVisible();
+    }
+    for (const bank of ['bbva', 'caixabank', 'santander']) {
+      await expect(accounts.locator(`a[data-account] [data-bank="${bank}"]`)).toHaveCount(1);
     }
     await expect(accounts.locator('[data-accounts-header]')).toHaveCount(0);
 

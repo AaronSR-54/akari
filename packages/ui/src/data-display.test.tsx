@@ -64,6 +64,70 @@ describe('data display', () => {
     expect(screen.getByText(/10 nov · Ocio/)).toBeInTheDocument();
   });
 
+  it('movement row acepta un icono propio sin perder el genérico por defecto', () => {
+    const { container, rerender } = render(
+      <MovementRow
+        concept="Cena"
+        category="Ocio"
+        dateLabel="10 nov"
+        amountMinor={4500}
+        currency="EUR"
+        type="expense"
+      />,
+    );
+    expect(container.querySelector('svg')).toBeInTheDocument();
+
+    rerender(
+      <MovementRow
+        concept="Cena"
+        category="Ocio"
+        dateLabel="10 nov"
+        amountMinor={4500}
+        currency="EUR"
+        type="expense"
+        icon={<span data-testid="icono-banco" />}
+      />,
+    );
+    expect(screen.getByTestId('icono-banco')).toBeInTheDocument();
+    expect(screen.getByTestId('icono-banco').parentElement).toHaveClass('bg-surface-sunken');
+    expect(container.querySelector('svg')).not.toBeInTheDocument();
+  });
+
+  it('el distintivo plain no tiñe el logo con el color del movimiento', () => {
+    render(
+      <MovementRow
+        concept="Nómina"
+        category="Ingresos"
+        dateLabel="1 nov"
+        amountMinor={200000}
+        currency="EUR"
+        type="income"
+        icon={<span data-testid="logo-banco" />}
+        iconTone="plain"
+      />,
+    );
+    const wrapper = screen.getByTestId('logo-banco').parentElement;
+    expect(wrapper).toHaveClass('rounded-full');
+    expect(wrapper).not.toHaveClass('bg-status-positive-soft');
+    expect(wrapper).not.toHaveClass('text-status-positive-text');
+  });
+
+  it('icon={null} oculta por completo el distintivo de la fila', () => {
+    const { container } = render(
+      <MovementRow
+        concept="Nómina"
+        category="Ingresos"
+        dateLabel="1 nov"
+        amountMinor={200000}
+        currency="EUR"
+        type="income"
+        icon={null}
+      />,
+    );
+    expect(container.querySelector('svg')).not.toBeInTheDocument();
+    expect(screen.getByText('Nómina')).toBeInTheDocument();
+  });
+
   it('balance summary agrupa divisas y alerta', () => {
     render(
       <BalanceSummary

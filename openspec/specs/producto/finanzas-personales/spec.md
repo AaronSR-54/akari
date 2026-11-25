@@ -8,7 +8,7 @@ Define el comportamiento de las finanzas personales de akari —cuentas, movimie
 
 ### Requirement: Alta y edición de cuentas
 
-La aplicación SHALL permitir crear y editar cuentas personales, conjuntas y de depósito con nombre, tipo, divisa y saldo inicial obligatorio, y SHALL mostrar los campos condicionales de cada tipo.
+La aplicación SHALL permitir crear y editar cuentas personales, conjuntas y de depósito con nombre, tipo, divisa y saldo inicial obligatorio, SHALL mostrar los campos condicionales de cada tipo y SHALL ofrecer un selector opcional de banco del catálogo local.
 
 #### Scenario: Saldo inicial obligatorio
 
@@ -24,6 +24,11 @@ La aplicación SHALL permitir crear y editar cuentas personales, conjuntas y de 
 
 - **WHEN** se modifica el nombre, la divisa o el saldo inicial de una cuenta existente
 - **THEN** los saldos y agregados que dependen de ella se recalculan de inmediato
+
+#### Scenario: Selección de banco en el formulario
+
+- **WHEN** se abre el formulario de alta o edición de una cuenta
+- **THEN** aparece un selector con los bancos del catálogo, «Efectivo» y «Sin banco / Otro», y la cuenta se puede guardar sin elegir ninguno
 
 ### Requirement: Saldo agregado y saldo estimado
 
@@ -41,7 +46,7 @@ La aplicación SHALL mostrar el saldo total de las cuentas incluidas y SHALL sep
 
 ### Requirement: Registro de movimientos
 
-La aplicación SHALL permitir registrar gastos e ingresos con importe, fecha, cuenta, concepto y repetición opcional, y SHALL actualizar el saldo de la cuenta afectada. En cuentas conjuntas SHALL registrar además el miembro autor del movimiento.
+La aplicación SHALL permitir registrar gastos e ingresos con importe, fecha, cuenta, concepto y repetición opcional, SHALL actualizar el saldo de la cuenta afectada y SHALL abrir el alta desde el listado en un modal con ese formulario, sin abandonar el listado. En cuentas conjuntas SHALL registrar además el miembro autor del movimiento.
 
 #### Scenario: Movimiento único
 
@@ -57,6 +62,11 @@ La aplicación SHALL permitir registrar gastos e ingresos con importe, fecha, cu
 
 - **WHEN** el importe está vacío, no es numérico o no corresponde al tipo de movimiento
 - **THEN** se muestra un error en texto y no se guarda el movimiento
+
+#### Scenario: Alta en modal
+
+- **WHEN** se pulsa «Añadir movimiento» en el listado de movimientos
+- **THEN** se abre un modal con el formulario completo sobre el listado y, al guardar, el nuevo movimiento aparece en la lista sin cambiar de URL
 
 #### Scenario: Autor en cuenta conjunta
 
@@ -203,3 +213,22 @@ La aplicación SHALL mostrar el detalle de un movimiento con su concepto, tipo, 
 
 - **WHEN** el movimiento deja de existir mientras su detalle está abierto
 - **THEN** la modal se cierra y el listado refleja su ausencia, sin dejar una pantalla bloqueada
+
+### Requirement: Edición de movimiento en modal
+
+La aplicación SHALL editar un movimiento en un modal con el mismo formulario completo del alta —tipo, importe, cuenta, concepto, fecha, categoría y nota—, SHALL conservar el contexto desde el que se abre y SHALL ofrecer eliminarlo con opción de deshacer.
+
+#### Scenario: Edición completa
+
+- **WHEN** se abre la edición de un movimiento y se cambian el tipo, la cuenta, el importe, la fecha, la categoría o la nota
+- **THEN** el movimiento y el saldo de las cuentas afectadas se actualizan y se confirma la acción
+
+#### Scenario: Cerrar sin guardar
+
+- **WHEN** se cierra el modal de edición con «Cancelar», con `Escape` o con un toque fuera
+- **THEN** el movimiento conserva sus datos anteriores
+
+#### Scenario: Eliminar desde el modal
+
+- **WHEN** se pulsa «Eliminar» en el modal de edición
+- **THEN** el movimiento desaparece de las listas, el saldo se recalcula y se ofrece deshacer

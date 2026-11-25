@@ -42,11 +42,27 @@ describe('resolveMainRoot y readEnv', () => {
     writeFileSync(join(repo, '.env'), 'kan_API_KEY=desde-principal\nkan_CURRENT_USER=persona@example.com\n');
     const worktree = `${repo}-wt`;
     tempDirs.push(worktree);
-    git(repo, ['worktree', 'add', '-q', '-b', 'feat/prueba', worktree]);
+    git(repo, ['worktree', 'add', '-q', '-b', 'prueba', worktree]);
 
     expect(resolveMainRoot({ cwd: worktree })).toBe(repo);
     expect(resolveEnvFile({ cwd: worktree })).toBe(join(repo, '.env'));
     expect(readEnv({ cwd: worktree, env: {} }).kan_API_KEY).toBe('desde-principal');
+  });
+
+  it('acepta un runner que devuelve { stdout } como execGit', () => {
+    const repo = initRepo();
+    writeFileSync(join(repo, '.env'), 'kan_API_KEY=desde-runner\n');
+    const worktree = `${repo}-wt`;
+    tempDirs.push(worktree);
+    git(repo, ['worktree', 'add', '-q', '-b', 'runner', worktree]);
+
+    const runGit = (args, { cwd } = {}) => ({
+      status: 0,
+      stdout: git(cwd, args),
+      stderr: '',
+    });
+    expect(resolveMainRoot({ cwd: worktree, runGit })).toBe(repo);
+    expect(readEnv({ cwd: worktree, env: {}, runGit }).kan_API_KEY).toBe('desde-runner');
   });
 
   it('lee el .env del propio checkout principal', () => {

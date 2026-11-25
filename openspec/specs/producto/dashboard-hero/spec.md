@@ -46,13 +46,25 @@ La gráfica del hero SHALL representar el saldo de la cuenta de referencia a lo 
 
 - **WHEN** un día tiene gastos o ingresos
 - **THEN** los gastos reducen la línea y los ingresos la elevan
-- **AND** la gráfica usa tinta para la línea y ámbar para el área, sin convertir divisas
+- **AND** la gráfica usa el acento mostaza para la línea y para el área, sin convertir divisas
+- **AND** la línea conserva ese mismo acento mostaza en tema claro y en tema oscuro, sin teñirse por el signo del movimiento
+
+#### Scenario: Trazado continuo suave
+
+- **WHEN** la serie tiene al menos tres puntos
+- **THEN** la línea se dibuja como una curva continua que suaviza los cambios de dirección
+- **AND** la curva pasa por el saldo de cierre del mes anterior, por cada día transcurrido y por el punto más alto de la serie
+- **AND** la curva arranca en la tangente de la esquina redondeada de inicio y termina en la del final, sin tocar los bordes del área
+- **AND** la curva no sobresale por encima del borde superior ni por debajo del área
 
 #### Scenario: Detalle de un día con el puntero
 
 - **WHEN** la persona pasa el puntero sobre un día transcurrido
 - **THEN** aparece un detalle con la fecha, los movimientos con su signo y el saldo tras ese día
 - **AND** el detalle se dibuja por encima de la tarjeta de balance aunque la gráfica quede detrás
+- **AND** el detalle usa el mismo fondo que los bloques de cuenta del dashboard, con borde y texto legibles en tema claro y oscuro
+- **AND** el detalle muestra la fecha y el saldo con tipografía reforzada y los movimientos con texto y cifras de tamaño superior al resto de la gráfica
+- **AND** el punto activo del trazo lleva un borde del mismo color de fondo del detalle
 - **AND** un día sin movimientos lo indica y mantiene el saldo del día anterior
 
 #### Scenario: Detalle de un día con el teclado
@@ -109,13 +121,13 @@ El dashboard SHALL mostrar «Balance del mes» en una tarjeta justo debajo de la
 
 ### Requirement: Unión de la gráfica y la tarjeta
 
-El hero SHALL componerse de dos columnas independientes de igual anchura y de igual altura: a la izquierda saldo y últimos movimientos con aire entre ambos, a la derecha gráfica, balance y accesos. La tarjeta de balance SHALL ir por delante de la gráfica, sin borde superior, con una sombra superior sutil y recortando el área ámbar en sus esquinas, limitada a la altura de su contenido. En desktop, la gráfica SHALL adaptar su altura para que ambas columnas terminen siempre a la misma altura, sin alterar el tamaño del panel de últimos movimientos.
+El hero SHALL componerse de dos columnas independientes de igual anchura y de igual altura: a la izquierda saldo y últimos movimientos con aire entre ambos, a la derecha gráfica, balance y accesos. La tarjeta de balance SHALL ir por delante de la gráfica, sin borde superior, con una sombra superior sutil y sin recortar el área ámbar, que queda separada de los bordes laterales y de las esquinas de la tarjeta. En desktop, la gráfica SHALL adaptar su altura para que ambas columnas terminen siempre a la misma altura, sin alterar el tamaño del panel de últimos movimientos.
 
 #### Scenario: Sin línea de separación
 
 - **WHEN** la gráfica y la tarjeta comparten su borde en desktop
 - **THEN** la tarjeta no dibuja una línea superior entre ellas
-- **AND** las esquinas redondeadas de la tarjeta recortan el área ámbar
+- **AND** el área ámbar conserva su espacio lateral y no llega a las esquinas de la tarjeta
 
 #### Scenario: Unión en móvil
 
@@ -133,10 +145,11 @@ El hero SHALL componerse de dos columnas independientes de igual anchura y de ig
 
 #### Scenario: Final del área redondeado
 
-- **WHEN** aún faltan días para el final de mes y el relleno se extiende en plano hasta el borde derecho
-- **THEN** la esquina superior del final del área se redondea con el mismo radio que el panel
-- **AND** el inicio del área se mantiene recto
-- **AND** con el mes completo el trazado no cambia
+- **WHEN** se dibuja el área de la evolución del saldo
+- **THEN** el trazado y el relleno dejan 8 px de espacio a cada lado del bloque de la gráfica
+- **AND** el área redondea sus esquinas tanto al inicio como al final
+- **AND** el mismo trazado se aplica con el mes abierto y con el mes completo
+- **AND** el recorrido por puntero y teclado sigue cubriendo el cierre anterior y todos los días transcurridos
 
 #### Scenario: Signo y color
 
@@ -226,13 +239,13 @@ El hero SHALL mostrar un estado informativo cuando no hay cuentas activas y MUST
 
 ### Requirement: Panel único de cuentas
 
-El resumen SHALL presentar todas las cuentas en un único panel a todo el ancho, con el encabezado «Cuentas» dentro de la tarjeta y bloques distinguidos por fondo hundido, sin tabla ni líneas divisorias, manteniendo íntegro el bento superior.
+El resumen SHALL presentar todas las cuentas en un único panel a todo el ancho, con un encabezado que empieza por «Cuentas» dentro de la tarjeta y bloques distinguidos por fondo hundido, sin tabla ni líneas divisorias, manteniendo íntegro el bento superior. El encabezado SHALL incluir el número de cuentas del dispositivo.
 
 #### Scenario: Panel único responsive
 
 - **WHEN** se abre el dashboard con al menos una cuenta
 - **THEN** todas las cuentas aparecen como bloques dentro de una sola superficie que ocupa todo el ancho del contenido, directamente debajo de los accesos rápidos
-- **AND** la tarjeta del panel muestra en su interior un encabezado «Cuentas» con un enlace «Gestionar cuentas» que lleva a `/cuentas/nueva`
+- **AND** la tarjeta del panel muestra en su interior un encabezado «Cuentas · N cuentas en este dispositivo» con un enlace «Gestionar cuentas» que lleva a `/cuentas/nueva`
 - **AND** en escritorio los bloques se reparten lado a lado, sin tabla ni líneas divisorias, y se distinguen por un fondo de superficie hundida con esquinas redondeadas y espaciado entre ellos
 - **AND** en móvil los bloques se apilan unos sobre otros
 - **AND** el saldo, la gráfica del mes, los últimos movimientos, el balance del mes y los accesos rápidos conservan su composición y comportamiento anteriores
@@ -254,4 +267,20 @@ El resumen SHALL presentar todas las cuentas en un único panel a todo el ancho,
 
 - **WHEN** una persona usa un lector de pantalla en el resumen
 - **THEN** las cuentas siguen formando un grupo con un nombre accesible
-- **AND** el encabezado «Cuentas» nombra la sección y el enlace «Gestionar cuentas» es él mismo un enlace independiente de los bloques
+- **AND** el encabezado «Cuentas · N cuentas en este dispositivo» nombra la sección y el enlace «Gestionar cuentas» es él mismo un enlace independiente de los bloques
+
+### Requirement: Contexto del resumen en las etiquetas del cuerpo
+
+El resumen SHALL mostrar la fecha actual en la etiqueta del saldo total y el número de cuentas en el encabezado del panel, de modo que el saludo no necesite subtítulo.
+
+#### Scenario: Fecha junto al saldo total
+
+- **WHEN** se abre el dashboard con al menos una cuenta
+- **THEN** la etiqueta del saldo total incluye la fecha larga en español: «Saldo total · domingo, 29 de noviembre»
+- **AND** la fecha no aparece como subtítulo del saludo ni duplicada en la cabecera fija
+
+#### Scenario: Estado vacío sin subtítulo
+
+- **WHEN** se abre el dashboard sin cuentas
+- **THEN** el saludo se muestra sin subtítulo y no se renderiza en móvil
+- **AND** el cuerpo del estado vacío indica que los datos se guardan en este dispositivo

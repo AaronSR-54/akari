@@ -132,3 +132,45 @@ Quedan fuera, además de las superficies nativas: la creación de planes de plaz
 - **Motivo:** las tarjetas `c085qqmjex7u` y `s2du40zg6zju` piden que el hover se solape sobre el contenido y que se unifiquen los tamaños entre sidebar y header; el usuario eligió un término medio: conservar el logotipo de la sidebar y adoptar la altura de ítems del header.
 - **Consecuencia:** el logotipo de las cabeceras es mayor que en el frame aprobado y los ítems de la sidebar y la navegación tablet son más altos; al expandirse, el panel tapa la esquina superior izquierda de la cabecera. El diseño está congelado: no se han modificado FigCraft, `design/` ni `docs/diseno/`, y la desviación queda registrada aquí.
 - **Cierre:** solo si la persona usuaria reabre la fase de diseño; hasta entonces la implementación se mantiene y la trazabilidad vive en `producto/shell-web`.
+
+## 19. Alta y edición de movimientos en modal (change `modal-nuevo-movimiento`)
+
+- **Diseño:** `M09` plantea el alta como pantalla propia y `W03` describe la edición en línea desde la tabla de movimientos.
+- **Implementación:** el alta desde `/movimientos` y la edición de un movimiento abren un modal con el formulario completo de `M09` (tipo, importe, cuenta, concepto, fecha, categoría y nota, y repetición al crear) en un panel ancho de 672 px, mayor que el token de 440 px. La ruta `/movimientos/nuevo` sigue existiendo como enlace directo para resumen, cuentas y preguntas. La edición conserva el borrado con deshacer.
+- **Motivo:** evitar salir del listado y unificar alta y edición en una sola superficie; el diálogo anterior no permitía cambiar cuenta, tipo ni nota.
+- **Consecuencia:** la composición no coincide con `M09`/`W03` aprobados. El diseño está congelado: no se han modificado FigCraft, `design/` ni `docs/diseno/`.
+- **Cierre:** solo si la persona usuaria reabre la fase de diseño; hasta entonces la implementación se mantiene y la trazabilidad vive en `producto/finanzas-personales`.
+
+## 20. Gráfica del resumen con padding y línea mostaza (change `fix-grafico-con-padding-inline`)
+
+- **Diseño:** la evolución del saldo del `W01` usa tinta para la línea y un área ámbar que llega hasta los bordes de la columna y se recorta en las esquinas de la tarjeta de balance; el detalle diario aparece sobre un panel de fondo invertido.
+- **Implementación:** el trazado y el área dejan 8 px a cada lado del bloque, el área redondea sus cuatro esquinas tanto con el mes abierto como con el completo, y la línea es una curva suave en el acento mostaza (`--color-accent-default`) en ambos temas que arranca y termina en las tangentes de las esquinas redondeadas. El panel de detalle usa el mismo fondo `surface-sunken` que los bloques de cuenta del dashboard, con borde sutil, tipografía reforzada y el borde del punto activo del mismo color.
+- **Motivo:** la tarjeta `z69iv2q63eie` pide padding inline, extremos redondeados y una línea más suave; la persona responsable confirmó que la línea SHALL ser siempre mostaza y descartó el rojo/verde por signo que la tarjeta también sugería, además de pedir que el panel de detalle comparte el fondo de las tarjetas de cuenta.
+- **Consecuencia:** el área ya no se prolonga bajo las esquinas de la tarjeta de balance, la línea cambia de color respecto al frame aprobado y el detalle deja de ser un panel oscuro. El diseño está congelado: no se han modificado FigCraft, `design/` ni `docs/diseno/`.
+- **Cierre:** solo si la persona usuaria reabre la fase de diseño; hasta entonces la implementación se mantiene y la trazabilidad vive en `producto/dashboard-hero`.
+
+## 21. Perfil y ajustes unificados en el avatar (change `user-button-settings`)
+
+- **Diseño:** `W06` vive en `/ajustes` bajo el título «Datos y sincronización» y la navegación principal incluye «Ajustes» como cuarto destino junto a Resumen, Movimientos y Grupos; el avatar de identidad es decorativo.
+- **Implementación:** el avatar es un enlace a `/ajustes` en sidebar, header, tablet y móvil, con padding ligero, cambio de fondo al pasar el puntero y tooltip «Ajustes»; la navegación principal queda en tres destinos; `/ajustes` añade una tarjeta «Perfil» con la identidad compartida y un editor de nombre persistido en los ajustes locales, y pasa a titularse «Ajustes» con un subtítulo sobre perfil y datos locales; el saludo del resumen usa también el nombre guardado. La foto sigue siendo una representación por iniciales.
+- **Motivo:** la tarjeta `syq5yifbebmi` pide mover el acceso al panel de ajustes al botón del usuario; el usuario pidió unificar perfil y ajustes en una sola superficie, añadir una afordancia visual al avatar y permitir editar el nombre (sin foto).
+- **Consecuencia:** desaparece el destino «Ajustes» de la barra de navegación, cambia el título de la pantalla y el nombre editable se refleja también en las iniciales del avatar, respecto al frame aprobado. El diseño está congelado: no se han modificado FigCraft, `design/` ni `docs/diseno/`.
+- **Cierre:** solo si la persona usuaria reabre la fase de diseño; hasta entonces la implementación se mantiene y la trazabilidad vive en `producto/shell-web`.
+
+## 22. Headings del resumen (change `headings-desktop-mobile`)
+
+- **Diseño:** el saludo con el nombre guardado y su subtítulo con la fecha y el número de cuentas viven en el encabezado del contenido; en modo sidebar ambos se trasladan a la cabecera fija `DesktopHeader`, y en móvil el encabezado del contenido sigue visible.
+- **Implementación:** el saludo se muestra solo, sin subtítulo, como único `h1` centrado en la cabecera fija de escritorio; en tablet sigue en el contenido y en móvil no se renderiza. La fecha se integra en la etiqueta del saldo («Saldo total · domingo, 29 de noviembre») y el recuento en el encabezado del panel («Cuentas · 3 cuentas en este dispositivo»), con la misma tipografía para ambas líneas (`text-ui-13-strong` y `text-text-primary`): etiqueta en negrita y dato en cursiva con peso normal, tanto en «Saldo total · fecha» como en «Cuentas · recuento». Los encabezados «Últimos movimientos» y «Balance del mes» comparten el mismo tamaño, color y peso de etiqueta. El estado vacío aplica el mismo patrón y traslada el aviso de datos locales al cuerpo.
+- **Motivo:** la tarjeta `wgfq78hd5m3m` pide modificar los headings en desktop y mobile; el saludo con subtítulo se percibe demasiado arriba en escritorio y redundante en móvil.
+- **Consecuencia:** en móvil el resumen no tiene un `h1` visible; la información que aportaba el subtítulo sigue disponible en el cuerpo. El diseño está congelado: no se han modificado FigCraft, `design/` ni `docs/diseno/`, y la desviación queda registrada aquí.
+- **Cierre:** solo si la persona usuaria reabre la fase de diseño; hasta entonces la implementación se mantiene y la trazabilidad vive en `producto/shell-web` y `producto/dashboard-hero`.
+
+**Extensión al resto de pantallas (mismo change).** Las páginas que siguen en la barra de navegación —Resumen, Movimientos y Grupos— dejan de mostrar su título en el contenido en móvil, porque la navegación ya nombra el destino; sus acciones se mantienen visibles en un bloque propio. Las pantallas a las que se entra desde otro sitio (cuentas, grupos, formularios, Preguntas rápidas y, desde `user-button-settings`, Ajustes a través del avatar) conservan el título en todos los breakpoints. En todas ellas el subtítulo desaparece de la cabecera y su información pasa al cuerpo con el mismo estilo: etiqueta en negrita y dato en cursiva con peso normal. El texto sobre perfil y datos locales de Ajustes se mantiene en el cuerpo junto al banner informativo.
+
+## 23. Punto del logotipo en la línea base y favicon compacto (change `logo-dot-favicon`)
+
+- **Diseño:** `docs/diseno/componentes.md` §0 describe el círculo ámbar como «punto final» tras la marca sin fijar su altura, y reserva el monograma reducido «a» para app icon y favicon.
+- **Implementación:** el círculo de `Logo` (`initial` y `expanded`) se dibuja con `items-baseline` y un ajuste visual de `translate-y-[1px]`, de modo que actúa como punto final de frase sobre la línea base; el alto del logotipo no cambia (32 px en navegación). El favicon (`apps/web/app/icon.svg`) pasa a ser el icono compacto sin fondo: trazo de la «ı» con color adaptativo a claro/oscuro y círculo ámbar a su derecha.
+- **Motivo:** las tarjetas `vnvtvx5wa8wv` y `d3hgfwy1ldfw` piden alinear el punto con el texto a nivel de línea base y llevar el icono compacto al favicon; el usuario confirmó la posición a la derecha y apoyada en la base.
+- **Consecuencia:** el círculo ya no flota por encima de la base y el favicon deja de ser el monograma «a». El diseño está congelado: no se han modificado FigCraft, `design/` ni `docs/diseno/`.
+- **Cierre:** solo si la persona usuaria reabre la fase de diseño; hasta entonces la implementación se mantiene y la trazabilidad vive en `producto/componentes`.

@@ -161,6 +161,8 @@ In both branches, never create the root as a side effect: do not run `openspec i
 
 5. **Perform the archive**
 
+   Before moving the change, run `npm run preview:worktree:stop` in its worktree to close the review frontend started during apply. A failure to stop it only warns; do not block archiving.
+
    Create an `archive` directory under `planningHome.changesDir` if it doesn't exist:
    ```bash
    mkdir -p "<planningHome.changesDir>/archive"

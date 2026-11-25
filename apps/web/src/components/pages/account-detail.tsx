@@ -34,10 +34,12 @@ import {
 import { useAccountSummary, useRecurrences } from '../../components/hooks';
 import { PageTitle } from '../../components/page-title';
 import { PageHeaderResponsive } from '../../components/page-header-responsive';
+import { HeadingMeta } from '../../components/heading-meta';
 import { useData } from '../../components/providers';
 import { ActionLink } from '../../components/action-link';
 import { PageSkeleton } from '../../components/page-skeleton';
 import { MovementDetailDialog } from '../../components/movement-detail-dialog';
+import { BankIcon } from '../../components/bank-icon';
 import {
   errorMessage,
   formatLongDate,
@@ -128,7 +130,6 @@ export function AccountDetailScreen({ accountId }: { accountId: string }) {
               {account.name}
             </span>
           }
-          meta={`${typeLabel[account.type] ?? account.type} · ${account.currency} · ${formatUpdated(account.updatedAt)}`}
           actions={
             <>
               <ActionLink href={`/cuentas/${account.id}/editar`} variant="secondary">
@@ -142,6 +143,10 @@ export function AccountDetailScreen({ accountId }: { accountId: string }) {
               </Button>
             </>
           }
+        />
+        <HeadingMeta
+          label={typeLabel[account.type] ?? account.type}
+          detail={`${account.currency} · ${formatUpdated(account.updatedAt)}`}
         />
 
         {projected.minor < 0 ? (
@@ -230,6 +235,8 @@ export function AccountDetailScreen({ accountId }: { accountId: string }) {
                       amountMinor={movement.amountMinor}
                       currency={movement.currency}
                       type={movement.type}
+                      icon={<BankIcon bankId={account.bankId} />}
+                      iconTone="plain"
                       onClick={() => setDetailId(movement.id)}
                     />
                   ))}

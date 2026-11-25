@@ -4,6 +4,7 @@ import { basename, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execGit } from './lib/workflow.mjs';
 import { isPortFree, readPorts, resolvePorts } from './lib/ports.mjs';
+import { startPreview, stopPreview } from './worktree-preview.mjs';
 
 function gitRoot(cwd) {
   try {
@@ -54,10 +55,12 @@ async function main(argv, { cwd = process.cwd(), log = console.log, logError = c
   const changeId = process.env.OPSX_CHANGE_ID?.trim() || basename(root);
 
   try {
+    const pausedPreview = args.command === 'e2e' ? stopPreview({ cwd: root, log }) : false;
     const previous = readPorts(root);
     if (args.command === 'e2e' && previous?.dev && !(await isPortFree(previous.dev))) {
+      if (pausedPreview) await startPreview({ cwd: root, log });
       throw new Error(
-        `El puerto de desarrollo ${previous.dev} sigue ocupado. Si es dev:worktree, páralo antes de ejecutar E2E: next dev y next build comparten .next.`
+        `El puerto de desarrollo ${previous.dev} sigue ocupado. Párale antes de ejecutar E2E: next dev y next build comparten .next.`
       );
     }
     const ports = await resolvePorts({
@@ -82,15 +85,20 @@ async function main(argv, { cwd = process.cwd(), log = console.log, logError = c
     }
 
     if (!(await isPortFree(saved.dev))) {
+      if (pausedPreview) await startPreview({ cwd: root, log });
       throw new Error(
-        `El puerto de desarrollo ${saved.dev} sigue ocupado. Si es dev:worktree, páralo antes de ejecutar E2E: next dev y next build comparten .next.`
+        `El puerto de desarrollo ${saved.dev} sigue ocupado. Párale antes de ejecutar E2E: next dev y next build comparten .next.`
       );
     }
     log(`E2E: E2E_PORT=${saved.e2e}`);
-    await runNpm(['run', 'e2e'], {
-      cwd: root,
-      env: { ...process.env, E2E_PORT: String(saved.e2e) },
-    });
+    try {
+      await runNpm(['run', 'e2e'], {
+        cwd: root,
+        env: { ...process.env, E2E_PORT: String(saved.e2e) },
+      });
+    } finally {
+      if (pausedPreview) await startPreview({ cwd: root, log });
+    }
     return 0;
   } catch (error) {
     logError(`Error: ${error instanceof Error ? error.message : String(error)}`);

@@ -1,4 +1,5 @@
 export * from './types.js';
+export * from './banks.js';
 export * from './money.js';
 export * from './errors.js';
 export * from './accounts.js';

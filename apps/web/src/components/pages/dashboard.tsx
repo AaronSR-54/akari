@@ -15,13 +15,15 @@ import {
   Stack,
   StatePage,
 } from '@akari/ui';
-import { useOverview } from '../hooks';
+import { useOverview, useSettings } from '../hooks';
+import { BankIcon } from '../bank-icon';
 import { PageTitle } from '../page-title';
 import { PageHeaderResponsive } from '../page-header-responsive';
 import { ActionLink } from '../action-link';
 import { PageSkeleton } from '../page-skeleton';
 import { MovementDetailDialog } from '../movement-detail-dialog';
 import { appNow } from '../../lib/clock';
+import { defaultProfile } from '../../lib/profile';
 import {
   formatDayMonth,
   formatFullDate,
@@ -46,6 +48,8 @@ const accountTypeLabel: Record<AccountType, string> = {
 
 function OverviewBody({ overview }: { overview: Overview }) {
   const [detailId, setDetailId] = useState<string | null>(null);
+  const bankIdFor = (accountId: string) =>
+    overview.accounts.find((account) => account.id === accountId)?.bankId;
   const leftRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<HTMLDivElement>(null);
   const balanceRef = useRef<HTMLDivElement>(null);
@@ -115,6 +119,17 @@ function OverviewBody({ overview }: { overview: Overview }) {
         ? 'text-status-danger-text'
         : 'text-text-primary';
   const multipleTotals = overview.totalBalances.length > 1;
+  // SectionHeader renderiza `title` como children, así que admite énfasis en línea.
+  const sectionTitle = (text: string) => <span className="font-bold">{text}</span> as unknown as string;
+  const accountsTitle = (
+    <>
+      <span className="font-bold">Cuentas</span>
+      <span className="font-normal italic">
+        {' · '}
+        {plural(overview.accounts.length, 'cuenta', 'cuentas')} en este dispositivo
+      </span>
+    </>
+  ) as unknown as string;
 
   return (
     <Stack gap={5.5} className="lg:gap-4">
@@ -124,7 +139,10 @@ function OverviewBody({ overview }: { overview: Overview }) {
       >
         <div ref={leftRef} className="contents lg:flex lg:flex-1 lg:flex-col lg:justify-between lg:gap-4">
         <div className="order-1 flex flex-col items-center gap-1.5 text-center lg:order-none lg:items-start lg:text-left" data-hero="balance">
-          <p className="text-ui-11 text-text-secondary">Saldo total</p>
+          <p className="text-ui-13-strong text-text-primary">
+            <span className="font-bold">Saldo total</span>
+            <span className="font-normal italic"> · {formatFullDate()}</span>
+          </p>
           {overview.totalBalances.length === 0 ? (
             <p className="text-ui-44-bold text-text-tertiary">—</p>
           ) : (
@@ -148,7 +166,7 @@ function OverviewBody({ overview }: { overview: Overview }) {
           <Card padding="md" className="flex h-full flex-col gap-2.5 hero-recent-union">
             <SectionHeader
               id="ultimos"
-              title="Últimos movimientos"
+              title={sectionTitle('Últimos movimientos')}
               action={
                 <Link
                   href="/movimientos"
@@ -177,6 +195,8 @@ function OverviewBody({ overview }: { overview: Overview }) {
                     amountMinor={movement.amountMinor}
                     currency={movement.currency}
                     type={movement.type}
+                    icon={<BankIcon bankId={bankIdFor(movement.accountId)} size={32} />}
+                    iconTone="plain"
                     onClick={() => setDetailId(movement.id)}
                   />
                 ))}
@@ -204,7 +224,7 @@ function OverviewBody({ overview }: { overview: Overview }) {
         </div>
         <div ref={balanceRef} data-hero="month-summary" className="order-4 relative z-10 mt-5 lg:order-none lg:mt-0">
           <Card padding="md" className="hero-card-shadow flex h-full flex-col gap-1 border-t-0">
-            <SectionHeader id="balance-mes" title="Balance del mes" />
+            <SectionHeader id="balance-mes" title={sectionTitle('Balance del mes')} />
             <p className="font-tabular text-ui-28-bold text-text-primary">
               <span className={balanceTone}>
                 {formatMinor(month.netMinor, currency, { signed: true })}
@@ -267,7 +287,7 @@ function OverviewBody({ overview }: { overview: Overview }) {
         <Card padding="lg" data-panel="accounts">
           <SectionHeader
             id="cuentas"
-            title="Cuentas"
+            title={accountsTitle}
             action={
               <Link
                 href="/cuentas/nueva"
@@ -287,9 +307,12 @@ function OverviewBody({ overview }: { overview: Overview }) {
                 className="flex h-full min-w-0 flex-col gap-2.5 rounded-xl bg-surface-sunken p-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
               >
                 <div className="flex items-start justify-between gap-2">
-                  <p className="min-w-0 truncate text-ui-13-strong text-text-primary">
-                    {account.name}
-                  </p>
+                  <span className="flex min-w-0 items-center gap-2">
+                    <BankIcon bankId={account.bankId} size={20} />
+                    <p className="min-w-0 truncate text-ui-13-strong text-text-primary">
+                      {account.name}
+                    </p>
+                  </span>
                   <Badge tone={account.includeInTotal ? 'positive' : 'neutral'}>
                     {account.includeInTotal ? 'Al día' : 'Excluida'}
                   </Badge>
@@ -338,30 +361,32 @@ function OverviewBody({ overview }: { overview: Overview }) {
 
 export function DashboardScreen() {
   const overview = useOverview();
+  const settings = useSettings();
+  const profileName = settings?.displayName ?? defaultProfile.displayName;
 
   if (!overview) {
     return <PageSkeleton variant="cards" />;
   }
 
   if (overview.accounts.length === 0) {
+    const actions = (
+      <>
+        <ActionLink href="/cuentas/nueva">Añadir cuenta</ActionLink>
+        <ActionLink href="/movimientos/nuevo" variant="secondary">
+          Añadir movimiento
+        </ActionLink>
+      </>
+    );
     return (
       <Stack gap={5.5}>
-        <PageHeaderResponsive
-          title={`${greeting()}, Marta`}
-          meta="Aún no hay cuentas · datos en este dispositivo"
-          actions={
-            <>
-              <ActionLink href="/cuentas/nueva">Añadir cuenta</ActionLink>
-              <ActionLink href="/movimientos/nuevo" variant="secondary">
-                Añadir movimiento
-              </ActionLink>
-            </>
-          }
-        />
+        <div className="hidden md:block">
+          <PageHeaderResponsive title={`${greeting()}, ${profileName}`} actions={actions} />
+        </div>
+        <div className="flex flex-wrap items-center gap-2.5 md:hidden">{actions}</div>
         <StatePage
           type="empty"
           title="Tu resumen empieza con una cuenta"
-          description="Crea una cuenta personal, conjunta o de depósito y registra su saldo inicial."
+          description="Crea una cuenta personal, conjunta o de depósito y registra su saldo inicial. Los datos se guardan solo en este dispositivo."
           primaryAction={<ActionLink href="/cuentas/nueva">Añadir cuenta</ActionLink>}
         />
       </Stack>
@@ -371,10 +396,9 @@ export function DashboardScreen() {
   return (
     <Stack gap={5.5}>
       <PageTitle title="Resumen" />
-      <PageHeaderResponsive
-        title={`${greeting()}, Marta`}
-        meta={`${formatFullDate()} · ${overview.accounts.length} cuentas en este dispositivo`}
-      />
+      <div className="hidden md:block">
+        <PageHeaderResponsive title={`${greeting()}, ${profileName}`} />
+      </div>
       <OverviewBody overview={overview} />
     </Stack>
   );

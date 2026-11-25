@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Banner, Modal, ToastProvider, useToast } from './feedback.js';
 
-function ModalHarness() {
+function ModalHarness({ wide = false }: { wide?: boolean }) {
   const [open, setOpen] = useState(false);
   return (
     <>
@@ -15,6 +15,7 @@ function ModalHarness() {
         open={open}
         onClose={() => setOpen(false)}
         title="Confirmar"
+        width={wide ? 'wide' : 'default'}
         footer={<button type="button">Guardar</button>}
       >
         ¿Seguro?
@@ -69,10 +70,20 @@ describe('feedback', () => {
     await user.click(trigger);
     const dialog = screen.getByRole('dialog', { name: 'Confirmar' });
     expect(dialog).toBeInTheDocument();
+    expect(dialog).toHaveClass('max-w-modal');
     expect(screen.getByRole('button', { name: 'Cerrar' })).toHaveFocus();
     await user.keyboard('{Escape}');
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(trigger).toHaveFocus();
+  });
+
+  it('el modal ancho amplía el panel', async () => {
+    const user = userEvent.setup();
+    render(<ModalHarness wide />);
+    await user.click(screen.getByRole('button', { name: 'Abrir' }));
+    const dialog = screen.getByRole('dialog', { name: 'Confirmar' });
+    expect(dialog).toHaveClass('max-w-2xl');
+    expect(dialog).not.toHaveClass('max-w-modal');
   });
 
   it('el modal cierra al pulsar el scrim', async () => {

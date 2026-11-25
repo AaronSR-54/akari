@@ -1,0 +1,16 @@
+{
+  "changeId": "logo-dot-favicon",
+  "branch": "logo-dot-favicon",
+  "cards": [
+    {
+      "publicId": "vnvtvx5wa8wv",
+      "title": "fix: alinear el punto del logotipo con el texto."
+    },
+    {
+      "publicId": "d3hgfwy1ldfw",
+      "title": "fix: cambiar el favicon por el icono compacto"
+    }
+  ],
+  "prUrl": "https://github.com/AaronSR-54/akari/pull/18",
+  "claimedAt": "2026-11-25T19:31:49.303Z"
+}

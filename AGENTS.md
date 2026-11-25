@@ -27,7 +27,7 @@ Instrucciones para agentes que trabajen en este repositorio.
 
 **Capacidades actuales.** Onboarding, cuentas (alta/edición/archivo), movimientos y recurrencias, planes de cuotas, resumen, preguntas rápidas, grupos con reparto (`equal`/`percentage`/`fixed`) y liquidación mínima, ajustes (tema y shell), seed, copia/restauración JSON sin cifrar y reset.
 
-**Fuentes de verdad.** El diseño visual vive en `docs/diseno/` + `design/` y está **congelado**: ningún change de OpenSpec lo modifica (ver «Diseño congelado»). Comportamiento: `openspec/specs/producto/`. Arquitectura, convenciones, mapa diseño→código y desviaciones: `docs/desarrollo/`. Rutas y shell: `docs/desarrollo/arquitectura.md`.
+**Fuentes de verdad.** El **código es la fuente de verdad** tanto para el comportamiento como para lo visual; se puede mejorar la interfaz directamente en código. `docs/diseno/` y `design/` son referencia histórica, ya no son bloqueantes (ver «Código como fuente de verdad visual»). Comportamiento: `openspec/specs/producto/`. Arquitectura, convenciones, mapa diseño→código y desviaciones: `docs/desarrollo/`. Rutas y shell: `docs/desarrollo/arquitectura.md`.
 
 **Verificación.** Antes de dar algo por terminado: `npm run typecheck`, `npm run lint`, `npm test` y `npm run build`. Si cambia una pantalla o un flujo, añade o actualiza E2E (`npm run e2e`).
 
@@ -39,16 +39,16 @@ Instrucciones para agentes que trabajen en este repositorio.
 - El código es de un solo uso por sesión: si la sesión cae o cambia el host, vuelve a pedir uno nuevo en lugar de reintentar con el anterior.
 - Los detalles de la sesión vigente (host, archivo, enlace de invitación) se anotan en `docs/diseno/estado.md`, pero el agente no los usa como sustituto del código que le entregue el usuario.
 
-## Diseño congelado: OpenSpec va directo a código
+## Código como fuente de verdad visual
 
-La fase de diseño está **parada**. Los changes de OpenSpec se dedican solo a comportamiento, código, pruebas y documentación técnica; no producen ni actualizan diseño.
+El archivo de diseño (Figma/FigCraft) se ha quedado obsoleto y **no bloquea** la implementación. La apariencia de la app se decide y se mejora en el código; `docs/diseno/`, `design/` y `openspec/specs/diseno/*` son referencia histórica, no una puerta de aprobación.
 
-- **No se tocan** `docs/diseno/`, `design/`, FigCraft ni `openspec/specs/diseno/*`. No son entregables de ningún change y no se reescriben «para alinear» con lo implementado.
-- Un change se redacta e implementa con código, pruebas, specs de comportamiento (`openspec/specs/producto/*`) y documentación en `docs/desarrollo/`.
-- Si el código se separa del diseño aprobado, no se corrige el diseño: se registra la desviación en `docs/desarrollo/desviaciones.md` y se continúa con el código.
+- Un change se redacta e implementa con código, pruebas, specs de comportamiento (`openspec/specs/producto/*`) y documentación en `docs/desarrollo/`. Las mejoras visuales se hacen en el código sin esperar a actualizar Figma.
+- **No se editan en el flujo de changes** `docs/diseno/`, `design/` ni `openspec/specs/diseno/*`: no son entregables y no se reescriben «para alinear» con lo implementado.
+- Si conviene dejar constancia de que el código se separó de la referencia histórica, se anota en `docs/desarrollo/desviaciones.md`; ya no es un requisito para seguir adelante.
 - No abras ni consultes FigCraft para un change. Solo se usa si el usuario lo pide explícitamente y entrega un código de sesión live (ver «FigCraft (MCP)»).
-- La rama y la PR de un change no incluyen cambios en `docs/diseno/`, `design/` ni `openspec/specs/diseno/*`. Si aparecen en el working tree, déjalos fuera.
-- Solo el usuario puede reabrir la fase de diseño; hasta entonces, cualquier propuesta visual se limita a una nota en `docs/desarrollo/desviaciones.md`.
+- La rama y la PR de un change no incluyen cambios en esos directorios. Si aparecen en el working tree, déjalos fuera.
+- El usuario puede pedir en cualquier momento que se vuelva a usar la fase de diseño; mientras no lo pida, manda el código.
 
 ## Flujo colaborativo: cola, claim y worktrees
 
@@ -60,7 +60,11 @@ Cada trabajo nuevo empieza en una tarjeta de `TO DO` del tablero autoalojado de 
 4. Proponer, aplicar y archivar el change.
 5. Abrir la PR, mover las tarjetas a `DONE` y limpiar el claim.
 
-Un change = una rama `feat/<change-id>` = un worktree = una sesión. No edites `main` ni abras dos sesiones sobre el mismo worktree.
+Un change = una rama = un worktree = una sesión. La rama se llama **exactamente igual que el id del change**, sin prefijo `feat/`. No edites `main` ni abras dos sesiones sobre el mismo worktree.
+
+### Convención de nombres
+
+El id del change es corto (≤30 caracteres), en inglés, en minúsculas y con guiones (`sidebar-float`); no copies el título literal de la tarjeta. Pasa `--change <id>` al reclamar si el id derivado es largo. Todos los mensajes de commit —los que genera `kan-sync` y los que escribas a mano— van en inglés (`chore(<change-id>): claim cards and create worktree`).
 
 ### Revisar la cola
 
@@ -100,12 +104,13 @@ E2E:   npm run e2e:worktree
 - No abras dos sesiones sobre el mismo worktree ni edites dos worktrees desde una sola sesión.
 - El checkout principal permanece en `main`; no lo uses para editar una tarea.
 - `.env` se lee del checkout principal mediante el directorio común de Git. No copies `.env` a los worktrees.
-- Los puertos se guardan en `.opsx/ports.json` (ignorado por Git). `dev:worktree` arranca Next en el puerto del worktree y `e2e:worktree` ejecuta Playwright con su `E2E_PORT`. No ejecutes los dos a la vez en el mismo worktree: comparten `.next`.
+- Los puertos se guardan en `.opsx/ports.json` (ignorado por Git). El primer worktree usa el puerto 3100 para desarrollo y E2E; si está ocupado, toma el primer puerto libre (3101, 3102…). `dev:worktree` arranca Next en ese puerto y `e2e:worktree` ejecuta Playwright con su `E2E_PORT`. `e2e:worktree` detiene y reanuda el frontal automáticamente; no ejecutes `dev:worktree` a la vez: comparten `.next`.
 
 ### Aplicar y archivar
 
-- **Al aplicar o retomar** (`/opsx-apply`): confirma que estás en el worktree del change y en `feat/<change-id>`. No muevas la tarjeta; sigue en `IN PROGRESS` o `REVIEW`.
-- **Al archivar** (`openspec archive`, skill `openspec-archive-change`): trabaja en la rama del change, archiva, commitear solo el alcance del change, publica la rama y abre la PR.
+- **Al aplicar o retomar** (`/opsx-apply`): confirma que estás en el worktree del change y en la rama `<change-id>`. Ejecuta `npm run preview:worktree` justo antes de empezar la implementación: deja el frontal abierto en segundo plano con la URL impresa para que se pueda revisar. No muevas la tarjeta; sigue en `IN PROGRESS` o `REVIEW`.
+- **Revisión del frontal.** `npm run preview:worktree:status` imprime la URL. `npm run e2e:worktree` detiene y reanuda el frontal automáticamente, así que no hace falta cerrarlo antes de las pruebas.
+- **Al archivar** (`openspec archive`, skill `openspec-archive-change`): ejecuta `npm run preview:worktree:stop` antes de mover el change al archivo, para cerrar el frontal. Trabaja en la rama del change, archiva, commitea solo el alcance del change, publica la rama y abre la PR. `kan-sync done` también intenta detenerlo como red de seguridad.
 - **PR.** Usa `node scripts/kan-sync.mjs pr-body <change-id>` como borrador, `gh pr create --base main` con la plantilla y no mergees ni cierres la PR.
 - **DONE.** Después de abrir la PR, ejecuta `node scripts/kan-sync.mjs done <change-id> --pr <url>`. Mueve todas las tarjetas del manifiesto a `DONE`, registra la URL y commitea el manifiesto. La PR sigue abierta: `DONE` significa «archivado y PR abierta», no «mergeado».
 - **Sin merge.** La revisión y el merge quedan en manos de una persona. Al terminar, informa la URL de la PR y las verificaciones.
@@ -122,6 +127,10 @@ node scripts/kan-sync.mjs release <change-id> [--force]
 
 `review` requiere que exista `lists.review` en `kan.config.json` y la lista `REVIEW` en el tablero. `release` se niega si el change está archivado, hay una PR abierta o el worktree tiene cambios sin commitear, salvo `--force`.
 
+### Identidad en Kan
+
+Antes de escribir en Kan, ejecuta `node scripts/kan-sync.mjs whoami`: imprime el email y el miembro configurados en `kan_CURRENT_USER` del `.env` del checkout principal. Usa **siempre** ese correo para identificar tus cambios; no lo hardcodees ni asumas el dueño del token. Para comentar una tarjeta, usa `node scripts/kan-sync.mjs comment <change-id> "<texto>"`: el texto queda firmado como `[<email>] <texto>`. Ningún correo real se escribe en código, docs, manifiestos ni commits.
+
 ### Conflictos y limpieza
 
 - Los archivados compiten por `openspec/specs/**`. Deja solo una PR de archivado lista a la vez o rebasa sobre `main` actualizado antes de pedir revisión; vuelve a ejecutar la CI.
@@ -135,6 +144,6 @@ node scripts/kan-sync.mjs release <change-id> [--force]
 - Revisa `git status` antes de añadir: nunca subas `.env`, credenciales ni artefactos ignorados.
 - Un change = una rama = una PR. No reutilices la rama de otro change.
 - Ningún change se abre, implementa ni archiva en `main`: usa el worktree del claim.
-- No incluyas `docs/diseno/`, `design/` ni `openspec/specs/diseno/*`: el diseño está congelado.
+- No incluyas `docs/diseno/`, `design/` ni `openspec/specs/diseno/*`: son referencia histórica y no se tocan en el flujo de changes.
 - Si `gh` falla, deja la rama subida y reporta el error junto con el comando exacto para crear la PR a mano.
 - Nunca commitees `.env`, el token, correos ni datos personales. `workflow.json` y `kan.config.json` no contienen secretos.

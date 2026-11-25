@@ -155,7 +155,7 @@ export function DateField({ label, help, error, id, required, className, ...prop
   );
 }
 
-export type SelectOption = { value: string; label: string };
+export type SelectOption = { value: string; label: string; icon?: ReactNode };
 
 const useIsomorphicLayoutEffect = typeof window === 'undefined' ? useEffect : useLayoutEffect;
 
@@ -213,7 +213,8 @@ function SelectControl({
   const typeahead = useRef({ text: '', at: 0 });
   const listboxId = `${id}-listbox`;
   const selectedIndex = options.findIndex((option) => option.value === value);
-  const selectedLabel = selectedIndex >= 0 ? options[selectedIndex]?.label : undefined;
+  const selected = selectedIndex >= 0 ? options[selectedIndex] : undefined;
+  const selectedLabel = selected?.label;
 
   const optionId = (index: number) => `${listboxId}-option-${index}`;
 
@@ -394,7 +395,14 @@ function SelectControl({
           className,
         )}
       >
-        <span className="truncate">{selectedLabel ?? ''}</span>
+        <span className="flex min-w-0 items-center gap-2">
+          {selected?.icon ? (
+            <span aria-hidden="true" className="inline-flex h-5 w-5 shrink-0 items-center justify-center">
+              {selected.icon}
+            </span>
+          ) : null}
+          <span className="truncate">{selectedLabel ?? ''}</span>
+        </span>
         <IconChevronDown
           size={16}
           className={cn(
@@ -434,12 +442,17 @@ function SelectControl({
               onMouseEnter={() => setActiveIndex(index)}
               onClick={() => commit(index)}
               className={cn(
-                'cursor-pointer truncate rounded-md px-3 py-2 text-ui-13 text-text-primary',
+                'flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-ui-13 text-text-primary',
                 index === activeIndex && 'bg-surface-sunken',
                 index === selectedIndex && 'text-ui-13-strong',
               )}
             >
-              {option.label}
+              {option.icon ? (
+                <span aria-hidden="true" className="inline-flex h-5 w-5 shrink-0 items-center justify-center">
+                  {option.icon}
+                </span>
+              ) : null}
+              <span className="truncate">{option.label}</span>
             </div>
           ))}
         </div>

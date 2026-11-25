@@ -12,6 +12,52 @@ test.describe('preguntas y ajustes', () => {
     await expect(page.getByText(/117,99/).first()).toBeVisible();
   });
 
+  test('el perfil aparece al entrar desde el avatar', async ({ page }) => {
+    await seedDemo(page);
+    await page.getByRole('link', { name: 'Ajustes', exact: true }).click();
+    await expect(page).toHaveURL(/\/ajustes$/);
+
+    const perfil = page.locator('[data-profile="panel"]');
+    await expect(perfil.getByRole('heading', { name: 'Perfil', level: 2 })).toBeVisible();
+    await expect(perfil).toContainText('Marta');
+    await expect(perfil).toContainText('Cuenta local');
+  });
+
+  test('edita el nombre del perfil y lo refleja el shell tras recargar', async ({ page }) => {
+    await seedDemo(page);
+    await page.getByRole('link', { name: 'Ajustes', exact: true }).click();
+
+    const perfil = page.locator('[data-profile="panel"]');
+    await perfil.getByRole('button', { name: 'Editar' }).click();
+    const modal = page.getByRole('dialog', { name: 'Editar nombre' });
+    await modal.getByLabel('Nombre').fill('   ');
+    await modal.getByRole('button', { name: 'Guardar' }).click();
+    await expect(modal.getByText(/obligatorio/)).toBeVisible();
+
+    await modal.getByLabel('Nombre').fill('Ana Ruiz');
+    await modal.getByRole('button', { name: 'Guardar' }).click();
+    await expect(page.getByText('Nombre actualizado')).toBeVisible();
+    await expect(perfil).toContainText('Ana Ruiz');
+
+    const enlacePerfil = page.getByRole('link', { name: 'Ajustes', exact: true });
+    await expect(enlacePerfil).toHaveAttribute('title', 'Ajustes');
+    await expect(enlacePerfil.getByRole('img', { name: 'Ana Ruiz' })).toBeVisible();
+
+    await page.reload();
+    await expect(page.locator('[data-profile="panel"]')).toContainText('Ana Ruiz');
+    await expect(
+      page.getByRole('link', { name: 'Ajustes', exact: true }).getByRole('img', { name: 'Ana Ruiz' }),
+    ).toBeVisible();
+
+    await page.goto('/');
+    const greeting = page.getByRole('heading', { name: /, Ana Ruiz$/ });
+    if ((page.viewportSize()?.width ?? 0) >= 768) {
+      await expect(greeting).toBeVisible();
+    } else {
+      await expect(greeting).toHaveCount(0);
+    }
+  });
+
   test('cambia tema y shell y persiste el tema', async ({ page }) => {
     await seedDemo(page);
     await page.goto('/ajustes');

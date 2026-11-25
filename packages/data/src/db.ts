@@ -59,9 +59,10 @@ export class AkariDB extends Dexie {
         await transaction.table<Settings>('settings').put(normalized);
       });
 
+    // v3 añade bankId al índice de cuentas y el autor del movimiento; no borra datos.
     this.version(3)
       .stores({
-        accounts: 'id, type, includeInTotal, archivedAt',
+        accounts: 'id, type, bankId, includeInTotal, archivedAt',
         movements: 'id, accountId, date, type, category, recurrenceId, installmentPlanId, [accountId+date]',
         recurrences: 'id, accountId, nextDate',
         installments: 'id, accountId',
@@ -71,7 +72,7 @@ export class AkariDB extends Dexie {
         settings: 'id',
       })
       .upgrade(async (transaction) => {
-        // v3 añade el autor del movimiento; los registros previos quedan sin atribuir.
+        // Los movimientos previos a v3 quedan sin atribuir; las cuentas conservan su bankId.
         await transaction
           .table<Movement>('movements')
           .toCollection()

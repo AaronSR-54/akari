@@ -8,7 +8,7 @@ Define la estructura de navegación y el comportamiento responsive de la aplicac
 
 ### Requirement: Navegación principal de escritorio
 
-La aplicación web SHALL ofrecer una navegación principal persistente en escritorio con los destinos Resumen, Movimientos, Grupos y Ajustes, y SHALL indicar el destino activo. La expansión transitoria por hover o foco SHALL superponerse al contenido con sombra y atenuación sin alterar el ancho del área principal; la expansión fijada SHALL reservar el ancho completo y redimensionar el contenido.
+La aplicación web SHALL ofrecer una navegación principal persistente en escritorio con los destinos Resumen, Movimientos y Grupos, y SHALL indicar el destino activo. MUST NOT incluir «Ajustes» como destino de la navegación principal. La expansión transitoria por hover o foco SHALL superponerse al contenido con sombra y atenuación sin alterar el ancho del área principal; la expansión fijada SHALL reservar el ancho completo y redimensionar el contenido.
 
 #### Scenario: Destino activo
 
@@ -39,6 +39,11 @@ La aplicación web SHALL ofrecer una navegación principal persistente en escrit
 
 - **WHEN** se muestra la sidebar
 - **THEN** no se muestra simultáneamente el header superior alternativo como segunda navegación principal
+
+#### Scenario: Sin acceso duplicado a ajustes
+
+- **WHEN** se muestra cualquiera de las variantes de la navegación principal
+- **THEN** no aparece «Ajustes» como destino de esa navegación
 
 ### Requirement: Header superior alternativo
 
@@ -141,12 +146,18 @@ La navegación principal SHALL permanecer en una posición fija mientras se desp
 
 ### Requirement: Cabecera con título y subtítulo en sidebar
 
-La variante sidebar SHALL mostrar en la cabecera fija `DesktopHeader`, como único encabezado visible en escritorio, el título de la sección (`h1`) y su subtítulo (`meta`/`description`). El contenido MUST NOT repetir ninguno de los dos en escritorio; `actions` y `breadcrumbs` permanecen en el contenido. La variante header MUST NOT mostrar una barra secundaria de título; `HeaderNav` SHALL seguir siendo la única barra superior.
+La variante sidebar SHALL mostrar en la cabecera fija `DesktopHeader`, como único encabezado visible en escritorio, el título de la sección (`h1`) y, cuando la pantalla lo defina, su subtítulo (`meta`/`description`). Una pantalla MAY omitir el subtítulo para dejar el `h1` centrado verticalmente en la cabecera. El contenido MUST NOT repetir ninguno de los dos en escritorio; `actions` y `breadcrumbs` permanecen en el contenido. Una pantalla MAY ocultar su bloque de título/subtítulo en móvil cuando esa información ya esté presente en el cuerpo; en tablet el título SHALL seguir mostrándose en el contenido. La variante header MUST NOT mostrar una barra secundaria de título; `HeaderNav` SHALL seguir siendo la única barra superior.
 
 #### Scenario: Sidebar con título y subtítulo en la cabecera
 
-- **WHEN** se abre una página como Resumen o Movimientos con la navegación lateral en escritorio
+- **WHEN** se abre una página como Movimientos o Ajustes con la navegación lateral en escritorio
 - **THEN** la cabecera muestra a la izquierda el título y debajo el subtítulo, a la derecha el buscador y el botón de avisos, y existe un único `h1` visible en la página
+
+#### Scenario: Cabecera con el título solo
+
+- **WHEN** se abre el resumen con la navegación lateral en escritorio
+- **THEN** la cabecera muestra únicamente el saludo como `h1`, centrado verticalmente y sin subtítulo debajo
+- **AND** el buscador y el botón de avisos siguen a la derecha y el `h1` sigue siendo el único visible en la página
 
 #### Scenario: Sin encabezado duplicado en el contenido
 
@@ -155,13 +166,26 @@ La variante sidebar SHALL mostrar en la cabecera fija `DesktopHeader`, como úni
 
 #### Scenario: Título y subtítulo dinámicos en la cabecera
 
-- **WHEN** se abre una cuenta, un grupo o el resumen con título y subtítulo dinámicos en vista sidebar
+- **WHEN** se abre una cuenta, un grupo o una pantalla con título y subtítulo dinámicos en vista sidebar
 - **THEN** la cabecera muestra los mismos valores que antes mostraba el contenido y el `document.title` no cambia
 
 #### Scenario: Tablet y móvil sin cambios
 
 - **WHEN** la ventana está en tablet o móvil con la navegación lateral configurada
-- **THEN** el título sigue mostrándose solo en el contenido y ninguna cabecera secundaria duplica el `h1`
+- **THEN** en tablet el título sigue mostrándose solo en el contenido y ninguna cabecera secundaria duplica el `h1`
+- **AND** en móvil el resumen no renderiza el bloque con el saludo ni su subtítulo porque la fecha y el número de cuentas ya están en el cuerpo
+
+#### Scenario: Páginas de navegación sin título en móvil
+
+- **WHEN** la ventana está en móvil y se abre Movimientos o Grupos
+- **THEN** el título de la sección no se renderiza en el contenido porque la navegación ya nombra el destino
+- **AND** las acciones de la pantalla siguen visibles en móvil
+
+#### Scenario: Páginas fuera de la navegación conservan el título
+
+- **WHEN** se abre una pantalla que no está en la navegación, como una cuenta, un grupo, un formulario, Preguntas rápidas o Ajustes desde el avatar
+- **THEN** el título sigue visible en móvil, tablet y escritorio
+- **AND** el contexto que antes era subtítulo de la cabecera se muestra en el cuerpo con la misma tipografía que el resumen
 
 #### Scenario: Variante header sin barra de subtítulo
 
@@ -189,7 +213,7 @@ La cabecera superior y el primer bloque del contenido SHALL mantener una separac
 
 ### Requirement: Identidad única en la navegación de escritorio
 
-La variante de sidebar SHALL mostrar el avatar de la persona una sola vez, en el pie de la sidebar, y MUST NOT duplicarlo en la cabecera superior. La variante de header SHALL mostrarlo una sola vez en la navegación superior.
+La variante de sidebar SHALL mostrar el avatar de la persona una sola vez, en el pie de la sidebar, y MUST NOT duplicarlo en la cabecera superior. La variante de header SHALL mostrarlo una sola vez en la navegación superior. El avatar SHALL servir como acceso a `/ajustes` en todas las variantes del shell y SHALL conservar el nombre accesible de la persona.
 
 #### Scenario: Sidebar visible
 
@@ -204,7 +228,12 @@ La variante de sidebar SHALL mostrar el avatar de la persona una sola vez, en el
 #### Scenario: Etiqueta accesible
 
 - **WHEN** se inspecciona el avatar visible
-- **THEN** conserva el nombre accesible de la persona y no se elimina del árbol de accesibilidad
+- **THEN** conserva el nombre accesible de la persona, no se elimina del árbol de accesibilidad y su control de acceso anuncia que abre ajustes
+
+#### Scenario: Acceso a ajustes desde la identidad
+
+- **WHEN** la persona activa el avatar visible en sidebar, header, tablet o móvil
+- **THEN** la aplicación abre `/ajustes` y muestra el panel con la sección de perfil
 
 ### Requirement: Tamaños unificados de la navegación
 
@@ -229,3 +258,50 @@ El shell SHALL usar una misma escala de tamaños para el logotipo, los ítems de
 
 - **WHEN** se unifican los tamaños de la navegación
 - **THEN** sigue apareciendo un único avatar por variante y el logotipo conserva su etiqueta accesible
+
+### Requirement: Panel unificado de perfil y ajustes
+
+La ruta `/ajustes` SHALL ser la única superficie de perfil y ajustes, y SHALL mostrar y permitir editar el nombre de la persona junto a la configuración local sin introducir autenticación, cifrado ni sincronización.
+
+#### Scenario: Identidad en el panel
+
+- **WHEN** se abre `/ajustes` desde el avatar del shell
+- **THEN** el panel muestra una sección de perfil con la misma identidad que muestra el shell y conserva las opciones de datos locales existentes
+
+#### Scenario: Edición del nombre
+
+- **WHEN** se guarda un nombre válido desde la sección de perfil
+- **THEN** el panel, el avatar de todas las variantes del shell y el saludo del resumen muestran el nombre guardado sin salir de la aplicación
+
+#### Scenario: Identidad sin credenciales
+
+- **WHEN** se consulta o edita la sección de perfil
+- **THEN** la aplicación no pide credenciales ni envía datos a un servidor, y la identidad sigue siendo local al dispositivo
+
+### Requirement: Título de la ruta de ajustes
+
+La ruta `/ajustes` SHALL usar «Ajustes» como título de página y SHALL describir en el cuerpo que el panel reúne el perfil y los datos guardados en el dispositivo; la cabecera MUST NOT mostrar subtítulo.
+
+#### Scenario: Título en la cabecera
+
+- **WHEN** se abre `/ajustes` con la navegación lateral en escritorio
+- **THEN** la cabecera muestra «Ajustes» como único `h1` visible y sin subtítulo, y el cuerpo menciona el perfil y los datos locales
+
+#### Scenario: Título en móvil
+
+- **WHEN** se abre `/ajustes` en móvil
+- **THEN** el contenido muestra «Ajustes» como título con la separación mínima respecto a la barra superior
+
+### Requirement: Afordancia del acceso desde la identidad
+
+El control de identidad del shell SHALL mostrar un cambio visual al pasar el puntero y SHALL ofrecer un tooltip que identifique el destino «Ajustes», sin perder el foco visible por teclado ni el nombre accesible de la persona.
+
+#### Scenario: Hover sobre el avatar
+
+- **WHEN** la persona sitúa el puntero sobre el avatar en cualquier variante del shell
+- **THEN** el control cambia de fondo y muestra el tooltip «Ajustes», haciendo perceptible que es pulsable
+
+#### Scenario: Navegación por teclado
+
+- **WHEN** la persona llega al avatar con el teclado
+- **THEN** conserva el anillo de foco y su nombre accesible, y al activarlo abre `/ajustes`

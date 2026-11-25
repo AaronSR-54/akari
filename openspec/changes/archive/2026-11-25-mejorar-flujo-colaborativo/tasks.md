@@ -22,7 +22,7 @@
 - [x] 3.4 Implementar `review`, `done` (con grupo, `--pr` y fallback sin manifiesto), `release` (retirada de la persona, etiquetas, worktree y rama con guardas) y `pr-body`; verificar con tests de cada escenario de las specs, incluido `done` repetido, `release` con cambios locales y `release` con PR abierta.
 - [x] 3.5 Implementar `check` para avisar de cambios en ficheros compartidos y enlazarlo con `done` y `pr-body`; verificar que detecta `AGENTS.md`, `package-lock.json`, `.github/**` y `playwright.config.ts` y que no bloquea el flujo.
 - [x] 3.6 Documentar y probar el bootstrap del worktree: ruta externa por defecto, `OPSX_WORKTREE_ROOT`, enlace de `node_modules`, ausencia de `.env` copiado y negativa a reutilizar una ruta existente; verificar con una creación y limpieza real de un worktree temporal.
-- [x] 3.7 Implementar `scripts/lib/ports.mjs` y la asignación de puertos en `claim`: hash estable, rangos 3100–3999 para desarrollo y 4100–4999 para E2E, comprobación con `node:net`, `.opsx/ports.json` ignorado y overrides `--dev-port`/`--e2e-port`; verificar con tests de puerto libre, ocupado, hash repetido, fichero ausente y puerto forzado.
+- [x] 3.7 Implementar `scripts/lib/ports.mjs` y la asignación de puertos en `claim`: comprobación con `node:net`, `.opsx/ports.json` ignorado y overrides `--dev-port`/`--e2e-port`; verificar con tests de puerto libre, ocupado, fichero ausente y puerto forzado. El reparto concreto se ajusta en 7.2.
 
 ## 4. Documentación del flujo y de Kan
 
@@ -47,6 +47,15 @@
 - [x] 6.3 Probar el flujo real de cola con una tarjeta desechable en `TO DO`: `queue`, `claim --dry-run`, `claim`, comprobar worktree/rama/etiqueta/asignación, intentar un segundo claim de la misma tarjeta y comprobar que falla, y ejecutar `release` para dejarla como estaba.
 - [x] 6.4 Abrir dos sesiones de OpenCode en dos worktrees de claims distintos, arrancar `dev:worktree` en cada una, comprobar que cada sesión ve su rama y su URL, que los cambios de una no aparecen en la otra y que los puertos son distintos, y limpiar ambos claims al terminar.
 - [x] 6.5 Verificar `pr-body` y `check` sobre este change, comprobar que el cuerpo enumera las tarjetas y que el aviso de ficheros compartidos incluye los que toca este change; ejecutar `/kan-queue` y comprobar que resume la cola sin escribir en Kan.
+
+## 7. Convención de nombres, puertos, frontal e identidad
+
+- [x] 7.1 Cambiar `branchName()` para devolver el id del change sin prefijo, limitar `slugify`/`isValidChangeId` a 30 caracteres en inglés, actualizar el manifiesto del change abierto y los mensajes de commit de `kan-sync` a inglés (incluidos los prefijos que reconoce `release`); verificar con tests de id largo, rama y commits.
+- [x] 7.2 Sustituir el hash de puertos por el puerto por defecto 3100 y asignación secuencial al estar ocupado, para desarrollo y E2E; verificar que el primer worktree obtiene 3100, el segundo 3101 y que los overrides siguen fallando si el puerto está ocupado.
+- [x] 7.3 Crear `scripts/worktree-preview.mjs` con `start`/`status`/`stop`, scripts `preview:worktree` y `preview:worktree:stop`, `.opsx/preview.json` y `.opsx/preview.log` ignorados, pausa del frontal durante `e2e:worktree` y parada al archivar; verificar arranque, URL, reinicio tras E2E y cierre.
+- [x] 7.4 Añadir `kan-sync whoami` y `kan-sync comment <change-id> <texto>`, exigir `kan_CURRENT_USER` para escrituras sin fallback al dueño del token y prefijar los comentarios con el email; verificar con tests de identidad ausente, comentario identificado y ausencia de correos fijos.
+- [x] 7.5 Actualizar `AGENTS.md`, `.opencode/commands/opsx-apply.md` y `opsx-archive.md` para registrar los pasos automáticos del agente, y `docs/desarrollo/flujo-colaborativo.md`, `docs/desarrollo/kanban.md` y `.env.example` con la nueva convención, puertos, frontal e identidad; verificar que no aparece ningún correo real.
+- [x] 7.6 Ejecutar `npm run typecheck`, `npm run lint`, `npm test` y `npm run build`, además de `openspec validate mejorar-flujo-colaborativo`, y corregir cualquier regresión.
 
 ## Workflow follow-up
 

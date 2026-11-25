@@ -9,7 +9,7 @@ export function changeMarker(changeId) {
 }
 
 export function changeLine(changeId) {
-  return `OpenSpec: \`${changeId}\` · rama \`feat/${changeId}\``;
+  return `OpenSpec: \`${changeId}\` · rama \`${branchName(changeId)}\``;
 }
 
 export function extractChangeId(card) {
@@ -210,13 +210,35 @@ export function pickCard(board, { changeId, cardPublicId }) {
   return matches[0];
 }
 
-export async function resolveTargetMember({ board, env, client }) {
+export async function resolveTargetMember({ board, env }) {
   const members = board.workspace?.members ?? [];
-  const configured = resolveAssignee(members, env.kan_CURRENT_USER);
-  if (configured) return configured;
+  const email = typeof env.kan_CURRENT_USER === 'string' ? env.kan_CURRENT_USER.trim() : '';
+  if (!email) {
+    throw new KanSyncError(
+      'Falta kan_CURRENT_USER en el .env del checkout principal; define el email del miembro de Kan que ejecuta el flujo.',
+      'KAN_IDENTITY_MISSING'
+    );
+  }
+  return resolveAssignee(members, email);
+}
 
-  const me = await client.request('/users/me');
-  return resolveAssignee(members, me.email);
+export function buildCommentText(email, text) {
+  const body = String(text ?? '').trim();
+  if (!body) {
+    throw new KanSyncError('El comentario no puede estar vacío.', 'COMMENT_INVALID');
+  }
+  const identity = String(email ?? '').trim();
+  if (!identity) {
+    throw new KanSyncError('Falta la identidad para firmar el comentario.', 'KAN_IDENTITY_MISSING');
+  }
+  return `[${identity}] ${body}`;
+}
+
+export async function addCardComment({ client, card, text }) {
+  return client.request(`/cards/${card.publicId}/comments`, {
+    method: 'POST',
+    body: { comment: text },
+  });
 }
 
 export function queuePayload(board, { config, assignee }) {

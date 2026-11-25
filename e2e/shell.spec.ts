@@ -34,16 +34,21 @@ test.describe('shell web', () => {
     await page.setViewportSize({ width: 1440, height: 600 });
     await seedDemo(page);
     await page.goto('/ajustes');
-    await expect(page.getByRole('heading', { name: 'Datos y sincronización' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Ajustes' })).toBeVisible();
 
     const aside = page.locator('aside');
     const header = page.locator('header.h-\\[72px\\]');
     await expect(header).toBeVisible();
-    await expect(header).toContainText('Datos y sincronización');
-    await expect(header).toContainText('La base local vive en este dispositivo');
-    await expect(page.getByRole('heading', { name: 'Datos y sincronización', level: 1 })).toHaveCount(1);
-    await expect(header.getByRole('heading', { name: 'Datos y sincronización', level: 1 })).toBeVisible();
-    await expect(page.locator('main').getByText('La base local vive en este dispositivo')).toBeHidden();
+    await expect(header).toContainText('Ajustes');
+    await expect(header).not.toContainText('Tu perfil y los datos guardados en este dispositivo');
+    await expect(page.getByRole('heading', { name: 'Ajustes', level: 1 })).toHaveCount(1);
+    await expect(header.getByRole('heading', { name: 'Ajustes', level: 1 })).toBeVisible();
+    await expect(page).toHaveTitle('Ajustes · akari', { timeout: 30_000 });
+    await expect(
+      page.locator('main').getByText('Tu perfil y los datos guardados en este dispositivo', {
+        exact: false,
+      }),
+    ).toBeVisible();
     const before = { aside: await aside.boundingBox(), header: await header.boundingBox() };
     expect(before.header?.y).toBe(0);
     const contentHeader = page.locator('main header').first();
@@ -60,13 +65,16 @@ test.describe('shell web', () => {
     await expect(header).toBeVisible();
   });
 
-  test('el subtítulo dinámico del resumen va a la cabecera', async ({ page }) => {
+  test('el resumen lleva el saludo sin subtítulo en la cabecera', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await seedDemo(page);
 
     const header = page.locator('header.h-\\[72px\\]');
-    await expect(header).toContainText('domingo, 29 de noviembre');
-    await expect(page.locator('main').getByText('domingo, 29 de noviembre', { exact: false })).toBeHidden();
+    await expect(header.getByRole('heading', { name: /Buen[oa]s/ })).toBeVisible();
+    await expect(header).not.toContainText('domingo, 29 de noviembre');
+    await expect(page.locator('[data-hero="balance"]')).toContainText(
+      'Saldo total · domingo, 29 de noviembre',
+    );
     await expect(page).toHaveTitle('Resumen · akari', { timeout: 30_000 });
   });
 
@@ -76,7 +84,7 @@ test.describe('shell web', () => {
     await page.goto('/ajustes');
 
     const bar = page.locator('header.sticky.top-0:visible');
-    const title = page.getByRole('heading', { name: 'Datos y sincronización', level: 1 });
+    const title = page.getByRole('heading', { name: 'Ajustes', level: 1 });
     await expect(bar).toBeVisible();
     const barBox = await bar.boundingBox();
     const titleBox = await title.boundingBox();
@@ -110,18 +118,41 @@ test.describe('shell web', () => {
     await seedDemo(page);
     await page.goto('/ajustes');
 
-    const avatar = page.getByRole('img', { name: 'Marta' });
-    await expect(avatar).toHaveCount(1);
     await expect(page.locator('aside').getByRole('img', { name: 'Marta' })).toHaveCount(1);
+    await expect(page.locator('[data-profile="panel"]').getByRole('img', { name: 'Marta' })).toHaveCount(1);
     await expect(page.getByRole('button', { name: 'Buscar' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Avisos' })).toBeVisible();
 
     await chooseOption(page, 'Navegación de escritorio', 'Header');
     await expect(page.getByLabel('Navegación de escritorio')).toHaveAttribute('data-value', 'header');
-    await expect(avatar).toHaveCount(1);
+    await expect(page.locator('aside')).toHaveCount(0);
     await expect(
       page.locator('header.sticky.top-0:visible').getByRole('img', { name: 'Marta' }),
     ).toHaveCount(1);
+  });
+
+  test('el avatar abre ajustes en todas las variantes del shell', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await seedDemo(page);
+
+    const accederAjustes = async () => {
+      await page.getByRole('link', { name: 'Ajustes', exact: true }).click();
+      await expect(page).toHaveURL(/\/ajustes$/);
+    };
+
+    await accederAjustes();
+
+    await chooseOption(page, 'Navegación de escritorio', 'Header');
+    await page.goto('/');
+    await accederAjustes();
+
+    await page.setViewportSize({ width: 900, height: 900 });
+    await page.goto('/');
+    await accederAjustes();
+
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto('/');
+    await accederAjustes();
   });
 
   test('deep links y atajo de búsqueda', async ({ page }) => {
@@ -353,6 +384,34 @@ test.describe('shell web', () => {
     await chooseOption(page, 'Navegación de escritorio', 'Header');
     await expect(page.locator('header.sticky.top-0:visible')).toBeVisible();
     await expect.poll(logoHeight).toBe(32);
+  });
+
+  test('el punto del logotipo compacto hace de punto final en la línea base', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await seedDemo(page);
+    const logo = page.locator('aside [role="img"][aria-label="akari"]:visible').first();
+    await expect
+      .poll(async () => Math.round((await logo.boundingBox())?.height ?? 0))
+      .toBe(32);
+
+    const glyph = logo.locator('span[aria-hidden="true"]').first();
+    const dot = logo.locator('span[aria-hidden="true"]').last();
+    await expect
+      .poll(async () => {
+        const glyphBox = await glyph.boundingBox();
+        const dotBox = await dot.boundingBox();
+        if (!glyphBox || !dotBox) return false;
+        const dotCenterY = dotBox.y + dotBox.height / 2;
+        const glyphCenterY = glyphBox.y + glyphBox.height / 2;
+        const baselineGap = glyphBox.y + glyphBox.height - (dotBox.y + dotBox.height);
+        return (
+          dotCenterY > glyphCenterY &&
+          dotBox.x > glyphBox.x + glyphBox.width &&
+          baselineGap >= 1 &&
+          baselineGap <= 12
+        );
+      })
+      .toBe(true);
   });
 
   test('la sidebar se expande sobre el contenido sin redimensionarlo', async ({ page }) => {

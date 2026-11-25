@@ -1,3 +1,5 @@
+import type { BankId } from './banks.js';
+
 export type AccountType = 'personal' | 'joint' | 'deposit';
 export type MovementType = 'expense' | 'income';
 export type Frequency = 'weekly' | 'monthly' | 'yearly';
@@ -20,6 +22,8 @@ export type Account = {
   currency: string;
   initialBalanceMinor: number;
   taeBps?: number | null;
+  /** Banco del catálogo local; ausente en cuentas creadas antes de este campo. */
+  bankId?: BankId | null;
   includeInTotal: boolean;
   members?: Member[];
   archivedAt?: string | null;
@@ -130,6 +134,8 @@ export type Settings = {
   shellMode: ShellMode;
   onboardingCompleted: boolean;
   demoLoaded: boolean;
+  /** Nombre editable del perfil; se resuelve con el valor por defecto si falta. */
+  displayName?: string;
   /** Versión del seed de ejemplo; permite refrescar demos antiguas. */
   demoSeedVersion?: number;
   /** Identificadores de avisos ya vistos; se recorta a los más recientes. */
@@ -142,6 +148,7 @@ export const defaultSettings: Settings = {
   shellMode: 'sidebar',
   onboardingCompleted: false,
   demoLoaded: false,
+  displayName: 'Marta',
 };
 
 export type AccountInput = {
@@ -150,6 +157,7 @@ export type AccountInput = {
   currency: string;
   initialBalanceMinor: number;
   taeBps?: number | null;
+  bankId?: BankId | null;
   includeInTotal?: boolean;
   members?: Member[];
 };

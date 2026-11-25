@@ -18,8 +18,10 @@ import {
 import { useAccounts, useMovements } from '../../components/hooks';
 import { PageTitle } from '../../components/page-title';
 import { PageHeaderResponsive } from '../../components/page-header-responsive';
+import { HeadingMeta } from '../../components/heading-meta';
 import { MovementDetailDialog } from '../../components/movement-detail-dialog';
-import { ActionLink } from '../../components/action-link';
+import { BankIcon } from '../../components/bank-icon';
+import { MovementDialog } from '../../components/movement-dialog';
 import { PageSkeleton } from '../../components/page-skeleton';
 import { downloadCsv, movementsToCsv } from '../../lib/csv';
 import { formatMonthYear, formatShortDate } from '../../lib/format';
@@ -47,6 +49,7 @@ export function MovementsScreen() {
   const [page, setPage] = useState(1);
   const [visible, setVisible] = useState(10);
   const [detailId, setDetailId] = useState<string | null>(null);
+  const [creating, setCreating] = useState(false);
 
   const filtered = useMemo(() => {
     if (!movements) return [];
@@ -80,6 +83,8 @@ export function MovementsScreen() {
   const pageItems = filtered.slice(start, start + pageSize);
   const mobileItems = filtered.slice(0, visible);
   const accountName = (id: string) => accounts.find((account) => account.id === id)?.name ?? '—';
+  const bankIdFor = (id: string) => accounts.find((account) => account.id === id)?.bankId;
+  const accountFilterActive = Boolean(accountId);
   const hasFilters = Boolean(query || type !== 'all' || category !== 'all' || accountId);
 
   const clearFilters = () => {
@@ -99,18 +104,26 @@ export function MovementsScreen() {
     <div>
       <PageTitle title="Movimientos" />
       <Stack gap={5}>
-        <PageHeaderResponsive
-          title="Movimientos"
-          meta={`${filtered.length} movimientos · ${formatMonthYear()}`}
-          actions={
-            <>
-              <Button variant="secondary" onClick={exportCsv}>
-                Exportar CSV
-              </Button>
-              <ActionLink href="/movimientos/nuevo">Añadir movimiento</ActionLink>
-            </>
-          }
-        />
+        <div className="hidden md:block">
+          <PageHeaderResponsive
+            title="Movimientos"
+            actions={
+              <>
+                <Button variant="secondary" onClick={exportCsv}>
+                  Exportar CSV
+                </Button>
+                <Button onClick={() => setCreating(true)}>Añadir movimiento</Button>
+              </>
+            }
+          />
+        </div>
+        <div className="flex flex-wrap items-center gap-2.5 md:hidden">
+          <Button variant="secondary" onClick={exportCsv}>
+            Exportar CSV
+          </Button>
+          <Button onClick={() => setCreating(true)}>Añadir movimiento</Button>
+        </div>
+        <HeadingMeta label={`${filtered.length} movimientos`} detail={formatMonthYear()} />
 
         <div className="flex flex-wrap items-center gap-2.5">
           <SearchField
@@ -153,7 +166,14 @@ export function MovementsScreen() {
                 setAccountId(value);
                 setPage(1);
               }}
-              options={[{ value: '', label: 'Todas las cuentas' }, ...accounts.map((account) => ({ value: account.id, label: account.name }))]}
+              options={[
+                { value: '', label: 'Todas las cuentas' },
+                ...accounts.map((account) => ({
+                  value: account.id,
+                  label: account.name,
+                  icon: <BankIcon bankId={account.bankId} size={16} />,
+                })),
+              ]}
             />
             <SelectPill
               ariaLabel="Orden"
@@ -187,7 +207,7 @@ export function MovementsScreen() {
               hasFilters ? (
                 <Button onClick={clearFilters}>Limpiar filtros</Button>
               ) : (
-                <ActionLink href="/movimientos/nuevo">Añadir movimiento</ActionLink>
+                <Button onClick={() => setCreating(true)}>Añadir movimiento</Button>
               )
             }
           />
@@ -221,7 +241,12 @@ export function MovementsScreen() {
                           onClick={() => setDetailId(movement.id)}
                           className="text-left"
                         >
-                          {movement.concept}
+                          <span className="inline-flex items-center gap-2">
+                            {!accountFilterActive ? (
+                              <BankIcon bankId={bankIdFor(movement.accountId)} />
+                            ) : null}
+                            {movement.concept}
+                          </span>
                         </button>
                       </td>
                       <td className="px-3 text-ui-10 text-text-secondary">{movement.category}</td>
@@ -297,6 +322,8 @@ export function MovementsScreen() {
                       amountMinor={movement.amountMinor}
                       currency={movement.currency}
                       type={movement.type}
+                      icon={accountFilterActive ? null : <BankIcon bankId={bankIdFor(movement.accountId)} />}
+                      iconTone="plain"
                       onClick={() => setDetailId(movement.id)}
                     />
                   ))}
@@ -313,10 +340,12 @@ export function MovementsScreen() {
           </>
         )}
       </Stack>
+      <MovementDialog accounts={accounts} open={creating} onClose={() => setCreating(false)} />
       <MovementDetailDialog
         movementId={detailId}
         open={Boolean(detailId)}
         onClose={() => setDetailId(null)}
+        showBankIcon={!accountId}
       />
     </div>
   );

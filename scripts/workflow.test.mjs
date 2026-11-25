@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import { afterAll, describe, expect, it } from 'vitest';
 import {
   archivedManifest,
+  branchName,
   createManifest,
   claimRef,
   claimRefsFor,
@@ -13,6 +14,7 @@ import {
   deriveChangeId,
   hotFilesChanged,
   isArchivedChange,
+  isValidChangeId,
   parseClaimRef,
   pushAtomicClaim,
   readManifest,
@@ -37,9 +39,16 @@ afterAll(() => {
 });
 
 describe('ids, manifiesto y rutas', () => {
-  it('genera ids kebab-case sin acentos ni signos', () => {
-    expect(slugify('Mejorar el flujo: facturas y avisos')).toBe('mejorar-el-flujo-facturas-y-avisos');
+  it('genera ids kebab-case cortos sin acentos ni signos', () => {
+    expect(slugify('Mejorar el flujo: facturas y avisos')).toBe('mejorar-el-flujo-facturas-y-av');
     expect(deriveChangeId('[otro-id] Arreglar el login')).toBe('arreglar-el-login');
+  });
+
+  it('usa el id del change como nombre de rama y rechaza ids largos', () => {
+    expect(branchName('sidebar-float')).toBe('sidebar-float');
+    expect(isValidChangeId('sidebar-float')).toBe(true);
+    expect(isValidChangeId('a'.repeat(31))).toBe(false);
+    expect(isValidChangeId('Sidebar_Float')).toBe(false);
   });
 
   it('valida y escribe workflow.json', () => {
@@ -52,7 +61,7 @@ describe('ids, manifiesto y rutas', () => {
     writeManifest(root, manifest);
     expect(readManifest(root, 'flujo-prueba')).toMatchObject({
       changeId: 'flujo-prueba',
-      branch: 'feat/flujo-prueba',
+      branch: 'flujo-prueba',
       cards: [{ publicId: 'card-1', title: 'Una' }, { publicId: 'card-2' }],
     });
     expect(readManifest(root, 'no-existe')).toBeNull();
@@ -61,7 +70,7 @@ describe('ids, manifiesto y rutas', () => {
   it('rechaza manifiestos inválidos, duplicados y secretos', () => {
     const base = {
       changeId: 'flujo-prueba',
-      branch: 'feat/flujo-prueba',
+      branch: 'flujo-prueba',
       cards: [{ publicId: 'card-1' }],
       prUrl: null,
     };
@@ -73,7 +82,7 @@ describe('ids, manifiesto y rutas', () => {
       writeManifest(tempDir('akari-manifest-'), { ...base, kan_API_KEY: 'secreto' })
     ).toThrow(/token|apikey|api_key|secret|email|campo/i);
     expect(() =>
-      writeManifest(tempDir('akari-manifest-'), { ...base, branch: 'feat/otra' })
+      writeManifest(tempDir('akari-manifest-'), { ...base, branch: 'otra' })
     ).toThrow(/rama/);
   });
 
