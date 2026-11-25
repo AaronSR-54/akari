@@ -99,21 +99,30 @@ export function PageHeader({
   meta,
   actions,
   breadcrumbs,
+  hideTitleAtLg = false,
 }: {
   title: string;
   description?: string;
   meta?: string;
   actions?: ReactNode;
   breadcrumbs?: ReactNode;
+  hideTitleAtLg?: boolean;
 }) {
   return (
     <header className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
       <div className="flex min-w-0 flex-col gap-2.5">
         {breadcrumbs ? <div className="text-ui-10 text-text-secondary">{breadcrumbs}</div> : null}
         <div className="flex flex-col gap-0.5">
-          <h1 className="text-ui-28-bold text-text-primary">{title}</h1>
+          <h1 className={cn('text-ui-28-bold text-text-primary', hideTitleAtLg && 'lg:hidden')}>{title}</h1>
           {meta || description ? (
-            <p className="max-w-xl text-ui-11 text-text-secondary">{meta ?? description}</p>
+            <p
+              className={cn(
+                'max-w-xl text-ui-11 text-text-secondary',
+                hideTitleAtLg && 'lg:hidden',
+              )}
+            >
+              {meta ?? description}
+            </p>
           ) : null}
         </div>
       </div>

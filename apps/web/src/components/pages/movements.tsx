@@ -9,7 +9,6 @@ import {
   Card,
   Inline,
   MovementRow,
-  PageHeader,
   SearchField,
   SelectPill,
   SegmentedControl,
@@ -19,6 +18,7 @@ import {
 } from '@akari/ui';
 import { useAccounts, useMovements } from '../../components/hooks';
 import { PageTitle } from '../../components/page-title';
+import { PageHeaderResponsive } from '../../components/page-header-responsive';
 import { MovementEditDialog } from '../../components/movement-edit-dialog';
 import { ActionLink } from '../../components/action-link';
 import { PageSkeleton } from '../../components/page-skeleton';
@@ -100,7 +100,7 @@ export function MovementsScreen() {
     <div>
       <PageTitle title="Movimientos" />
       <Stack gap={5}>
-        <PageHeader
+        <PageHeaderResponsive
           title="Movimientos"
           meta={`${filtered.length} movimientos · ${formatMonthYear()}`}
           actions={

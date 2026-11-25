@@ -7,7 +7,6 @@ import {
   Button,
   Card,
   ChartBars,
-  PageHeader,
   SegmentedControl,
   Stack,
   StatePage,
@@ -15,6 +14,7 @@ import {
 } from '@akari/ui';
 import { useQuickAnswers } from '../../components/hooks';
 import { PageTitle } from '../../components/page-title';
+import { PageHeaderResponsive } from '../../components/page-header-responsive';
 import { PageSkeleton } from '../../components/page-skeleton';
 import {
   formatLongDate,
@@ -121,7 +121,7 @@ export function QuestionsScreen() {
     <div>
       <PageTitle title="Preguntas rápidas" />
       <Stack gap={5}>
-        <PageHeader
+        <PageHeaderResponsive
           title="Preguntas rápidas"
           meta={`Respuestas directas sobre tus datos · ${formatMonthYear()}`}
         />

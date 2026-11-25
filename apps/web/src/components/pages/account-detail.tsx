@@ -24,7 +24,6 @@ import {
   InfoRow,
   Modal,
   MovementRow,
-  PageHeader,
   ProgressInstallments,
   SectionHeader,
   StatCard,
@@ -34,6 +33,7 @@ import {
 } from '@akari/ui';
 import { useAccountSummary, useRecurrences } from '../../components/hooks';
 import { PageTitle } from '../../components/page-title';
+import { PageHeaderResponsive } from '../../components/page-header-responsive';
 import { useData } from '../../components/providers';
 import { ActionLink } from '../../components/action-link';
 import { PageSkeleton } from '../../components/page-skeleton';
@@ -118,7 +118,7 @@ export function AccountDetailScreen({ accountId }: { accountId: string }) {
     <div>
       <PageTitle title={account.name} />
       <Stack gap={5.5}>
-        <PageHeader
+        <PageHeaderResponsive
           title={account.name}
           breadcrumbs={
             <span>

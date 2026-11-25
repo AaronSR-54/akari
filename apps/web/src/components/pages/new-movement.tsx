@@ -2,10 +2,11 @@
 
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { PageHeader, Stack, StatePage } from '@akari/ui';
+import { Stack, StatePage } from '@akari/ui';
 import { useAccounts } from '../../components/hooks';
 import { MovementForm } from '../../components/forms/movement-form';
 import { PageTitle } from '../../components/page-title';
+import { PageHeaderResponsive } from '../../components/page-header-responsive';
 import { ActionLink } from '../../components/action-link';
 import { PageSkeleton } from '../../components/page-skeleton';
 
@@ -34,7 +35,7 @@ export function NewMovementScreen() {
   return (
     <Stack gap={5}>
       <PageTitle title="Nuevo movimiento" />
-      <PageHeader
+      <PageHeaderResponsive
         title="Nuevo movimiento"
         description="Un gasto o ingreso; si se repite, akari crea la suscripción."
         breadcrumbs={

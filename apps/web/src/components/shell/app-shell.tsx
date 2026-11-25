@@ -1,10 +1,12 @@
 'use client';
 
 import { useEffect, useState, type ReactNode } from 'react';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { Button, StatePage } from '@akari/ui';
 import { useData, useDataRetry } from '../providers';
 import { useSettings } from '../hooks';
+import { PageTitleProvider, usePageTitle } from '../page-title';
+import { routeTitles } from '../nav';
 import {
   DesktopHeader,
   HeaderNav,
@@ -17,10 +19,20 @@ import { SearchDialog } from './search-dialog';
 import { PageSkeleton } from '../page-skeleton';
 
 export function AppShell({ children }: { children: ReactNode }) {
+  return (
+    <PageTitleProvider>
+      <AppShellInner>{children}</AppShellInner>
+    </PageTitleProvider>
+  );
+}
+
+function AppShellInner({ children }: { children: ReactNode }) {
   const { ready, error } = useData();
   const retry = useDataRetry();
   const settings = useSettings();
   const router = useRouter();
+  const pathname = usePathname();
+  const { title, meta } = usePageTitle();
   const [searchOpen, setSearchOpen] = useState(false);
 
   useEffect(() => {
@@ -42,6 +54,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   const sidebarMode = settings?.shellMode !== 'header';
   const showApp = ready && settings?.onboardingCompleted;
+  const headerTitle = title || routeTitles[pathname ?? ''] || '';
 
   return (
     <div className="min-h-screen bg-surface-canvas lg:p-4">
@@ -57,7 +70,9 @@ export function AppShell({ children }: { children: ReactNode }) {
           {sidebarMode ? null : <HeaderNav onOpenSearch={() => setSearchOpen(true)} />}
           <TabletHeader />
           <MobileTopBar onOpenSearch={() => setSearchOpen(true)} />
-          {sidebarMode ? <DesktopHeader onOpenSearch={() => setSearchOpen(true)} /> : null}
+          {sidebarMode ? (
+            <DesktopHeader title={headerTitle} meta={meta} onOpenSearch={() => setSearchOpen(true)} />
+          ) : null}
           <main id="contenido" className="flex-1 px-5 pb-24 pt-6 md:px-6 md:pb-8 lg:px-8">
             {error ? (
               <StatePage

@@ -20,7 +20,6 @@ import {
   Card,
   Inline,
   Modal,
-  PageHeader,
   SectionHeader,
   SelectPill,
   SettingRow,
@@ -30,6 +29,7 @@ import {
 } from '@akari/ui';
 import { useSettings } from '../../components/hooks';
 import { PageTitle } from '../../components/page-title';
+import { PageHeaderResponsive } from '../../components/page-header-responsive';
 import { useData } from '../../components/providers';
 import { PageSkeleton } from '../../components/page-skeleton';
 
@@ -140,7 +140,7 @@ export function SettingsScreen() {
     <div>
       <PageTitle title="Datos y sincronización" />
       <Stack gap={5}>
-        <PageHeader
+        <PageHeaderResponsive
           title="Datos y sincronización"
           meta="La base local vive en este dispositivo. La nube es opcional y aún no está activa."
           actions={

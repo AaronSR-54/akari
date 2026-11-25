@@ -39,13 +39,16 @@ test.describe('shell web', () => {
     const aside = page.locator('aside');
     const header = page.locator('header.h-\\[72px\\]');
     await expect(header).toBeVisible();
-    await expect(header).not.toContainText('Datos y sincronización');
+    await expect(header).toContainText('Datos y sincronización');
+    await expect(header).toContainText('La base local vive en este dispositivo');
     await expect(page.getByRole('heading', { name: 'Datos y sincronización', level: 1 })).toHaveCount(1);
+    await expect(header.getByRole('heading', { name: 'Datos y sincronización', level: 1 })).toBeVisible();
+    await expect(page.locator('main').getByText('La base local vive en este dispositivo')).toBeHidden();
     const before = { aside: await aside.boundingBox(), header: await header.boundingBox() };
     expect(before.header?.y).toBe(0);
-    const title = page.getByRole('heading', { name: 'Datos y sincronización', level: 1 });
-    const titleBox = await title.boundingBox();
-    const gap = (titleBox?.y ?? 0) - ((before.header?.y ?? 0) + (before.header?.height ?? 0));
+    const contentHeader = page.locator('main header').first();
+    const contentBox = await contentHeader.boundingBox();
+    const gap = (contentBox?.y ?? 0) - ((before.header?.y ?? 0) + (before.header?.height ?? 0));
     expect(gap).toBeGreaterThanOrEqual(24);
 
     await page.evaluate(() => window.scrollTo(0, 220));
@@ -55,6 +58,16 @@ test.describe('shell web', () => {
     expect(after.aside?.y).toBe(before.aside?.y);
     expect(after.header?.y).toBe(0);
     await expect(header).toBeVisible();
+  });
+
+  test('el subtítulo dinámico del resumen va a la cabecera', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await seedDemo(page);
+
+    const header = page.locator('header.h-\\[72px\\]');
+    await expect(header).toContainText('domingo, 29 de noviembre');
+    await expect(page.locator('main').getByText('domingo, 29 de noviembre', { exact: false })).toBeHidden();
+    await expect(page).toHaveTitle('Resumen · akari', { timeout: 30_000 });
   });
 
   test('el título respira bajo la barra en móvil', async ({ page }) => {
@@ -141,7 +154,7 @@ test.describe('shell web', () => {
 
     await aside.getByRole('link', { name: 'Movimientos' }).focus();
     await expect(aside).toHaveAttribute('data-expanded', 'true');
-    await page.locator('main').getByRole('heading', { level: 1 }).click();
+    await page.locator('header.h-\\[72px\\]').getByRole('heading', { level: 1 }).click();
     await expect(aside).toHaveAttribute('data-expanded', 'false');
   });
 

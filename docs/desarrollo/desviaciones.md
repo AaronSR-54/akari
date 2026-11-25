@@ -98,3 +98,11 @@ Quedan fuera, además de las superficies nativas: la creación de planes de plaz
 - **Motivo:** la tarjeta `wgqrx4qnq4ed` pide difuminar el fondo al abrir las modales.
 - **Consecuencia:** el fondo se ve desenfocado, un efecto que el diseño congelado no recoge.
 - **Cierre:** solo si la persona usuaria reabre la fase de diseño; hasta entonces la implementación se mantiene y la spec afectada es `producto/componentes`.
+
+## 15. Título en la cabecera sidebar (change `fix-mover-el-titulo-de-la-pagina-al-header-cuando-estamos-en-al-vista-sidebar`)
+
+- **Diseño:** la cabecera de la variante sidebar no muestra el título; el H1 y el subtítulo viven solo en el contenido.
+- **Implementación:** `DesktopHeader` muestra el título como único `h1` y su subtítulo (`meta`) debajo en escritorio; el `PageHeader` del contenido oculta ambos en `lg` con `hideTitleAtLg`.
+- **Motivo:** la tarjeta `vg0xdmgej32g` pide mover el título a la cabecera en vista sidebar; el usuario amplió el alcance para incluir también el subtítulo (fecha y número de cuentas del resumen).
+- **Consecuencia:** título y subtítulo permanecen fijos arriba en escritorio; en tablet/móvil y variante `header` siguen en el contenido.
+- **Cierre:** solo si la persona usuaria reabre la fase de diseño; hasta entonces la implementación se mantiene y la trazabilidad vive en `producto/shell-web`.

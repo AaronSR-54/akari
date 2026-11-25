@@ -14,7 +14,6 @@ import {
   Button,
   Card,
   Inline,
-  PageHeader,
   SectionHeader,
   SelectField,
   SelectPill,
@@ -25,6 +24,7 @@ import {
 import { GroupExpenseForm } from '../../components/forms/group-expense-form';
 import { useAccounts, useGroupSummary } from '../../components/hooks';
 import { PageTitle } from '../../components/page-title';
+import { PageHeaderResponsive } from '../../components/page-header-responsive';
 import { useData } from '../../components/providers';
 import { ActionLink } from '../../components/action-link';
 import { GroupStatusBadge } from '../../components/group-status-badge';
@@ -108,7 +108,7 @@ export function GroupDetailScreen({ groupId }: { groupId: string }) {
     <div>
       <PageTitle title={group.name} />
       <Stack gap={5}>
-        <PageHeader
+        <PageHeaderResponsive
           title={group.name}
           breadcrumbs={
             <span>

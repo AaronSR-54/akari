@@ -13,13 +13,13 @@ import {
   Icon,
   MonthBalance,
   MovementRow,
-  PageHeader,
   SectionHeader,
   Stack,
   StatePage,
 } from '@akari/ui';
 import { useOverview } from '../hooks';
 import { PageTitle } from '../page-title';
+import { PageHeaderResponsive } from '../page-header-responsive';
 import { ActionLink } from '../action-link';
 import { PageSkeleton } from '../page-skeleton';
 import { appNow } from '../../lib/clock';
@@ -324,7 +324,7 @@ export function DashboardScreen() {
   if (overview.accounts.length === 0) {
     return (
       <Stack gap={5.5}>
-        <PageHeader
+        <PageHeaderResponsive
           title={`${greeting()}, Marta`}
           meta="Aún no hay cuentas · datos en este dispositivo"
           actions={
@@ -349,7 +349,7 @@ export function DashboardScreen() {
   return (
     <Stack gap={5.5}>
       <PageTitle title="Resumen" />
-      <PageHeader
+      <PageHeaderResponsive
         title={`${greeting()}, Marta`}
         meta={`${formatFullDate()} · ${overview.accounts.length} cuentas en este dispositivo`}
       />

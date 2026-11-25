@@ -1,10 +1,11 @@
 'use client';
 
 import Link from 'next/link';
-import { PageHeader, Stack, StatePage } from '@akari/ui';
+import { Stack, StatePage } from '@akari/ui';
 import { AccountForm } from '../forms/account-form';
 import { useAccount } from '../hooks';
 import { PageTitle } from '../page-title';
+import { PageHeaderResponsive } from '../page-header-responsive';
 import { PageSkeleton } from '../page-skeleton';
 import { ActionLink } from '../action-link';
 
@@ -29,7 +30,7 @@ export function AccountEditScreen({ accountId }: { accountId: string }) {
   return (
     <Stack gap={5}>
       <PageTitle title={`Editar ${account.name}`} />
-      <PageHeader
+      <PageHeaderResponsive
         title={`Editar ${account.name}`}
         description="Cambiar el saldo inicial recalcula el saldo y los agregados."
         breadcrumbs={
