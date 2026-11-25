@@ -1,0 +1,12 @@
+{
+  "changeId": "bank-stack",
+  "branch": "bank-stack",
+  "cards": [
+    {
+      "publicId": "68jidm1vqesc",
+      "title": "feat: añadir stack de bancos"
+    }
+  ],
+  "prUrl": null,
+  "claimedAt": "2026-11-25T19:19:22.851Z"
+}
