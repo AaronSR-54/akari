@@ -7,19 +7,19 @@ Define la presentación editorial del resumen: el saldo total sobre el lienzo, l
 
 ### Requirement: Hero del resumen sin contenedor
 
-El dashboard SHALL presentar el saldo total y la evolución del saldo del mes sobre el lienzo, sin borde, fondo, sombra ni tarjeta, y SHALL componer el hero como retícula 2×2 con saldo, gráfica, últimos movimientos y balance del mes, manteniendo Cuentas y Cuota unificada por debajo del hero.
+El dashboard SHALL presentar el saldo total y la evolución del saldo del mes sobre el lienzo, sin borde, fondo, sombra ni tarjeta, y SHALL componer el hero con saldo, gráfica, últimos movimientos, balance del mes y accesos rápidos, manteniendo Cuentas y Cuota unificada por debajo del hero.
 
 #### Scenario: Hero sin caja
 
 - **WHEN** se abre el dashboard con al menos una cuenta
 - **THEN** el saldo total y la gráfica del saldo del mes aparecen sobre el lienzo sin contenedor propio
-- **AND** el hero muestra en la fila 1 saldo y gráfica, y en la fila 2 últimos movimientos y balance del mes
+- **AND** el hero muestra en la columna izquierda saldo y últimos movimientos, y en la derecha gráfica, balance del mes y accesos rápidos
 - **AND** las secciones de cuentas y cuota unificada siguen visibles debajo del hero
 
 #### Scenario: Viewport estrecho
 
 - **WHEN** el ancho disponible no permite mostrar dos columnas en el hero
-- **THEN** los cuatro bloques se apilan en una columna en el orden saldo, gráfica, últimos movimientos, balance
+- **THEN** los bloques se apilan en una columna en el orden saldo, gráfica, últimos movimientos, balance, accesos rápidos
 - **AND** el bloque de saldo se centra horizontalmente
 - **AND** la gráfica y el panel de últimos movimientos van unidos sin separación
 - **AND** ninguno recupera borde ni fondo de tarjeta
@@ -109,7 +109,7 @@ El dashboard SHALL mostrar «Balance del mes» en una tarjeta justo debajo de la
 
 ### Requirement: Unión de la gráfica y la tarjeta
 
-El hero SHALL componerse de dos columnas independientes de igual anchura: a la izquierda saldo y últimos movimientos con aire entre ambos, a la derecha gráfica y balance unidos. La tarjeta de balance SHALL ir por delante de la gráfica, sin borde superior, con una sombra superior sutil y recortando el área ámbar en sus esquinas, limitada a la altura de su contenido. La gráfica SHALL mantener una altura mínima mayor en desktop para que ambas columnas terminen a la misma altura de contenido.
+El hero SHALL componerse de dos columnas independientes de igual anchura y de igual altura: a la izquierda saldo y últimos movimientos con aire entre ambos, a la derecha gráfica, balance y accesos. La tarjeta de balance SHALL ir por delante de la gráfica, sin borde superior, con una sombra superior sutil y recortando el área ámbar en sus esquinas, limitada a la altura de su contenido. En desktop, la gráfica SHALL adaptar su altura para que ambas columnas terminen siempre a la misma altura, sin alterar el tamaño del panel de últimos movimientos.
 
 #### Scenario: Sin línea de separación
 
@@ -124,11 +124,19 @@ El hero SHALL componerse de dos columnas independientes de igual anchura: a la i
 
 #### Scenario: Columnas equilibradas
 
-- **WHEN** se abre el resumen en desktop con movimientos y proyección de ejemplo
-- **THEN** ambas columnas empiezan a la misma altura y terminan a la misma altura de contenido
+- **WHEN** se abre el resumen en desktop con cualquier cantidad de movimientos
+- **THEN** ambas columnas empiezan a la misma altura y terminan siempre a la misma altura
 - **AND** entre el saldo y los últimos movimientos hay aire visible
 - **AND** la gráfica y la tarjeta de balance van unidas sin separación
-- **AND** la gráfica absorbe la altura restante para igualar los fondos
+- **AND** la gráfica adapta su altura a la columna izquierda (mínimo 160px) para igualar los fondos
+- **AND** la columna izquierda reparte su hueco como aire, sin cambiar el tamaño del panel de últimos movimientos
+
+#### Scenario: Final del área redondeado
+
+- **WHEN** aún faltan días para el final de mes y el relleno se extiende en plano hasta el borde derecho
+- **THEN** la esquina superior del final del área se redondea con el mismo radio que el panel
+- **AND** el inicio del área se mantiene recto
+- **AND** con el mes completo el trazado no cambia
 
 #### Scenario: Signo y color
 
@@ -164,7 +172,7 @@ La demo SHALL usar una fecha fija y un histórico de varios meses para que el sa
 
 ### Requirement: Sin gráficos semanales ni tarjetas duplicadas
 
-El dashboard MUST NOT mostrar el gráfico semanal de movimientos ni duplicar el balance del mes o la cuota en el hero, y SHALL conservar el acceso a «Preguntas rápidas» dentro del panel de últimos movimientos.
+El dashboard MUST NOT mostrar el gráfico semanal de movimientos ni duplicar el balance del mes o la cuota en el hero, y SHALL conservar el acceso a «Preguntas rápidas» en el panel de accesos rápidos.
 
 #### Scenario: Un único balance del mes
 
@@ -181,8 +189,9 @@ El dashboard MUST NOT mostrar el gráfico semanal de movimientos ni duplicar el 
 #### Scenario: Acceso conservado
 
 - **WHEN** la persona busca las preguntas rápidas desde el resumen
-- **THEN** encuentra un enlace visible dentro del panel de últimos movimientos que lleva a `/preguntas`
-- **AND** el panel conserva el enlace «Ver todos» hacia `/movimientos`
+- **THEN** encuentra un acceso visible dentro del panel de accesos rápidos que lleva a `/preguntas`
+- **AND** el panel de últimos movimientos conserva el enlace «Ver todos» hacia `/movimientos`
+- **AND** no hay un segundo enlace a preguntas rápidas en el panel de últimos movimientos
 
 ### Requirement: Entrada animada del hero
 

@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { Avatar, Icon, IconBell, IconButton, IconSearch, Logo, cn } from '@akari/ui';
-import { isActivePath, navItems } from '../nav';
+import { isActivePath, navItems, type NavItem } from '../nav';
 
 const initials = 'MR';
 const displayName = 'Marta';
@@ -249,37 +249,50 @@ export function MobileTopBar({ onOpenSearch }: { onOpenSearch: () => void }) {
 
 export function MobileNav() {
   const pathname = usePathname();
+  const renderTab = (item: NavItem) => {
+    const active = isActivePath(pathname, item.href);
+    return (
+      <li key={item.href} className="flex-1">
+        <Link
+          href={item.href}
+          aria-current={active ? 'page' : undefined}
+          className={cn(
+            'flex min-h-11 flex-col items-center justify-center gap-1 rounded-lg px-1 py-1 text-ui-9-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring',
+            active ? 'text-text-primary' : 'text-text-tertiary',
+          )}
+        >
+          <span
+            className={cn(
+              'inline-flex h-7 w-12 items-center justify-center rounded-full',
+              active && 'bg-text-primary text-text-inverse',
+            )}
+          >
+            <Icon name={item.icon} size={20} />
+          </span>
+          {item.label}
+        </Link>
+      </li>
+    );
+  };
+  const addActive = isActivePath(pathname, '/movimientos/nuevo');
   return (
     <nav
       aria-label="Navegación principal"
       className="safe-bottom fixed inset-x-0 bottom-0 z-40 border-t border-border-subtle bg-surface-default md:hidden"
     >
       <ul className="mx-auto flex max-w-md items-center justify-around px-2 py-1.5">
-        {navItems.map((item) => {
-          const active = isActivePath(pathname, item.href);
-          return (
-            <li key={item.href} className="flex-1">
-              <Link
-                href={item.href}
-                aria-current={active ? 'page' : undefined}
-                className={cn(
-                  'flex min-h-11 flex-col items-center justify-center gap-1 rounded-lg px-1 py-1 text-ui-9-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring',
-                  active ? 'text-text-primary' : 'text-text-tertiary',
-                )}
-              >
-                <span
-                  className={cn(
-                    'inline-flex h-7 w-12 items-center justify-center rounded-full',
-                    active && 'bg-text-primary text-text-inverse',
-                  )}
-                >
-                  <Icon name={item.icon} size={20} />
-                </span>
-                {item.label}
-              </Link>
-            </li>
-          );
-        })}
+        {navItems.slice(0, 2).map(renderTab)}
+        <li className="flex flex-1 justify-center">
+          <Link
+            href="/movimientos/nuevo"
+            aria-label="Añadir movimiento"
+            aria-current={addActive ? 'page' : undefined}
+            className="bg-accent-default text-accent-ink flex h-14 w-14 -translate-y-3 items-center justify-center rounded-full elevation-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+          >
+            <Icon name="add" size={24} />
+          </Link>
+        </li>
+        {navItems.slice(2).map(renderTab)}
       </ul>
     </nav>
   );
