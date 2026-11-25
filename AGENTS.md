@@ -60,7 +60,11 @@ Cada trabajo nuevo empieza en una tarjeta de `TO DO` del tablero autoalojado de 
 4. Proponer, aplicar y archivar el change.
 5. Abrir la PR, mover las tarjetas a `DONE` y limpiar el claim.
 
-Un change = una rama `feat/<change-id>` = un worktree = una sesión. No edites `main` ni abras dos sesiones sobre el mismo worktree.
+Un change = una rama = un worktree = una sesión. La rama se llama **exactamente igual que el id del change**, sin prefijo `feat/`. No edites `main` ni abras dos sesiones sobre el mismo worktree.
+
+### Convención de nombres
+
+El id del change es corto (≤30 caracteres), en inglés, en minúsculas y con guiones (`sidebar-float`); no copies el título literal de la tarjeta. Pasa `--change <id>` al reclamar si el id derivado es largo. Todos los mensajes de commit —los que genera `kan-sync` y los que escribas a mano— van en inglés (`chore(<change-id>): claim cards and create worktree`).
 
 ### Revisar la cola
 
@@ -100,12 +104,13 @@ E2E:   npm run e2e:worktree
 - No abras dos sesiones sobre el mismo worktree ni edites dos worktrees desde una sola sesión.
 - El checkout principal permanece en `main`; no lo uses para editar una tarea.
 - `.env` se lee del checkout principal mediante el directorio común de Git. No copies `.env` a los worktrees.
-- Los puertos se guardan en `.opsx/ports.json` (ignorado por Git). `dev:worktree` arranca Next en el puerto del worktree y `e2e:worktree` ejecuta Playwright con su `E2E_PORT`. No ejecutes los dos a la vez en el mismo worktree: comparten `.next`.
+- Los puertos se guardan en `.opsx/ports.json` (ignorado por Git). El primer worktree usa el puerto 3100 para desarrollo y E2E; si está ocupado, toma el primer puerto libre (3101, 3102…). `dev:worktree` arranca Next en ese puerto y `e2e:worktree` ejecuta Playwright con su `E2E_PORT`. `e2e:worktree` detiene y reanuda el frontal automáticamente; no ejecutes `dev:worktree` a la vez: comparten `.next`.
 
 ### Aplicar y archivar
 
-- **Al aplicar o retomar** (`/opsx-apply`): confirma que estás en el worktree del change y en `feat/<change-id>`. No muevas la tarjeta; sigue en `IN PROGRESS` o `REVIEW`.
-- **Al archivar** (`openspec archive`, skill `openspec-archive-change`): trabaja en la rama del change, archiva, commitear solo el alcance del change, publica la rama y abre la PR.
+- **Al aplicar o retomar** (`/opsx-apply`): confirma que estás en el worktree del change y en la rama `<change-id>`. Ejecuta `npm run preview:worktree` justo antes de empezar la implementación: deja el frontal abierto en segundo plano con la URL impresa para que se pueda revisar. No muevas la tarjeta; sigue en `IN PROGRESS` o `REVIEW`.
+- **Revisión del frontal.** `npm run preview:worktree:status` imprime la URL. `npm run e2e:worktree` detiene y reanuda el frontal automáticamente, así que no hace falta cerrarlo antes de las pruebas.
+- **Al archivar** (`openspec archive`, skill `openspec-archive-change`): ejecuta `npm run preview:worktree:stop` antes de mover el change al archivo, para cerrar el frontal. Trabaja en la rama del change, archiva, commitea solo el alcance del change, publica la rama y abre la PR. `kan-sync done` también intenta detenerlo como red de seguridad.
 - **PR.** Usa `node scripts/kan-sync.mjs pr-body <change-id>` como borrador, `gh pr create --base main` con la plantilla y no mergees ni cierres la PR.
 - **DONE.** Después de abrir la PR, ejecuta `node scripts/kan-sync.mjs done <change-id> --pr <url>`. Mueve todas las tarjetas del manifiesto a `DONE`, registra la URL y commitea el manifiesto. La PR sigue abierta: `DONE` significa «archivado y PR abierta», no «mergeado».
 - **Sin merge.** La revisión y el merge quedan en manos de una persona. Al terminar, informa la URL de la PR y las verificaciones.
@@ -121,6 +126,10 @@ node scripts/kan-sync.mjs release <change-id> [--force]
 ```
 
 `review` requiere que exista `lists.review` en `kan.config.json` y la lista `REVIEW` en el tablero. `release` se niega si el change está archivado, hay una PR abierta o el worktree tiene cambios sin commitear, salvo `--force`.
+
+### Identidad en Kan
+
+Antes de escribir en Kan, ejecuta `node scripts/kan-sync.mjs whoami`: imprime el email y el miembro configurados en `kan_CURRENT_USER` del `.env` del checkout principal. Usa **siempre** ese correo para identificar tus cambios; no lo hardcodees ni asumas el dueño del token. Para comentar una tarjeta, usa `node scripts/kan-sync.mjs comment <change-id> "<texto>"`: el texto queda firmado como `[<email>] <texto>`. Ningún correo real se escribe en código, docs, manifiestos ni commits.
 
 ### Conflictos y limpieza
 

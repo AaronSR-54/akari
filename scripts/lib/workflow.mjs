@@ -4,6 +4,7 @@ import { basename, dirname, join, resolve } from 'node:path';
 import { KanSyncError } from './errors.mjs';
 
 const CHANGE_ID = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+export const MAX_CHANGE_ID_LENGTH = 30;
 
 export const HOT_FILES = [
   'AGENTS.md',
@@ -25,12 +26,12 @@ export function slugify(text) {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '')
-    .slice(0, 80)
+    .slice(0, MAX_CHANGE_ID_LENGTH)
     .replace(/-+$/g, '');
 }
 
 export function isValidChangeId(value) {
-  return typeof value === 'string' && value.length > 0 && value.length <= 80 && CHANGE_ID.test(value);
+  return typeof value === 'string' && value.length > 0 && value.length <= MAX_CHANGE_ID_LENGTH && CHANGE_ID.test(value);
 }
 
 export function deriveChangeId(title) {
@@ -43,7 +44,7 @@ export function deriveChangeId(title) {
 }
 
 export function branchName(changeId) {
-  return `feat/${changeId}`;
+  return changeId;
 }
 
 export function manifestPath(root, changeId) {
@@ -90,7 +91,7 @@ export function validateManifest(data) {
   }
   assertNoSecrets(data);
   if (!isValidChangeId(data.changeId)) {
-    throw new KanSyncError('workflow.json tiene un "changeId" inválido.', 'MANIFEST_INVALID');
+    throw new KanSyncError('workflow.json tiene un "changeId" inválido: inglés, minúsculas, guiones y 30 caracteres como máximo.', 'MANIFEST_INVALID');
   }
   if (data.branch !== branchName(data.changeId)) {
     throw new KanSyncError(`workflow.json debe usar la rama "${branchName(data.changeId)}".`, 'MANIFEST_INVALID');

@@ -13,8 +13,10 @@ import {
 import { KanSyncError } from './lib/errors.mjs';
 import {
   DEFAULT_TIMEOUT_MS,
+  addCardComment,
   appendChangeMarker,
   assignCard,
+  buildCommentText,
   createClient,
   discover,
   doneChange,
@@ -22,6 +24,7 @@ import {
   findCardByPublicId,
   memberName,
   moveCard,
+  pickCard,
   queue,
   removeChangeMarker,
   removeCardMember,
@@ -67,8 +70,10 @@ export {
 export { KanSyncError } from './lib/errors.mjs';
 export {
   DEFAULT_TIMEOUT_MS,
+  addCardComment,
   appendChangeMarker,
   appendPrUrl,
+  buildCommentText,
   buildCreateCard,
   buildMoveCard,
   changeLine,
@@ -81,6 +86,7 @@ export {
   flattenCards,
   matchCards,
   memberName,
+  pickCard,
   queue,
   queuePayload,
   removeChangeMarker,
@@ -99,6 +105,8 @@ const USAGE = `Uso:
   node scripts/kan-sync.mjs release <change-id> [--force] [--dry-run]
   node scripts/kan-sync.mjs pr-body <change-id> [--archive]
   node scripts/kan-sync.mjs check <change-id>
+  node scripts/kan-sync.mjs whoami
+  node scripts/kan-sync.mjs comment <change-id> <texto> [--dry-run]
   node scripts/kan-sync.mjs start <change-id> [--title "texto"] [--card <publicId>] [--dry-run]
   node scripts/kan-sync.mjs discover [--base-url URL] [--board <publicId>] [--json]
 
@@ -444,7 +452,7 @@ export async function claimCommand({
         runGit,
         worktree,
         changeId: resolvedChangeId,
-        message: `chore(${resolvedChangeId}): reclamar tarjetas y crear worktree`,
+        message: `chore(${resolvedChangeId}): claim cards and create worktree`,
       });
       const tags = cards.map((card) => claimTag(card.publicId, resolvedChangeId));
       for (const card of cards) {
@@ -583,7 +591,7 @@ async function linkCommand({ changeId, cardIds, config, env, fetchImpl, dryRun, 
     runGit,
     worktree: root,
     changeId,
-    message: `chore(${changeId}): enlazar ${cards.map((card) => card.publicId).join(', ')}`,
+    message: `chore(${changeId}): link cards ${cards.map((card) => card.publicId).join(', ')}`,
   });
   runGit(['push', 'origin', `HEAD:refs/heads/${next.branch}`], { cwd: root });
 
@@ -659,12 +667,68 @@ async function doneCommand({ changeId, config, env, fetchImpl, dryRun, cardPubli
       worktree: root,
       changeId,
       changePath,
-      message: `chore(${changeId}): registrar la PR`,
+      message: `chore(${changeId}): record PR`,
     });
     runGit(['push', 'origin', `HEAD:refs/heads/${next.branch}`], { cwd: root });
   }
   if (!prUrl) log('Aviso: no se registró ninguna PR; pasa --pr <url> cuando la abras.');
+  if (!dryRun) stopPreview({ cwd: root, log });
   return result;
+}
+
+function stopPreview({ cwd, log }) {
+  try {
+    const result = spawnSync('npm', ['run', 'preview:worktree:stop'], {
+      cwd,
+      encoding: 'utf8',
+      stdio: 'pipe',
+    });
+    if (result.status === 0) return true;
+    const detail = (result.stderr || result.stdout || '').trim();
+    log(`Aviso: no se pudo detener el frontal de revisión${detail ? `: ${detail}` : '.'}`);
+    return false;
+  } catch (error) {
+    log(`Aviso: no se pudo detener el frontal de revisión: ${error.message}`);
+    return false;
+  }
+}
+
+export async function whoamiCommand({ config, env, fetchImpl, log }) {
+  const client = createClient({
+    baseUrl: config.baseUrl,
+    apiKey: requireApiKey(env),
+    fetchImpl,
+    timeoutMs: config.timeoutMs,
+  });
+  const board = await client.request(`/boards/${config.boardPublicId}`);
+  const member = await resolveTargetMember({ board, env, client });
+  log(`email: ${member.email}`);
+  log(`memberPublicId: ${member.publicId}`);
+  log(`name: ${memberName(member)}`);
+  return member;
+}
+
+export async function commentCommand({ changeId, text, config, env, fetchImpl, dryRun, log, cardPublicId }) {
+  const client = createClient({
+    baseUrl: config.baseUrl,
+    apiKey: requireApiKey(env),
+    fetchImpl,
+    timeoutMs: config.timeoutMs,
+  });
+  const board = await client.request(`/boards/${config.boardPublicId}`);
+  const member = await resolveTargetMember({ board, env, client });
+  const card = pickCard(board, { changeId, cardPublicId });
+  if (!card) {
+    throw new KanSyncError(`No hay ninguna tarjeta para el change "${changeId}".`, 'CARD_NOT_FOUND');
+  }
+  const comment = buildCommentText(member.email, text);
+  if (dryRun) {
+    log(`[dry-run] comentario en ${card.publicId}: ${comment}`);
+    return { dryRun: true, card: card.publicId, comment };
+  }
+  await addCardComment({ client, card, text: comment });
+  log(`Comentario publicado en ${card.publicId} como ${member.email}.`);
+  return { dryRun: false, card: card.publicId, comment };
 }
 
 function checkCommand({ changeId, cwd, runGit = execGit, log = () => {} }) {
@@ -724,9 +788,9 @@ async function releaseCommand({ changeId, config, env, fetchImpl, dryRun, force,
     .split(/\r?\n/)
     .filter(Boolean);
   const claimCommitPrefixes = [
-    `chore(${changeId}): reclamar`,
-    `chore(${changeId}): enlazar`,
-    `chore(${changeId}): registrar la PR`,
+    `chore(${changeId}): claim`,
+    `chore(${changeId}): link`,
+    `chore(${changeId}): record PR`,
   ];
   const workCommits = commits.filter(
     (line) => !claimCommitPrefixes.some((prefix) => line.includes(prefix))
@@ -926,6 +990,11 @@ export async function run(argv, { env = process.env, log = console.log, logError
 
     const config = { ...readConfig({ configFile }), timeoutMs };
 
+    if (command === 'whoami') {
+      await whoamiCommand({ config, env: mergedEnv, fetchImpl: globalThis.fetch, log });
+      return 0;
+    }
+
     if (command === 'queue') {
       await queue({ config, env: mergedEnv, fetchImpl: globalThis.fetch, json: values.json, log });
       return 0;
@@ -988,6 +1057,12 @@ export async function run(argv, { env = process.env, log = console.log, logError
       await startChange({ ...options, title: values.title, cardPublicId: values.card, cards: manifest?.cards });
     } else if (command === 'done') {
       await doneCommand({ ...options, cardPublicId: values.card, prUrl: values.pr, noCheck: Boolean(values['no-check']) });
+    } else if (command === 'comment') {
+      await commentCommand({
+        ...options,
+        text: positionals.slice(2).join(' '),
+        cardPublicId: values.card,
+      });
     } else if (command === 'review') {
       await reviewCommand(options);
     } else if (command === 'release') {

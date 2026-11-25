@@ -5,7 +5,7 @@ Este documento describe cómo varias personas —o varias sesiones de OpenCode�
 ## Requisitos
 
 - Node.js ≥ 20.9 y `npm` para el runtime; la CI usa Node 24 LTS porque `jsdom 31`/`undici 8` requieren ≥22.19.
-- Un `.env` en el checkout principal con `kan_API_KEY` y, si quieres una identidad concreta, `kan_CURRENT_USER`. Nunca se commitea.
+- Un `.env` en el checkout principal con `kan_API_KEY` y `kan_CURRENT_USER` (email de un miembro activo). Nunca se commitea.
 - `kan.config.json` versionado con la URL de Kan, el tablero y las listas `todo`, `inProgress` y `done`. `review` es opcional.
 - `gh` autenticado para abrir PRs y comprobar el estado de una PR al liberar un claim.
 - Para `review`, una lista `REVIEW` en el tablero y `lists.review` en la configuración.
@@ -36,7 +36,7 @@ node scripts/kan-sync.mjs queue --json
 }
 ```
 
-`claimable` se calcula contra la identidad de `kan_CURRENT_USER` o la persona dueña del token. Los agentes deben usar `queue --json` antes de proponer un claim y no inventar `publicId`.
+`claimable` se calcula contra la identidad de `kan_CURRENT_USER`. Los agentes deben usar `queue --json` antes de proponer un claim y no inventar `publicId`. Con `kan-sync whoami` comprueban qué email están usando; con `kan-sync comment <change-id> "<texto>"` escriben comentarios firmados con ese email.
 
 ### Disparadores para el agente
 
@@ -57,7 +57,7 @@ node scripts/kan-sync.mjs claim h4isbq13sxo7 --change mejorar-facturas
 node scripts/kan-sync.mjs claim card-a card-b card-c --change mejorar-facturas
 ```
 
-Si hay más de una tarjeta, `--change` es obligatorio: el id debe describir el grupo.
+Si hay más de una tarjeta, `--change` es obligatorio: el id debe describir el grupo. El id del change —y por tanto la rama— es corto (≤30 caracteres), en inglés, minúsculas y con guiones; los commits también van en inglés. No copies el título literal de la tarjeta como id.
 
 Preflight de `claim`:
 
@@ -69,7 +69,7 @@ Preflight de `claim`:
 
 Después crea:
 
-- rama `feat/<change-id>` desde `origin/main`;
+- rama `<change-id>` desde `origin/main`;
 - worktree fuera del checkout principal;
 - scaffold de OpenSpec si el change no existe;
 - `openspec/changes/<change-id>/workflow.json`;
@@ -100,13 +100,14 @@ Resuelve rama, worktree, puertos y tarjetas sin crear nada.
 El claim imprime:
 
 ```text
-Change: mejorar-facturas
-Rama: feat/mejorar-facturas
-Worktree: /ruta/a/akari-worktrees/mejorar-facturas
-Puertos: dev=3102 e2e=4102
-Abrir: opencode /ruta/a/akari-worktrees/mejorar-facturas
+Change: facturas-panel
+Rama: facturas-panel
+Worktree: /ruta/a/akari-worktrees/facturas-panel
+Puertos: dev=3100 e2e=3100
+Abrir: opencode /ruta/a/akari-worktrees/facturas-panel
 Dev:   npm run dev:worktree
 E2E:   npm run e2e:worktree
+Preview: npm run preview:worktree
 ```
 
 Reglas:
@@ -129,8 +130,9 @@ opencode .
 ```
 
 - `/opsx-propose`: si el claim ya creó el scaffold, continúa ese change; no ejecutes `openspec new change` para duplicarlo.
-- `/opsx-apply`: implementa las tareas en el worktree.
-- `openspec archive`: archiva el change en la rama.
+- `/opsx-apply`: abre el frontal con `npm run preview:worktree` antes de implementar las tareas y deja la URL impresa para revisar. No es un paso manual: lo hace el agente.
+- `npm run preview:worktree:status`: imprime la URL si el frontal sigue activo. `npm run e2e:worktree` lo detiene y lo reanuda solo.
+- `openspec archive`: ejecuta `npm run preview:worktree:stop` y archiva el change en la rama. El frontal se cierra en ese momento.
 
 Antes de commitear:
 
@@ -148,7 +150,7 @@ El commit de archivado incluye solo el change, su código y sus pruebas. No incl
 
 ```bash
 node scripts/kan-sync.mjs pr-body mejorar-facturas
-git push -u origin feat/mejorar-facturas
+git push -u origin facturas-panel
 gh pr create --base main --title "feat(mejorar-facturas): ..." --body-file /tmp/pr.md
 ```
 
@@ -170,23 +172,24 @@ node scripts/kan-sync.mjs review mejorar-facturas
 
 ## Puertos por worktree
 
-Cada claim asigna dos puertos:
+Cada claim asigna dos puertos. Ambos empiezan en 3100: el primer worktree lo obtiene libre; si otro worktree ya lo ocupa, se toma el primer puerto libre (3101, 3102…). No hay hash ni rangos separados.
 
-| Uso | Rango | Ejemplo |
+| Uso | Puerto inicial | Ejemplo |
 | --- | --- | --- |
-| Desarrollo | 3100–3999 | 3102 |
-| E2E | 4100–4999 | 4102 |
+| Desarrollo | 3100 | 3100 |
+| E2E | 3100 | 3100 |
 
 Se guardan en `.opsx/ports.json`, ignorado por Git. `workflow.json` no los contiene: son específicos de la máquina.
 
 ```bash
-npm run dev:worktree    # Next en el puerto de desarrollo
-npm run e2e:worktree    # Playwright con E2E_PORT del worktree
+npm run dev:worktree          # Next en el puerto de desarrollo
+npm run e2e:worktree          # Playwright con E2E_PORT del worktree
+npm run preview:worktree      # frontal en segundo plano; imprime la URL
+npm run preview:worktree:stop # cierra el frontal
 ```
 
 - `dev:worktree` regenera tokens antes de arrancar.
-- `e2e:worktree` usa el puerto E2E del worktree.
-- No ejecutes `dev:worktree` y `e2e:worktree` a la vez en el mismo worktree: comparten `.next`.
+- `e2e:worktree` usa el puerto E2E del worktree, detiene el frontal antes de correr y lo reanuda al terminar: comparten `.next`.
 - Si un puerto está ocupado, el helper reasigna o falla con el puerto en el mensaje.
 - `--dev-port` y `--e2e-port` fuerzan un valor; si está ocupado, falla.
 - En CI no hay `.opsx/ports.json`: E2E usa `E2E_PORT` o 3100.
@@ -196,8 +199,8 @@ Ejemplo de dos sesiones:
 
 | Worktree | Dev | E2E |
 | --- | --- | --- |
-| `mejorar-facturas` | 3102 | 4102 |
-| `arreglar-login` | 3103 | 4103 |
+| `facturas-panel` | 3100 | 3100 |
+| `login-social` | 3101 | 3101 |
 
 ## Conflictos y ficheros compartidos
 
@@ -213,8 +216,8 @@ Tras el merge:
 
 ```bash
 git worktree remove /ruta/a/akari-worktrees/mejorar-facturas
-git branch -d feat/mejorar-facturas
-git push origin --delete feat/mejorar-facturas
+git branch -d facturas-panel
+git push origin --delete facturas-panel
 ```
 
 Las etiquetas `claims/*` se borran al liberar el claim. Para abandonar uno:
@@ -272,11 +275,11 @@ Notas:
 | --- | --- |
 | `Falta kan_API_KEY` | No hay `.env` en el checkout principal o falta la variable. |
 | `La tarjeta … ya está reclamada por el change …` | Otra persona ganó el claim. Usa otra tarjeta o libera la anterior. |
-| `La rama feat/… ya existe` | Hay un claim o una rama previa. Elige otro `--change` o libera el claim. |
+| `La rama … ya existe` | Hay un claim o una rama previa. Elige otro `--change` corto en inglés o libera el claim. |
 | `La ruta del worktree ya existe` | Quedó un worktree de un intento anterior; límpialo o usa otra ruta. |
 | `No existe workflow.json` | Estás en el checkout equivocado; ejecuta el comando dentro del worktree del claim. |
 | `El puerto … está ocupado` | Otro servidor lo usa; el helper reasigna o pide `--dev-port`/`--e2e-port`. |
-| `e2e:worktree` pide parar el dev | `next dev` y `next build` comparten `.next`; para `dev:worktree` antes. |
+| `e2e:worktree` pide parar el dev | `next dev` y `next build` comparten `.next`; el helper detiene y reanuda el frontal, pero otro `dev:worktree` hay que pararlo antes. |
 | `release` se niega por PR abierta | Cierra la PR o usa `--force` si de verdad vas a descartar el trabajo. |
 | `openspec new change` falla | El claim ya creó el change; continúa el existente. |
 

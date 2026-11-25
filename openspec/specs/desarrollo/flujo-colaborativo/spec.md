@@ -8,12 +8,12 @@ Define el ciclo de trabajo paralelo entre la cola de Kan.bn, OpenSpec, los workt
 
 ### Requirement: Un claim, una rama y un worktree
 
-Cada claim SHALL crear una rama `feat/<change-id>` desde `main` actualizado y un worktree propio fuera del checkout principal. El checkout principal SHALL permanecer en `main` y sin cambios de la tarea. Dos claims distintos SHALL producir ramas y rutas de worktree distintas.
+Cada claim SHALL crear una rama llamada exactamente `<change-id>` (sin prefijo) desde `main` actualizado y un worktree propio fuera del checkout principal, sin tocar el checkout principal ni compartir rama entre claims.
 
 #### Scenario: Creación del worktree
 
 - **WHEN** se reclama un change desde `main` limpio
-- **THEN** existe una rama `feat/<change-id>` y un worktree nuevo asociado a ella, ambos visibles con `git worktree list`
+- **THEN** existe una rama `<change-id>` y un worktree nuevo asociado a ella, ambos visibles con `git worktree list`
 
 #### Scenario: Checkout principal intacto
 
@@ -22,7 +22,7 @@ Cada claim SHALL crear una rama `feat/<change-id>` desde `main` actualizado y un
 
 #### Scenario: Reutilización de rama
 
-- **WHEN** ya existe una rama `feat/<change-id>` que no pertenece al mismo claim
+- **WHEN** ya existe una rama `<change-id>` que no pertenece al mismo claim
 - **THEN** la herramienta no crea otro worktree ni reutiliza la rama y pide elegir otro id o liberar el claim
 
 #### Scenario: Worktree existente
@@ -123,7 +123,7 @@ Cada PR SHALL rellenar una plantilla versionada con el id del change, las tarjet
 
 ### Requirement: Puertos aislados por worktree
 
-Cada claim SHALL asignar un puerto de desarrollo y un puerto E2E al worktree, guardarlos en `.opsx/ports.json` ignorado por Git y exponerlos a `npm run dev:worktree` y `npm run e2e:worktree`. `E2E_PORT` SHALL seguir siendo configurable para CI. Si un puerto está ocupado, el flujo SHALL reasignar o fallar con un mensaje claro; `--dev-port` y `--e2e-port` SHALL permitir forzarlo.
+Cada claim SHALL asignar un puerto de desarrollo y otro E2E guardados en `.opsx/ports.json` e ignorados por Git. Ambos SHALL empezar en 3100: el primer worktree libre lo usa y los demás SHALL tomar el siguiente libre. `E2E_PORT` SHALL ser configurable en CI; los overrides SHALL fallar si el puerto está ocupado.
 
 #### Scenario: Asignación al reclamar
 
@@ -133,7 +133,7 @@ Cada claim SHALL asignar un puerto de desarrollo y un puerto E2E al worktree, gu
 #### Scenario: Arranque de desarrollo
 
 - **WHEN** se ejecuta `npm run dev:worktree` en un worktree con puertos asignados
-- **THEN** Next arranca en el puerto de desarrollo asignado y la salida muestra la URL local de ese worktree
+- **THEN** Next arranca en el puerto asignado y la salida muestra la URL local de ese worktree
 
 #### Scenario: E2E por worktree
 
@@ -143,12 +143,12 @@ Cada claim SHALL asignar un puerto de desarrollo y un puerto E2E al worktree, gu
 #### Scenario: Dos worktrees en paralelo
 
 - **WHEN** dos worktrees arrancan `dev:worktree` o `e2e:worktree` a la vez
-- **THEN** cada uno usa un puerto distinto y ninguno reutiliza ni bloquea el servidor del otro
+- **THEN** el primero usa 3100, el segundo comprueba que está ocupado y usa el siguiente libre, y ninguno reutiliza ni bloquea el servidor del otro
 
 #### Scenario: Puerto ocupado
 
-- **WHEN** el puerto asignado está ocupado por otro proceso al arrancar
-- **THEN** el helper elige el siguiente puerto libre o falla indicando el puerto y el proceso que lo ocupa, sin reutilizar el servidor ajeno
+- **WHEN** el puerto por defecto 3100 está ocupado por otro worktree al arrancar
+- **THEN** el helper elige el siguiente puerto libre (3101, 3102…), lo guarda en `.opsx/ports.json` y no reutiliza el servidor ajeno
 
 #### Scenario: Fichero de puertos ausente
 
@@ -157,8 +157,8 @@ Cada claim SHALL asignar un puerto de desarrollo y un puerto E2E al worktree, gu
 
 #### Scenario: Servidor de desarrollo activo
 
-- **WHEN** se ejecuta `e2e:worktree` mientras `dev:worktree` sigue activo en el mismo worktree
-- **THEN** el helper no lanza un segundo Next y pide parar el servidor de desarrollo antes de ejecutar E2E
+- **WHEN** se ejecuta `e2e:worktree` mientras hay un frontal activo en el mismo worktree
+- **THEN** el helper detiene el frontal, ejecuta E2E en el puerto asignado y lo reanuda al terminar, sin lanzar un segundo Next sobre el mismo `.next`
 
 #### Scenario: Puertos forzados
 
@@ -168,7 +168,12 @@ Cada claim SHALL asignar un puerto de desarrollo y un puerto E2E al worktree, gu
 #### Scenario: Valores por defecto en CI
 
 - **WHEN** no se define `E2E_PORT` ni existe `.opsx/ports.json`, como en CI
-- **THEN** E2E usa el puerto por defecto documentado y el flujo de una sola persona sigue funcionando
+- **THEN** E2E usa el puerto por defecto 3100 y el flujo de una sola persona sigue funcionando
+
+#### Scenario: Primer change
+
+- **WHEN** se reclama o arranca el primer worktree y el puerto 3100 está libre
+- **THEN** desarrollo y E2E empiezan desde 3100, sin desplazamiento por hash del change id
 
 #### Scenario: Puertos no versionados
 
@@ -250,3 +255,51 @@ Cuando varias tarjetas de Kan describan trabajo que se entrega junto, el flujo S
 
 - **WHEN** dos tarjetas no comparten alcance ni capacidad
 - **THEN** el flujo recomienda claims separados y no las agrupa por conveniencia
+
+### Requirement: Convención de nombres en inglés
+
+El id del change SHALL ser corto (≤30 caracteres), en inglés, en minúsculas y separado por guiones; la rama SHALL usar ese mismo id sin prefijo. Los mensajes de commit generados por la herramienta SHALL estar en inglés y la documentación SHALL exigir inglés para los commits manuales. La herramienta SHALL rechazar ids que superen los 30 caracteres o contengan caracteres distintos de `a-z0-9` y guiones.
+
+#### Scenario: Id derivado de un título largo
+
+- **WHEN** la tarjeta se llama «fix: mover el título de la página al header cuando estamos en la vista sidebar» y no se pasa `--change`
+- **THEN** el id propuesto no supera 30 caracteres y la persona puede sustituirlo por uno corto en inglés con `--change`
+
+#### Scenario: Id inválido
+
+- **WHEN** se pasa un `--change` con más de 30 caracteres, acentos o mayúsculas
+- **THEN** la herramienta falla antes de crear rama, worktree ni tarjeta con un mensaje que explica la convención
+
+#### Scenario: Mensajes de commit
+
+- **WHEN** `claim`, `link` o `done` crean un commit
+- **THEN** el mensaje está en inglés y `release` sigue reconociendo los commits del claim
+
+### Requirement: Frontal de revisión gestionado por el agente
+
+El agente SHALL arrancar el frontal al aplicar el change y SHALL detenerlo al archivar, sin intervención de la persona. `npm run preview:worktree` SHALL ejecutar el servidor en segundo plano, guardar url, puerto y pid en `.opsx/preview.json` (ignorado) y ofrecer `status` y `stop`; `/opsx-apply` y `/opsx-archive` SHALL incluir esos pasos.
+
+#### Scenario: Aplicar un change
+
+- **WHEN** el agente empieza a aplicar un change en su worktree
+- **THEN** arranca el frontal en segundo plano, imprime la URL local y `.opsx/preview.json` contiene el proceso
+
+#### Scenario: Revisión lista
+
+- **WHEN** el change está pendiente de validación para archivarse
+- **THEN** la URL del frontal sigue disponible sin que la persona haya tenido que arrancar nada
+
+#### Scenario: Archivar
+
+- **WHEN** el agente archiva el change
+- **THEN** detiene el proceso del frontal, borra `.opsx/preview.json` y el puerto queda libre
+
+#### Scenario: Archivado por otra vía
+
+- **WHEN** el change se archiva sin pasar por `/opsx-archive`
+- **THEN** `done` intenta detener el frontal y, si falla, avisa sin bloquear el cierre
+
+#### Scenario: Frontal no versionado
+
+- **WHEN** se inspecciona `git status` con el frontal activo
+- **THEN** ni `.opsx/preview.json` ni `.opsx/preview.log` aparecen como cambios pendientes

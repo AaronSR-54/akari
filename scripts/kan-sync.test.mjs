@@ -3,8 +3,11 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
+  addCardComment,
+  buildCommentText,
   buildCreateCard,
   claimCommand,
+  commentCommand,
   buildMoveCard,
   doneChange,
   queue,
@@ -21,6 +24,7 @@ import {
   reviewChange,
   startChange,
   validateClaimCards,
+  whoamiCommand,
 } from './kan-sync.mjs';
 
 describe('loadEnvText', () => {
@@ -28,13 +32,13 @@ describe('loadEnvText', () => {
     const values = loadEnvText(`
 # convención kan_
 kan_API_KEY=kan_secreto
-kan_CURRENT_USER="aaron@example.com"
+kan_CURRENT_USER="persona@example.com"
 
 kan_EXTRA = 'valor con espacios'
 `);
     expect(values).toEqual({
       kan_API_KEY: 'kan_secreto',
-      kan_CURRENT_USER: 'aaron@example.com',
+      kan_CURRENT_USER: 'persona@example.com',
       kan_EXTRA: 'valor con espacios',
     });
   });
@@ -122,7 +126,7 @@ function emptyBoard() {
     workspace: {
       publicId: 'ws1234567890',
       members: [
-        { publicId: 'm-aaron', email: 'aaron@example.com', status: 'active', user: { name: 'Aaron' } },
+        { publicId: 'm-aaron', email: 'persona@example.com', status: 'active', user: { name: 'Aaron' } },
         { publicId: 'm-otro', email: 'otro@example.com', status: 'active', user: { name: 'Otro' } },
       ],
     },
@@ -163,7 +167,7 @@ function makeFetch(routes) {
   return { fetchImpl, calls };
 }
 
-const ENV = { kan_API_KEY: 'kan_prueba', kan_CURRENT_USER: 'aaron@example.com' };
+const ENV = { kan_API_KEY: 'kan_prueba', kan_CURRENT_USER: 'persona@example.com' };
 
 describe('resolveList', () => {
   const lists = [
@@ -235,14 +239,14 @@ describe('resolveAssignee', () => {
   const members = emptyBoard().workspace.members;
 
   it('compara el email sin distinguir mayúsculas', () => {
-    expect(resolveAssignee(members, 'AARON@example.com').publicId).toBe('m-aaron');
+    expect(resolveAssignee(members, 'PERSONA@example.com').publicId).toBe('m-aaron');
   });
 
   it('ignora miembros no activos', () => {
     const paused = [
-      { publicId: 'm-pausado', email: 'aaron@example.com', status: 'paused', user: { name: null } },
+      { publicId: 'm-pausado', email: 'persona@example.com', status: 'paused', user: { name: null } },
     ];
-    expect(() => resolveAssignee(paused, 'aaron@example.com')).toThrow(/Miembros disponibles: \(ninguno\)/);
+    expect(() => resolveAssignee(paused, 'persona@example.com')).toThrow(/Miembros disponibles: \(ninguno\)/);
   });
 
   it('no falla si no hay persona configurada', () => {
@@ -346,28 +350,26 @@ describe('startChange', () => {
         env: { ...ENV, kan_CURRENT_USER: 'nadie@example.com' },
         fetchImpl,
       })
-    ).rejects.toThrow(/nadie@example\.com.*aaron@example\.com/s);
+    ).rejects.toThrow(/nadie@example\.com.*persona@example\.com/s);
     expect(calls).toHaveLength(1);
   });
 
-  it('usa la dueña del token cuando falta kan_CURRENT_USER', async () => {
+  it('falla antes de escribir si falta kan_CURRENT_USER', async () => {
     const board = emptyBoard();
     const { fetchImpl, calls } = makeFetch({
       'GET /boards/b12345678901': { body: board },
-      'GET /users/me': { body: { id: 'u1', email: 'aaron@example.com' } },
-      'POST /cards': { status: 201, body: { publicId: 'card-nueva' } },
-      'PUT /cards/card-nueva': { body: {} },
+      'GET /users/me': { body: { id: 'u1', email: 'persona@example.com' } },
     });
 
-    await startChange({
-      changeId: 'integrar-kanban-openspec',
-      config: CONFIG,
-      env: { kan_API_KEY: 'kan_prueba' },
-      fetchImpl,
-    });
-
-    expect(calls[1]).toMatchObject({ method: 'GET', path: '/users/me' });
-    expect(calls[2].body.memberPublicIds).toEqual(['m-aaron']);
+    await expect(
+      startChange({
+        changeId: 'integrar-kanban-openspec',
+        config: CONFIG,
+        env: { kan_API_KEY: 'kan_prueba' },
+        fetchImpl,
+      })
+    ).rejects.toThrow(/kan_CURRENT_USER/);
+    expect(calls).toHaveLength(1);
   });
 
   it('no escribe nada con --dry-run', async () => {
@@ -488,7 +490,7 @@ describe('cola y marcadores', () => {
     expect(payload.claimed[0]).toMatchObject({
       publicId: 'card-claim',
       changeId: 'integrar-kanban-openspec',
-      branch: 'feat/integrar-kanban-openspec',
+      branch: 'integrar-kanban-openspec',
       claimable: false,
     });
     expect(JSON.parse(output).todo[0].publicId).toBe('card-libre');
@@ -643,5 +645,102 @@ describe('claim sin cola', () => {
         runGit,
       })
     ).rejects.toThrow(/No se pudo conectar/);
+  });
+});
+
+describe('identidad y comentarios en Kan', () => {
+  it('firma los comentarios con el email configurado', () => {
+    expect(buildCommentText('persona@example.com', ' Listo para revisar ')).toBe(
+      '[persona@example.com] Listo para revisar'
+    );
+    expect(() => buildCommentText('persona@example.com', '  ')).toThrow(/vacío/);
+    expect(() => buildCommentText('', 'texto')).toThrow(/identidad/);
+  });
+
+  it('whoami imprime la identidad sin mostrar el token', async () => {
+    const board = emptyBoard();
+    const logs = [];
+    const { fetchImpl, calls } = makeFetch({ 'GET /boards/b12345678901': { body: board } });
+    const member = await whoamiCommand({
+      config: CONFIG,
+      env: ENV,
+      fetchImpl,
+      log: (line) => logs.push(line),
+    });
+    expect(member.publicId).toBe('m-aaron');
+    expect(logs.join('\n')).toContain('persona@example.com');
+    expect(logs.join('\n')).not.toContain(ENV.kan_API_KEY);
+    expect(calls).toHaveLength(1);
+  });
+
+  it('comment publica el texto firmado en la tarjeta del change', async () => {
+    const board = emptyBoard();
+    board.lists[0].cards.push(card());
+    const { fetchImpl, calls } = makeFetch({
+      'GET /boards/b12345678901': { body: board },
+      'POST /cards/card-1/comments': { status: 201, body: { publicId: 'comment-1' } },
+    });
+    const result = await commentCommand({
+      changeId: 'integrar-kanban-openspec',
+      text: 'Listo para revisar',
+      config: CONFIG,
+      env: ENV,
+      fetchImpl,
+      dryRun: false,
+      log: () => {},
+    });
+    expect(result.comment).toBe('[persona@example.com] Listo para revisar');
+    expect(calls[1]).toMatchObject({
+      method: 'POST',
+      path: '/cards/card-1/comments',
+      body: { comment: '[persona@example.com] Listo para revisar' },
+    });
+  });
+
+  it('comment falla si no hay tarjeta para el change', async () => {
+    const board = emptyBoard();
+    const { fetchImpl } = makeFetch({ 'GET /boards/b12345678901': { body: board } });
+    await expect(
+      commentCommand({
+        changeId: 'change-inexistente',
+        text: 'Hola',
+        config: CONFIG,
+        env: ENV,
+        fetchImpl,
+        dryRun: false,
+        log: () => {},
+      })
+    ).rejects.toThrow(/No hay ninguna tarjeta/);
+  });
+
+  it('comment en dry-run no escribe', async () => {
+    const board = emptyBoard();
+    board.lists[0].cards.push(card());
+    const { fetchImpl, calls } = makeFetch({ 'GET /boards/b12345678901': { body: board } });
+    await commentCommand({
+      changeId: 'integrar-kanban-openspec',
+      text: 'Hola',
+      config: CONFIG,
+      env: ENV,
+      fetchImpl,
+      dryRun: true,
+      log: () => {},
+    });
+    expect(calls).toHaveLength(1);
+  });
+
+  it('addCardComment usa el endpoint de comentarios', async () => {
+    const { fetchImpl, calls } = makeFetch({
+      'POST /cards/card-1/comments': { status: 201, body: { publicId: 'comment-1' } },
+    });
+    const client = {
+      request: (path, init = {}) =>
+        fetchImpl(`https://kan.example.com/api/v1${path}`, {
+          ...init,
+          body: init.body ? JSON.stringify(init.body) : undefined,
+        }),
+    };
+    await addCardComment({ client, card: { publicId: 'card-1' }, text: 'texto' });
+    expect(calls[0].path).toBe('/cards/card-1/comments');
   });
 });

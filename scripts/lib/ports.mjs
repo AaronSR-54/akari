@@ -3,8 +3,9 @@ import { createServer } from 'node:net';
 import { dirname, join } from 'node:path';
 import { KanSyncError } from './errors.mjs';
 
-export const DEV_PORT_RANGE = { start: 3100, end: 3999 };
-export const E2E_PORT_RANGE = { start: 4100, end: 4999 };
+export const DEFAULT_PORT = 3100;
+export const DEV_PORT_RANGE = { start: DEFAULT_PORT, end: 3999 };
+export const E2E_PORT_RANGE = { start: DEFAULT_PORT, end: 3999 };
 
 export function portsPath(root) {
   return join(root, '.opsx', 'ports.json');
@@ -83,7 +84,7 @@ export function writePorts(root, ports) {
   return payload;
 }
 
-async function pickPort({ changeId, range, existing, forced, isFree }) {
+async function pickPort({ range, existing, forced, isFree }) {
   if (forced != null) {
     if (!(await isFree(forced))) {
       throw new KanSyncError(`El puerto ${forced} ya está ocupado; elige otro con --dev-port/--e2e-port.`, 'PORT_BUSY');
@@ -91,18 +92,11 @@ async function pickPort({ changeId, range, existing, forced, isFree }) {
     return forced;
   }
   if (existing != null && (await isFree(existing))) return existing;
-  const start = basePort(changeId, range);
-  try {
-    return await findFreePort({ start, end: range.end, isFree });
-  } catch (error) {
-    if (start <= range.start) throw error;
-    return findFreePort({ start: range.start, end: start - 1, isFree });
-  }
+  return findFreePort({ start: range.start, end: range.end, isFree });
 }
 
 export async function resolvePorts({
   root,
-  changeId,
   devPort,
   e2ePort,
   isFree = isPortFree,
@@ -112,14 +106,12 @@ export async function resolvePorts({
   const forcedDev = normalizePort(devPort, '--dev-port');
   const forcedE2e = normalizePort(e2ePort, '--e2e-port');
   const dev = await pickPort({
-    changeId,
     range: DEV_PORT_RANGE,
     existing: existing?.dev,
     forced: forcedDev,
     isFree,
   });
   const e2e = await pickPort({
-    changeId,
     range: E2E_PORT_RANGE,
     existing: existing?.e2e,
     forced: forcedE2e,
@@ -130,14 +122,13 @@ export async function resolvePorts({
   return ports;
 }
 
-export async function ensurePort(root, kind, { changeId, forced, isFree = isPortFree } = {}) {
+export async function ensurePort(root, kind, { forced, isFree = isPortFree } = {}) {
   if (kind !== 'dev' && kind !== 'e2e') {
     throw new KanSyncError(`Tipo de puerto desconocido "${kind}".`, 'PORT_INVALID');
   }
   const existing = readPortsFile(root);
   const range = kind === 'dev' ? DEV_PORT_RANGE : E2E_PORT_RANGE;
   const port = await pickPort({
-    changeId: changeId || 'akari',
     range,
     existing: existing?.[kind],
     forced: normalizePort(forced, kind === 'dev' ? '--dev-port' : '--e2e-port'),

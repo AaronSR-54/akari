@@ -5,9 +5,9 @@
 Ver `proposal.md` para la motivación. El estado actual tiene cuatro limitaciones que condicionan el diseño:
 
 - `scripts/kan-sync.mjs` es un CLI ESM sin dependencias que ya sabe leer `kan.config.json`, resolver el `.env`, hablar con la API REST de Kan.bn y mover una tarjeta entre listas. Sus funciones puras se prueban con Vitest.
-- `AGENTS.md` exige una rama `feat/<change-id>` por change y una PR por rama, pero el change se propone antes de tener tarjeta. No existe una cola ni una reserva atómica.
+- `AGENTS.md` exige una rama por change y una PR por rama, con ids largos derivados del título de la tarjeta y commits en español; el change se propone antes de tener tarjeta. No existe una cola ni una reserva atómica.
 - Solo hay un checkout. Un worktree de OpenCode ya existe para `integrar-kanban-openspec`, pero no hay un flujo repetible que cree uno por tarea ni que impida abrir dos sesiones sobre el mismo.
-- No hay `.github/`, así que la calidad de una PR depende de que el agente recuerde ejecutar las verificaciones. `playwright.config.ts` fija el puerto 3100, lo que impide ejecutar E2E en dos worktrees a la vez.
+- No hay `.github/`, así que la calidad de una PR depende de que el agente recuerde ejecutar las verificaciones. `playwright.config.ts` fija el puerto 3100 y los worktrees calculan puertos con un hash del change, así que el primer change no usa el puerto por defecto y no hay un frontal que quede abierto para revisar.
 
 El repositorio exige Node ≥ 20.9, ESM y no tiene dependencias de utilidades. El tablero Kan.bn es autoalojado y accesible por Tailscale; GitHub Actions no puede asumir que lo alcanza.
 
@@ -45,7 +45,7 @@ Alternativas descartadas: GitHub Issues como cola (añade una tercera fuente de 
 
 El claim se publica en un único `git push --atomic` con:
 
-- la rama `feat/<change-id>`;
+- la rama `<change-id>`;
 - una etiqueta anotada `refs/tags/claims/<card-public-id>/<change-id>` por cada tarjeta.
 
 El servidor Git es el árbitro: si la rama o cualquiera de las etiquetas ya existe, el push completo falla y nadie mueve tarjetas. La etiqueta codifica el change en el nombre, así que el error puede decir quién posee la tarjeta sin guardar correos ni metadatos personales. La etiqueta se crea con un mensaje neutro (`change=<id> card=<id>`) y no contiene tokens.
@@ -54,7 +54,7 @@ Secuencia de `claim`:
 
 1. Leer el tablero y validar que todas las tarjetas están en `TO DO`, libres o asignadas a quien reclama, y sin marcador de otro change. Si Kan no responde, abortar antes de tocar Git.
 2. Resolver el `change-id`, comprobar que no choca con un change archivado y que la rama y las etiquetas no pertenecen a otro claim.
-3. Crear el worktree y la rama local desde `origin/main`; crear el scaffold del change con `openspec new change` si no existe; escribir `workflow.json`; commitear `chore(<id>): reclamar ...`.
+3. Crear el worktree y la rama local desde `origin/main`; crear el scaffold del change con `openspec new change` si no existe; escribir `workflow.json`; commitear `chore(<id>): claim cards and create worktree`.
 4. Crear las etiquetas y publicar rama + etiquetas con `--atomic`. Si falla, borrar worktree, rama local y etiquetas locales; no tocar Kan.
 5. Asignar y mover las tarjetas a In Progress, añadir el marcador del change a la descripción y dejar el estado visible.
 6. Imprimir el change, las tarjetas, la ruta del worktree y el comando exacto para abrir la sesión.
@@ -73,7 +73,7 @@ La ruta por defecto es un directorio hermano del checkout principal:
 
 Así el worktree no queda dentro del repositorio: ESLint, Vitest, Next y `git status` no lo recorren, y no hace falta añadir más entradas a los ignores. La ruta se puede cambiar con `OPSX_WORKTREE_ROOT` o `--worktree-root`; `claim` imprime siempre la ruta final.
 
-El checkout principal permanece en `main`. El worktree se crea con `git worktree add -b feat/<change-id> <ruta> origin/main`. Si `origin/main` no está actualizado, se hace `git fetch origin main` antes.
+El checkout principal permanece en `main`. El worktree se crea con `git worktree add -b <change-id> <ruta> origin/main`. Si `origin/main` no está actualizado, se hace `git fetch origin main` antes.
 
 Para evitar una instalación completa por worktree, `claim` enlaza `node_modules` del checkout principal cuando existe. Un cambio de dependencias exige sustituir el enlace por una instalación aislada (`rm node_modules && npm ci`); se documenta en el flujo y la CI siempre instala desde cero.
 
@@ -87,8 +87,8 @@ Alternativas descartadas: usar un único checkout y cambiar de rama (dos sesione
 
 ```json
 {
-  "changeId": "mejorar-flujo-colaborativo",
-  "branch": "feat/mejorar-flujo-colaborativo",
+  "changeId": "sidebar-float",
+  "branch": "sidebar-float",
   "cards": [
     { "publicId": "card_abc", "title": "Mejorar el flujo" }
   ],
@@ -106,8 +106,8 @@ No guarda el email de la persona, el token, la ruta absoluta del worktree ni el 
 Las tarjetas nuevas reciben en la descripción un marcador invisible y una línea legible:
 
 ```text
-<!-- openspec-change: mejorar-flujo-colaborativo -->
-OpenSpec: `mejorar-flujo-colaborativo` · rama `feat/mejorar-flujo-colaborativo`
+<!-- openspec-change: sidebar-float -->
+OpenSpec: `sidebar-float` · rama `sidebar-float`
 ```
 
 El marcador permite encontrar tarjetas agrupadas aunque su título no contenga el id. La identificación prioriza el manifiesto; después acepta el id como token completo del título o el marcador de la descripción. Si hay más de una tarjeta candidata sin manifiesto, se aborta sin mover nada. `release` retira el marcador y la línea legible sin tocar el resto de la descripción.
@@ -129,13 +129,37 @@ El marcador permite encontrar tarjetas agrupadas aunque su título no contenga e
 - `release <change-id> [--force]`: devuelve tarjetas, borra etiquetas y limpia worktree/rama si es seguro.
 - `pr-body <change-id>`: imprime un borrador de cuerpo de PR con el change y las tarjetas.
 - `check <change-id>`: avisa si la rama toca ficheros compartidos.
+- `whoami`: imprime el email y el miembro de Kan configurados, sin secretos.
+- `comment <change-id> <texto>`: añade un comentario a la tarjeta del change, identificado con el email configurado.
 - `start`, `done` y `discover` mantienen compatibilidad; `done` sin manifiesto conserva el comportamiento anterior.
 
-`queue --json` es el contrato que usan los agentes; el modo texto es para personas. La salida agrupa `todo` y `claimed` y cada tarjeta incluye `publicId`, `title`, `list`, `members`, `changeId`, `branch` y `claimable`. `claimable` se calcula contra la identidad de `kan_CURRENT_USER` o la dueña del token, así que el agente no necesita comparar correos ni leer secretos. Un agente puede elegir la primera tarjeta con `claimable: true` y pasarla a `claim` sin inventar identificadores.
+`queue --json` es el contrato que usan los agentes; el modo texto es para personas. La salida agrupa `todo` y `claimed` y cada tarjeta incluye `publicId`, `title`, `list`, `members`, `changeId`, `branch` y `claimable`. `claimable` se calcula contra la identidad de `kan_CURRENT_USER`, así que el agente no necesita comparar correos ni leer secretos. Un agente puede elegir la primera tarjeta con `claimable: true` y pasarla a `claim` sin inventar identificadores.
 
 Los disparadores para el agente se documentan en `AGENTS.md`: «revisa la cola», «mira el Kan», «qué tareas hay», «qué puedo hacer», «busca trabajo», «tareas libres», «siguiente tarea», «estado del tablero» y `/kan-queue`. Ante cualquiera de ellos debe ejecutar `queue --json`, resumir las tarjetas libres y reclamadas, y no escribir en el tablero hasta que se pida un `claim` explícito. El comando de OpenCode `/kan-queue` envuelve esa consulta para que no dependa de que el agente recuerde la frase.
 
 `done` se ejecuta después de abrir la PR de archivado. El tablero refleja el ciclo de OpenSpec, no el merge de GitHub: `DONE` significa «archivado y PR abierta». Es la decisión acordada; GitHub sigue siendo la fuente de verdad del merge y una PR rechazada se gestiona manualmente. `review` existe para quien abra una PR antes de archivar; el flujo estándar puede pasar de `IN PROGRESS` a `DONE`.
+
+### Convención de nombres: rama = id del change, en inglés
+
+El id del change es el nombre de la rama, sin prefijo. Debe ser corto (≤30 caracteres), en inglés, en minúsculas y con guiones entre palabras (`sidebar-float`, no el título literal de la tarjeta). `slugify` recorta a 30 caracteres y `isValidChangeId` rechaza ids más largos. Al derivar el id desde una tarjeta se conserva el prefijo entre corchetes del título, pero el resultado se recorta: la persona puede pasar `--change` con un id mejor. Los mensajes de commit que genera `kan-sync` pasan a inglés (`chore(<id>): claim cards and create worktree`, `link cards`, `record PR`); `release` reconoce esos prefijos para distinguir el commit del claim. La documentación y `AGENTS.md` fijan la regla de escribir también en inglés los commits manuales.
+
+Alternativas descartadas: conservar `feat/` (el prefijo no aporta información y rompe la igualdad rama = change), ids largos derivados del título (ramas ilegibles) y traducir automáticamente el español (no es fiable sin dependencias).
+
+### Frontal de revisión gestionado por el agente
+
+El frontal SHALL arrancar automáticamente cuando el agente aplica el change y SHALL detenerse cuando archiva: es una responsabilidad del agente, no un comando que la persona deba recordar. `npm run preview:worktree` (`scripts/worktree-preview.mjs`) lanza `npm run dev:worktree` en segundo plano con `detached: true`, redirige la salida a `.opsx/preview.log` y guarda `{ url, port, pid, startedAt }` en `.opsx/preview.json`, ignorado por Git. `status` imprime la URL y `stop` termina el grupo de procesos y borra el fichero.
+
+El comando local `/opsx-apply` incorpora el paso «start preview» entre la lectura del contexto y la implementación; `/opsx-archive` incorpora «stop preview» antes de mover el change al archivo. `AGENTS.md` recoge la misma regla para sesiones que no usan esos atajos. `kan-sync done` llama a `stop` como red de seguridad si el change se archivó por otra vía; un fallo al detener solo avisa.
+
+`e2e:worktree` detecta `.opsx/preview.json`, detiene el frontal antes de resolver puertos y lanzar Playwright, y lo reanuda al terminar, porque `next dev` y `next build` comparten `.next`. Al liberarse 3100, E2E lo usa; si otro worktree lo ocupa, toma el siguiente libre.
+
+Alternativas descartadas: dejar el dev en primer plano (bloquea la sesión), abrir un navegador desde el script (depende del entorno de la persona) y enganchar un hook de git (no cubre `apply`).
+
+### Identidad explícita en Kan desde el `.env`
+
+Kan atribuye las escrituras HTTP al dueño de la API key, así que el nombre visible en tarjetas, comentarios y actividad no puede cambiarse con un campo de la petición. La herramienta SHALL dejar de asumir esa identidad: `resolveTargetMember` exige `kan_CURRENT_USER` y resuelve el miembro activo del workspace; si falta o no coincide, falla con un mensaje claro antes de escribir. `whoami` imprime el email, el `publicId` del miembro y su nombre, sin mostrar el token. `comment <change-id> <texto>` busca la tarjeta por manifiesto, marcador o título y publica el texto precedido de `[<email>]`. Ningún correo concreto aparece en código, tests, manifiestos ni documentación: los ejemplos usan `persona@example.com`.
+
+Alternativas descartadas: suplantar al usuario con una cabecera (la API no la soporta), guardar el email en `workflow.json` (el manifiesto viaja a la PR y no debe contener datos personales) y un mapa de correos en `kan.config.json` (versionaría datos personales).
 
 ### Entorno y secretos
 
@@ -158,17 +182,12 @@ La protección de `main` (checks obligatorios, revisión, rama actualizada, sin 
 
 `playwright.config.ts` pasa a leer `E2E_PORT` (por defecto 3100) y lo usa en `baseURL` y en el comando del servidor. En CI se mantiene el valor por defecto.
 
-Para el trabajo local, cada claim asigna dos puertos al worktree:
-
-- desarrollo, en el rango 3100–3999;
-- E2E, en el rango 4100–4999.
-
-La asignación parte de un hash estable del change id y comprueba que el puerto esté libre con `node:net`; si está ocupado, avanza al siguiente. El resultado se guarda en `.opsx/ports.json` dentro del worktree:
+Para el trabajo local, cada claim asigna dos puertos al worktree. Ambos empiezan en el puerto por defecto 3100: el primer change lo obtiene libre; el siguiente worktree comprueba con `node:net` que está ocupado y toma el primer puerto libre (3101, 3102…). No hay hash ni rangos separados para dev y E2E. Con el frontal en 3100, E2E recibe 3101. El resultado se guarda en `.opsx/ports.json` dentro del worktree:
 
 ```json
 {
-  "dev": 3102,
-  "e2e": 4102,
+  "dev": 3100,
+  "e2e": 3101,
   "assignedAt": "2026-11-25T10:05:00.000Z"
 }
 ```
@@ -178,13 +197,15 @@ El fichero es específico de la máquina y está ignorado por Git (`/.opsx/`), i
 Dos scripts de raíz hacen el arranque en un paso:
 
 ```bash
-npm run dev:worktree   # Next en el puerto de desarrollo, imprime la URL
-npm run e2e:worktree   # Playwright con E2E_PORT del worktree
+npm run dev:worktree          # Next en el puerto de desarrollo, imprime la URL
+npm run e2e:worktree          # Playwright con E2E_PORT del worktree
+npm run preview:worktree      # frontal en segundo plano, imprime la URL
+npm run preview:worktree:stop # detiene el frontal
 ```
 
-`dev:worktree` lee o crea `.opsx/ports.json`, comprueba que el puerto siga libre, regenera los tokens y ejecuta `npm run dev -w @akari/web -- -p <puerto>`; el `--` es obligatorio para que npm pase `-p` a `next dev`. `e2e:worktree` lee el mismo fichero, exporta `E2E_PORT` y ejecuta `npm run e2e`. `claim` escribe el fichero desde el principio y muestra la URL y los comandos, para que la sesión no tenga que calcular nada.
+`dev:worktree` lee o crea `.opsx/ports.json`, comprueba que el puerto siga libre, regenera los tokens y ejecuta `npm run dev -w @akari/web -- -p <puerto>`; el `--` es obligatorio para que npm pase `-p` a `next dev`. `e2e:worktree` lee el mismo fichero, exporta `E2E_PORT` y ejecuta `npm run e2e`. Si hay un frontal activo en el mismo worktree, lo detiene antes y lo reanuda al terminar para no mezclar `next dev` con `next build`. `claim` escribe el fichero desde el principio y muestra la URL y los comandos, para que la sesión no tenga que calcular nada.
 
-Si el puerto de desarrollo está ocupado al arrancar `e2e:worktree` en el mismo worktree, el helper avisa de que hay que parar el servidor de desarrollo: `next dev` y `next build` comparten `.next` y no deben escribir a la vez. Los dos worktrees pueden tener servidores a la vez porque cada uno usa su propio puerto y su propio `.next`. `npm run dev` sigue funcionando en el checkout principal con el puerto 3000 por defecto.
+Los dos worktrees pueden tener servidores a la vez porque cada uno usa su propio puerto y su propio `.next`. `npm run dev` sigue funcionando en el checkout principal con el puerto 3000 por defecto.
 
 ### Conflictos y ficheros compartidos
 
@@ -211,13 +232,15 @@ Se mantiene un único CLI, `scripts/kan-sync.mjs`, para no duplicar puntos de en
 - **Ruido de etiquetas en GitHub** → se limitan al namespace `claims/` y se limpian tras el merge; no afectan a releases.
 - **`DONE` antes del merge** → decisión explícita; GitHub es la fuente de verdad del merge y una PR rechazada se reabre manualmente.
 - **`node_modules` compartido** → acelera el arranque, pero un cambio de dependencias exige instalación aislada; la CI nunca comparte.
-- **Colisión de puertos** → `claim` asigna un puerto de desarrollo y otro de E2E por worktree; los helpers reasignan si están ocupados al arrancar y nunca reutilizan el servidor de otro worktree. En el mismo worktree, `dev:worktree` y `e2e:worktree` no se ejecutan a la vez porque comparten `.next`.
+- **Colisión de puertos** → ambos puertos arrancan en 3100 y avanzan al primer libre; los helpers reasignan al arrancar y nunca reutilizan el servidor de otro worktree. En el mismo worktree, el frontal se detiene antes de E2E porque comparten `.next`.
 - **Puertos versionados por error** → `.opsx/` está en `.gitignore` y `workflow.json` no los contiene; la CI no depende de ellos.
-- **Reparto de puertos entre claims concurrentes** → el hash puede coincidir; el helper de arranque vuelve a comprobar y reasigna antes de lanzar el servidor, así que el conflicto se resuelve en el momento de uso.
+- **Reparto de puertos entre claims concurrentes** → dos worktrees pueden querer 3100 a la vez; la comprobación con `node:net` al arrancar resuelve el conflicto en el momento de uso y el perdedor toma 3101.
 - **Conflictos de archivado** → rebase obligatorio y una PR de archivado lista a la vez; la protección de rama lo refuerza.
 - **Kan inalcanzable** → el preflight de `claim` aborta antes de tocar Git; un fallo posterior conserva rama y worktree y permite reintentar.
 - **`gh` no disponible en `release`** → la comprobación de PR abierta se degrada a un aviso y pide comprobarla a mano; no se borra nada sin confirmación.
 - **Cambio de título de tarjeta** → el manifiesto y el marcador evitan depender del título.
+- **Frontal olvidado al archivar** → `/opsx-archive` y `done` detienen el proceso; `preview:worktree status` permite comprobarlo. Un fallo al detener solo avisa, nunca bloquea el archivado.
+- **Identidad de Kan cambiante** → `kan_CURRENT_USER` es la única fuente; si la persona cambia su email en el workspace, la herramienta falla con un mensaje claro en lugar de escribir como el dueño del token.
 - **Espacio en disco** → los worktrees y `node_modules` enlazados se limpian tras el merge; `release` y la documentación lo recuerdan.
 - **Doble commit al registrar la PR** → `done` actualiza el manifiesto y lo publica después de abrir la PR; la CI vuelve a ejecutarse. Es el precio de dejar la URL versionada.
 
@@ -228,6 +251,8 @@ No hay migración de datos ni cambios de runtime.
 1. Los changes y tarjetas existentes siguen funcionando: sin `workflow.json`, `done` usa la coincidencia por título o marcador; `start` sigue creando la tarjeta si falta.
 2. `kan.config.json` puede añadir `lists.review` cuando el tablero tenga la lista; sin ella, `claim`, `done` y `release` funcionan y solo `review` falla con un mensaje claro.
 3. El `.env` existente en el checkout principal se sigue usando; los worktrees dejan de necesitar una copia.
-4. Los worktrees antiguos no se tocan; se limpian con `git worktree remove` cuando su rama se mergee. La primera vez que ejecutan `dev:worktree` o `e2e:worktree` reciben su `.opsx/ports.json`; los claims nuevos lo crean al reclamar.
-5. `.opsx/` se añade a `.gitignore`; si un worktree antiguo ya tenía un puerto manual, se puede forzar con `--dev-port`/`--e2e-port` o borrar el fichero para que se reasigne.
-6. Para revertir, basta con retirar los comandos nuevos, la CI, la plantilla y la documentación; las etiquetas `claims/*` se pueden borrar y el tablero queda como esté.
+4. Los worktrees antiguos no se tocan; se limpian con `git worktree remove` cuando su rama se mergee. La primera vez que ejecutan `dev:worktree` o `e2e:worktree` reciben su `.opsx/ports.json` con el puerto 3100 si está libre; los claims nuevos lo crean al reclamar.
+5. `.opsx/` se añade a `.gitignore`; si un worktree antiguo ya tenía un puerto manual, se puede forzar con `--dev-port`/`--e2e-port` o borrar el fichero para que se reasigne desde 3100.
+6. Los changes y ramas archivados con prefijo `feat/` no se renombran: sus manifiestos siguen en el archivo y no se validan al abrir un change nuevo. El change abierto `mejorar-flujo-colaborativo` actualiza su manifiesto a la rama `mejorar-flujo-colaborativo`.
+7. Los `.env` existentes ya tienen `kan_CURRENT_USER`; si no, la herramienta falla con un mensaje antes de escribir en Kan y la persona lo añade.
+8. Para revertir, basta con retirar los comandos nuevos, la CI, la plantilla y la documentación; las etiquetas `claims/*` se pueden borrar y el tablero queda como esté.
