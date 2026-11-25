@@ -61,8 +61,21 @@
     box-shadow: 0 -8px 20px -8px rgba(31, 27, 22, 0.14);
   }
 
+  @media (max-width: 1023px) {
+    .hero-recent-union {
+      border-top-width: 0;
+      box-shadow: 0 -8px 20px -8px rgba(31, 27, 22, 0.14);
+    }
+  }
+
   [data-theme='dark'] .hero-card-shadow {
     box-shadow: 0 -8px 20px -8px rgba(0, 0, 0, 0.45);
+  }
+
+  @media (max-width: 1023px) {
+    [data-theme='dark'] .hero-recent-union {
+      box-shadow: 0 -8px 20px -8px rgba(0, 0, 0, 0.45);
+    }
   }
 }
 

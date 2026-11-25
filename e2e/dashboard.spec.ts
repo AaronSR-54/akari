@@ -12,10 +12,16 @@ test.describe('dashboard hero', () => {
 
     const balance = page.locator('[data-hero="balance"]');
     const monthBlock = page.locator('[data-hero="month"]');
+    const recent = page.locator('[data-hero="recent"]');
     const summary = page.locator('[data-hero="month-summary"]');
     await expect(balance).toContainText('Saldo total');
     await expect(monthBlock).toBeVisible();
     await expect(monthBlock).not.toContainText('Base 1 nov');
+    await expect(recent).toContainText('Últimos movimientos');
+    await expect(recent.getByRole('link', { name: 'Ver todos' })).toHaveAttribute(
+      'href',
+      '/movimientos',
+    );
     await expect(summary).toContainText('Balance del mes');
     await expect(summary).toContainText('+2.152,01 €');
     await expect(summary).toContainText('Saldo total estimado a fin de mes: 15.898,84 €');
@@ -30,24 +36,85 @@ test.describe('dashboard hero', () => {
     expect(await summaryCard.evaluate((el) => getComputedStyle(el).borderTopWidth)).toBe('0px');
     expect(await summaryCard.evaluate((el) => getComputedStyle(el).boxShadow)).not.toBe('none');
 
-    const chartBox = await monthBlock.boundingBox();
+    const chartBox = await monthBlock.evaluate(async (element) => {
+      try {
+        await Promise.all(
+          element.getAnimations().map((animation) => animation.finished.catch(() => undefined)),
+        );
+      } catch {
+        /* sin Web Animations: seguir con la medición */
+      }
+      return null;
+    }).then(() => monthBlock.boundingBox());
     const summaryBox = await summary.boundingBox();
     expect(chartBox).not.toBeNull();
     expect(summaryBox).not.toBeNull();
     if (chartBox && summaryBox) {
-      expect(summaryBox.y - (chartBox.y + chartBox.height)).toBeLessThanOrEqual(1);
+      const lineTop = await monthBlock.evaluate((element) => {
+        const path = element.querySelector('svg path[fill="none"]');
+        if (!path) return null;
+        const box = element.getBoundingClientRect();
+        return path.getBoundingClientRect().top - box.top;
+      });
+      expect(lineTop).not.toBeNull();
+      if (lineTop !== null) expect(Math.abs(lineTop)).toBeLessThanOrEqual(2);
+      const svgFill = await monthBlock.evaluate((element) => {
+        const svg = element.querySelector('svg');
+        if (!svg) return null;
+        const box = element.getBoundingClientRect();
+        return svg.getBoundingClientRect().height - box.height;
+      });
+      expect(svgFill).not.toBeNull();
+      if (svgFill !== null) expect(Math.abs(svgFill)).toBeLessThanOrEqual(1);
+      if ((page.viewportSize()?.width ?? 0) >= 1024) {
+        expect(summaryBox.y - (chartBox.y + chartBox.height)).toBeLessThanOrEqual(1);
+      } else {
+        const recentBox = await recent.boundingBox();
+        expect(recentBox).not.toBeNull();
+        if (recentBox) {
+          expect(recentBox.y).toBeGreaterThan(chartBox.y);
+          expect(summaryBox.y).toBeGreaterThan(recentBox.y);
+          expect(Math.abs(recentBox.y - (chartBox.y + chartBox.height))).toBeLessThanOrEqual(1);
+          await expect(balance).toHaveCSS('text-align', 'center');
+          const recentCard = recent.locator('div').first();
+          expect(await recentCard.evaluate((el) => getComputedStyle(el).borderTopWidth)).toBe(
+            '0px',
+          );
+        }
+      }
 
       if ((page.viewportSize()?.width ?? 0) >= 1024) {
         const balanceBox = await balance.boundingBox();
-        const upcomingBox = await page.locator('[data-hero="upcoming"]').boundingBox();
+        const recentBox = await recent.boundingBox();
         expect(balanceBox).not.toBeNull();
-        expect(upcomingBox).not.toBeNull();
-        if (balanceBox && upcomingBox) {
+        expect(recentBox).not.toBeNull();
+        if (balanceBox && recentBox) {
           expect(Math.abs(chartBox.y - balanceBox.y)).toBeLessThanOrEqual(1);
-          expect(Math.abs(summaryBox.y + summaryBox.height - (upcomingBox.y + upcomingBox.height))).toBeLessThanOrEqual(1);
+          const air = recentBox.y - (balanceBox.y + balanceBox.height);
+          expect(air).toBeGreaterThanOrEqual(16);
+          const leftBottom = recentBox.y + recentBox.height;
+          const rightBottom = summaryBox.y + summaryBox.height;
+          expect(Math.abs(leftBottom - rightBottom)).toBeLessThanOrEqual(8);
         }
       }
+
+      if ((page.viewportSize()?.width ?? 0) >= 1024) {
+        const amountSize = await balance
+          .locator('[data-amount]')
+          .first()
+          .evaluate((element) => getComputedStyle(element).fontSize);
+        expect(amountSize).toBe('52px');
+        await expect(balance).not.toContainText('estimado a fin de mes');
+        await expect(balance).not.toContainText('Sin proyección');
+        await expect(balance).not.toHaveCSS('text-align', 'center');
+        const recentCard = recent.locator('div').first();
+        expect(await recentCard.evaluate((el) => getComputedStyle(el).borderTopWidth)).toBe(
+          '1px',
+        );
+      }
     }
+
+    await expect(page.locator('[data-hero="upcoming"]')).toHaveCount(0);
 
     const bar = monthBlock.getByRole('group', { name: /Saldo del mes por día/ });
     await expect(bar).toBeVisible();
