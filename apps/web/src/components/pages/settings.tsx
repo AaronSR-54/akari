@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { updateProfileName } from '@akari/domain';
 import {
   backupToJson,
   exportBackup,
@@ -14,6 +15,7 @@ import {
 } from '@akari/data';
 import { appNow } from '../../lib/clock';
 import {
+  Avatar,
   Badge,
   Banner,
   Button,
@@ -24,12 +26,14 @@ import {
   SelectPill,
   SettingRow,
   Stack,
+  TextField,
   useToast,
   useTheme,
 } from '@akari/ui';
 import { useSettings } from '../../components/hooks';
 import { PageTitle } from '../../components/page-title';
 import { PageHeaderResponsive } from '../../components/page-header-responsive';
+import { defaultProfile, initialsFromName } from '../../lib/profile';
 import { useData } from '../../components/providers';
 import { PageSkeleton } from '../../components/page-skeleton';
 
@@ -50,6 +54,9 @@ export function SettingsScreen() {
   const router = useRouter();
   const [storage, setStorage] = useState<StorageStatus | null>(null);
   const [confirm, setConfirm] = useState<'reset' | 'demo' | 'import' | null>(null);
+  const [editingName, setEditingName] = useState(false);
+  const [nameDraft, setNameDraft] = useState('');
+  const [nameError, setNameError] = useState<string | undefined>();
   const [busy, setBusy] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -61,12 +68,30 @@ export function SettingsScreen() {
     return <PageSkeleton variant="single" />;
   }
 
+  const profileName = settings.displayName ?? defaultProfile.displayName;
+
   const update = async (patch: Parameters<typeof repositories.settings.update>[0]) => {
     try {
       await repositories.settings.update(patch);
       toast({ title: 'Ajustes guardados', tone: 'success' });
     } catch (error) {
       toast({ title: 'No se han podido guardar', description: storageErrorMessage(error), tone: 'error' });
+    }
+  };
+
+  const saveName = async () => {
+    setBusy(true);
+    setNameError(undefined);
+    try {
+      await updateProfileName(repositories, nameDraft);
+      setEditingName(false);
+      toast({ title: 'Nombre actualizado', tone: 'success' });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'No se ha podido guardar el nombre.';
+      setNameError(message);
+      toast({ title: 'No se ha podido guardar', description: message, tone: 'error' });
+    } finally {
+      setBusy(false);
     }
   };
 
@@ -138,11 +163,11 @@ export function SettingsScreen() {
 
   return (
     <div>
-      <PageTitle title="Datos y sincronización" />
+      <PageTitle title="Ajustes" />
       <Stack gap={5}>
         <PageHeaderResponsive
-          title="Datos y sincronización"
-          meta="La base local vive en este dispositivo. La nube es opcional y aún no está activa."
+          title="Ajustes"
+          meta="Tu perfil y los datos guardados en este dispositivo. La nube es opcional y aún no está activa."
           actions={
             <Button variant="secondary" onClick={exportData}>
               Exportar copia
@@ -158,6 +183,36 @@ export function SettingsScreen() {
           </a>
           .
         </Banner>
+
+        <Card padding="md" className="flex flex-col gap-3" data-profile="panel">
+          <SectionHeader
+            title="Perfil"
+            action={
+              <Button
+                variant="tertiary"
+                size="sm"
+                onClick={() => {
+                  setNameDraft(profileName);
+                  setNameError(undefined);
+                  setEditingName(true);
+                }}
+              >
+                Editar
+              </Button>
+            }
+          />
+          <div className="flex items-center gap-3">
+            <Avatar size="md" initials={initialsFromName(profileName)} label={profileName} />
+            <div className="min-w-0">
+              <p className="text-ui-12-strong text-text-primary">{profileName}</p>
+              <p className="text-ui-10 text-text-secondary">{defaultProfile.subtitle}</p>
+            </div>
+          </div>
+          <p className="text-ui-10 text-text-secondary">
+            El nombre se guarda solo en este dispositivo. La foto se representa con iniciales y no se
+            almacenan imágenes.
+          </p>
+        </Card>
 
         <div className="grid gap-4 lg:grid-cols-[1.06fr_1fr]">
           <Card padding="none" className="px-5 py-2">
@@ -338,6 +393,32 @@ export function SettingsScreen() {
         {confirm === 'demo'
           ? 'Los datos actuales se sustituirán por cuentas, movimientos y grupos de ejemplo.'
           : 'Se borrarán todas las cuentas, movimientos y grupos de este navegador. Exporta una copia antes si quieres conservarlos.'}
+      </Modal>
+
+      <Modal
+        open={editingName}
+        onClose={() => setEditingName(false)}
+        title="Editar nombre"
+        footer={
+          <>
+            <Button variant="tertiary" onClick={() => setEditingName(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={() => void saveName()} loading={busy}>
+              Guardar
+            </Button>
+          </>
+        }
+      >
+        <TextField
+          label="Nombre"
+          value={nameDraft}
+          onChange={(event) => setNameDraft(event.target.value)}
+          error={nameError}
+          help="Se muestra en tu perfil y en el acceso de usuario. Máximo 40 caracteres."
+          maxLength={40}
+          data-autofocus
+        />
       </Modal>
     </div>
   );

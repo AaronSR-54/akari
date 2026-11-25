@@ -70,9 +70,14 @@ describe('repositories', () => {
 
   it('devuelve ajustes por defecto y persiste cambios', async () => {
     expect((await repositories.settings.get()).onboardingCompleted).toBe(false);
-    const updated = await repositories.settings.update({ onboardingCompleted: true, theme: 'dark' });
+    const updated = await repositories.settings.update({
+      onboardingCompleted: true,
+      theme: 'dark',
+      displayName: 'Ana Ruiz',
+    });
     expect(updated.onboardingCompleted).toBe(true);
     expect((await repositories.settings.get()).theme).toBe('dark');
+    expect((await repositories.settings.get()).displayName).toBe('Ana Ruiz');
   });
 
   it('revierte las escrituras de una transacción fallida', async () => {

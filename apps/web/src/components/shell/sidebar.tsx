@@ -4,10 +4,8 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { Avatar, Icon, IconBell, IconButton, IconSearch, Logo, cn } from '@akari/ui';
+import { defaultProfile, initialsFromName } from '../../lib/profile';
 import { isActivePath, navItems, type NavItem } from '../nav';
-
-const initials = 'MR';
-const displayName = 'Marta';
 
 function NavLogo({ format }: { format: 'expanded' | 'initial' }) {
   return (
@@ -58,9 +56,11 @@ function NavList({
 export function Sidebar({
   pinned,
   onPinnedChange,
+  displayName = defaultProfile.displayName,
 }: {
   pinned: boolean;
   onPinnedChange: (value: boolean) => void;
+  displayName?: string;
 }) {
   const [hovered, setHovered] = useState(false);
   const [focusWithin, setFocusWithin] = useState(false);
@@ -138,13 +138,21 @@ export function Sidebar({
           </div>
           <NavList expanded={expanded} onNavigate={() => setHovered(false)} />
         </div>
-        <div className={cn('mt-4 flex items-center gap-3', !expanded && 'justify-center')}>
-          <Avatar size="md" initials={initials} label={displayName} />
+        <Link
+          href="/ajustes"
+          aria-label="Ajustes"
+          title="Ajustes"
+          className={cn(
+            'mt-4 flex items-center gap-3 rounded-lg p-1 transition-colors duration-fast hover:bg-surface-sunken focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2',
+            !expanded && 'justify-center',
+          )}
+        >
+          <Avatar size="md" initials={initialsFromName(displayName)} label={displayName} />
           <span className={cn('min-w-0', !expanded && 'sr-only')}>
             <span className="block truncate text-ui-12-strong text-text-primary">{displayName}</span>
-            <span className="block truncate text-ui-10 text-text-secondary">Cuenta local</span>
+            <span className="block truncate text-ui-10 text-text-secondary">{defaultProfile.subtitle}</span>
           </span>
-        </div>
+        </Link>
       </aside>
     </>
   );
@@ -186,7 +194,13 @@ export function DesktopHeader({
   );
 }
 
-export function HeaderNav({ onOpenSearch }: { onOpenSearch: () => void }) {
+export function HeaderNav({
+  onOpenSearch,
+  displayName = defaultProfile.displayName,
+}: {
+  onOpenSearch: () => void;
+  displayName?: string;
+}) {
   const pathname = usePathname();
   return (
     <header className="sticky top-0 z-30 hidden w-full bg-surface-canvas lg:-mt-4 lg:block">
@@ -221,14 +235,21 @@ export function HeaderNav({ onOpenSearch }: { onOpenSearch: () => void }) {
         <div className="flex items-center gap-3">
           <IconButton aria-label="Buscar" icon={<IconSearch size={20} />} onClick={onOpenSearch} />
           <IconButton aria-label="Avisos" icon={<IconBell size={20} />} />
-          <Avatar size="md" initials={initials} label={displayName} />
+          <Link
+            href="/ajustes"
+            aria-label="Ajustes"
+            title="Ajustes"
+            className="inline-flex rounded-full p-1 transition-colors duration-fast hover:bg-surface-sunken focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2"
+          >
+            <Avatar size="md" initials={initialsFromName(displayName)} label={displayName} />
+          </Link>
         </div>
       </div>
     </header>
   );
 }
 
-export function TabletHeader() {
+export function TabletHeader({ displayName = defaultProfile.displayName }: { displayName?: string }) {
   const pathname = usePathname();
   return (
     <header className="sticky top-0 z-30 hidden border-b border-border-subtle bg-surface-default md:block lg:hidden">
@@ -260,13 +281,26 @@ export function TabletHeader() {
             })}
           </nav>
         </div>
-        <Avatar size="md" initials={initials} tone="strong" label={displayName} />
+        <Link
+          href="/ajustes"
+          aria-label="Ajustes"
+          title="Ajustes"
+          className="inline-flex rounded-full p-1 transition-colors duration-fast hover:bg-surface-sunken focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2"
+        >
+          <Avatar size="md" initials={initialsFromName(displayName)} tone="strong" label={displayName} />
+        </Link>
       </div>
     </header>
   );
 }
 
-export function MobileTopBar({ onOpenSearch }: { onOpenSearch: () => void }) {
+export function MobileTopBar({
+  onOpenSearch,
+  displayName = defaultProfile.displayName,
+}: {
+  onOpenSearch: () => void;
+  displayName?: string;
+}) {
   return (
     <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-border-subtle bg-surface-default px-5 md:hidden">
       <Link
@@ -278,7 +312,14 @@ export function MobileTopBar({ onOpenSearch }: { onOpenSearch: () => void }) {
       </Link>
       <div className="flex items-center gap-2">
         <IconButton aria-label="Buscar" icon={<IconSearch size={20} />} onClick={onOpenSearch} />
-        <Avatar size="md" initials={initials} tone="strong" label={displayName} />
+        <Link
+          href="/ajustes"
+          aria-label="Ajustes"
+          title="Ajustes"
+          className="inline-flex rounded-full p-1 transition-colors duration-fast hover:bg-surface-sunken focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2"
+        >
+          <Avatar size="md" initials={initialsFromName(displayName)} tone="strong" label={displayName} />
+        </Link>
       </div>
     </header>
   );

@@ -9,6 +9,7 @@ import {
   recordMovement,
   settleTransfer,
   updateGroupRole,
+  updateProfileName,
   ValidationError,
   type Group,
   type InstallmentPlan,
@@ -329,5 +330,27 @@ describe('services', () => {
     expect(answers.biggestExpense.hasData).toBe(true);
     expect(answers.biggestExpense.amountMinor).toBe(4500);
     expect(answers.avoidable.amountMinor).toBe(4500);
+  });
+});
+
+describe('nombre del perfil', () => {
+  it('guarda el nombre recortado y lo conserva al leer los ajustes', async () => {
+    const repositories = memoryRepositories();
+    const updated = await updateProfileName(repositories, '  Ana Ruiz  ');
+    expect(updated.displayName).toBe('Ana Ruiz');
+    expect((await repositories.settings.get()).displayName).toBe('Ana Ruiz');
+  });
+
+  it('rechaza un nombre vacío sin alterar el guardado', async () => {
+    const repositories = memoryRepositories();
+    await updateProfileName(repositories, 'Ana');
+    await expect(updateProfileName(repositories, '   ')).rejects.toThrow(ValidationError);
+    expect((await repositories.settings.get()).displayName).toBe('Ana');
+  });
+
+  it('rechaza un nombre demasiado largo', async () => {
+    const repositories = memoryRepositories();
+    await expect(updateProfileName(repositories, 'A'.repeat(41))).rejects.toThrow(/40 caracteres/);
+    expect((await repositories.settings.get()).displayName).toBeUndefined();
   });
 });

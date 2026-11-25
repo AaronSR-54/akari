@@ -15,13 +15,14 @@ import {
   Stack,
   StatePage,
 } from '@akari/ui';
-import { useOverview } from '../hooks';
+import { useOverview, useSettings } from '../hooks';
 import { PageTitle } from '../page-title';
 import { PageHeaderResponsive } from '../page-header-responsive';
 import { ActionLink } from '../action-link';
 import { PageSkeleton } from '../page-skeleton';
 import { MovementDetailDialog } from '../movement-detail-dialog';
 import { appNow } from '../../lib/clock';
+import { defaultProfile } from '../../lib/profile';
 import {
   formatDayMonth,
   formatFullDate,
@@ -338,6 +339,8 @@ function OverviewBody({ overview }: { overview: Overview }) {
 
 export function DashboardScreen() {
   const overview = useOverview();
+  const settings = useSettings();
+  const profileName = settings?.displayName ?? defaultProfile.displayName;
 
   if (!overview) {
     return <PageSkeleton variant="cards" />;
@@ -347,7 +350,7 @@ export function DashboardScreen() {
     return (
       <Stack gap={5.5}>
         <PageHeaderResponsive
-          title={`${greeting()}, Marta`}
+          title={`${greeting()}, ${profileName}`}
           meta="Aún no hay cuentas · datos en este dispositivo"
           actions={
             <>
@@ -372,7 +375,7 @@ export function DashboardScreen() {
     <Stack gap={5.5}>
       <PageTitle title="Resumen" />
       <PageHeaderResponsive
-        title={`${greeting()}, Marta`}
+        title={`${greeting()}, ${profileName}`}
         meta={`${formatFullDate()} · ${overview.accounts.length} cuentas en este dispositivo`}
       />
       <OverviewBody overview={overview} />

@@ -6,7 +6,6 @@ export const navItems: NavItem[] = [
   { href: '/', label: 'Resumen', icon: 'home' },
   { href: '/movimientos', label: 'Movimientos', icon: 'arrows' },
   { href: '/grupos', label: 'Grupos', icon: 'users' },
-  { href: '/ajustes', label: 'Ajustes', icon: 'sliders' },
 ];
 
 export function isActivePath(pathname: string, href: string): boolean {
