@@ -114,6 +114,7 @@ E2E:   npm run e2e:worktree
 - **PR.** Usa `node scripts/kan-sync.mjs pr-body <change-id>` como borrador, `gh pr create --base main` con la plantilla y no mergees ni cierres la PR.
 - **DONE.** Después de abrir la PR, ejecuta `node scripts/kan-sync.mjs done <change-id> --pr <url>`. Mueve todas las tarjetas del manifiesto a `DONE`, registra la URL y commitea el manifiesto. La PR sigue abierta: `DONE` significa «archivado y PR abierta», no «mergeado».
 - **Sin merge.** La revisión y el merge quedan en manos de una persona. Al terminar, informa la URL de la PR y las verificaciones.
+- **Espera al merge para limpiar.** Archivar NO borra el worktree: el agente lo conserva y solo ejecuta `node scripts/kan-sync.mjs cleanup <change-id>` cuando una persona confirma que la PR está mergeada. El comando consulta `gh pr view` y falla sin borrar nada si la PR sigue abierta o no se puede comprobar; borra el worktree y la rama local, sin tocar etiquetas ni la rama remota. `--dry-run` muestra la acción y `--force` permite retirar un worktree con cambios sin commitear.
 
 ### Revisión y liberación
 
@@ -123,6 +124,9 @@ node scripts/kan-sync.mjs review <change-id>
 
 # Abandonar un claim: devuelve tarjetas, borra etiquetas y limpia worktree/rama.
 node scripts/kan-sync.mjs release <change-id> [--force]
+
+# Tras confirmar el merge: borra solo el worktree y la rama local.
+node scripts/kan-sync.mjs cleanup <change-id> [--pr <url>] [--dry-run] [--force]
 ```
 
 `review` requiere que exista `lists.review` en `kan.config.json` y la lista `REVIEW` en el tablero. `release` se niega si el change está archivado, hay una PR abierta o el worktree tiene cambios sin commitear, salvo `--force`.
@@ -135,7 +139,7 @@ Antes de escribir en Kan, ejecuta `node scripts/kan-sync.mjs whoami`: imprime el
 
 - Los archivados compiten por `openspec/specs/**`. Deja solo una PR de archivado lista a la vez o rebasa sobre `main` actualizado antes de pedir revisión; vuelve a ejecutar la CI.
 - `check <change-id>` avisa si la rama toca ficheros compartidos (`AGENTS.md`, `package.json`, CI, configuración, documentación de flujo). Coordina esos cambios y mergea en serie.
-- Tras el merge, limpia el worktree, la rama y las etiquetas del claim. Un claim abandonado se libera con `release`.
+- Tras el merge confirmado, ejecuta `node scripts/kan-sync.mjs cleanup <change-id>`: borra el worktree y la rama local, sin tocar etiquetas ni la rama remota. Un claim abandonado se libera con `release`.
 - Si Kan falla antes de reclamar, `claim` aborta sin tocar Git. Si falla después de publicar el claim, conserva rama y worktree, informa y permite reintentar; no bloquees OpenSpec.
 - `start` sigue existiendo para changes antiguos sin claim previo.
 

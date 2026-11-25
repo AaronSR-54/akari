@@ -207,6 +207,12 @@ npm run preview:worktree:stop # detiene el frontal
 
 Los dos worktrees pueden tener servidores a la vez porque cada uno usa su propio puerto y su propio `.next`. `npm run dev` sigue funcionando en el checkout principal con el puerto 3000 por defecto.
 
+### Limpieza del worktree tras el merge
+
+Archivar deja el worktree en pie a propósito: `done` ocurre antes del merge y borrarlo entonces obligaría a recrearlo si la PR recibe cambios o se reabre. El agente espera a que una persona mergee la PR y ejecuta `kan-sync cleanup <change-id>`. El comando toma la URL de `workflow.json` (o `--pr`) y consulta `gh pr view <url> --json state,mergedAt,headRefName`: GitHub es la única fuente de verdad y sin `mergedAt` no se borra nada. La comprobación falla cerrada: si `gh` no está disponible, no autentica o la PR está abierta o cerrada sin merge, el comando falla con un mensaje claro y deja el worktree intacto.
+
+La limpieza se ejecuta desde el checkout principal —resuelto con `--git-common-dir`— y solo elimina el directorio del worktree y la rama local (`git branch -d`, con `-D` como respaldo). No borra las etiquetas `claims/*`: esas las gestiona `release` para claims abandonados. Tampoco borra la rama remota: GitHub ya la conserva tras el merge. `--dry-run` imprime la acción sin ejecutarla y `--force` permite retirar un worktree con cambios sin commitear. Si el comando se lanza desde el checkout principal de `main`, se niega a borrarlo.
+
 ### Conflictos y ficheros compartidos
 
 El aislamiento por rama evita la mayoría de conflictos, pero los archivados compiten por `openspec/specs/**`. La regla es: solo una PR de archivado se marca como lista a la vez, o cada una se rebasa sobre `main` actualizado y vuelve a ejecutar la CI antes de revisarse. La protección de rama con «require branches to be up to date» refuerza la regla; una merge queue es opcional.
@@ -241,7 +247,7 @@ Se mantiene un único CLI, `scripts/kan-sync.mjs`, para no duplicar puntos de en
 - **Cambio de título de tarjeta** → el manifiesto y el marcador evitan depender del título.
 - **Frontal olvidado al archivar** → `/opsx-archive` y `done` detienen el proceso; `preview:worktree status` permite comprobarlo. Un fallo al detener solo avisa, nunca bloquea el archivado.
 - **Identidad de Kan cambiante** → `kan_CURRENT_USER` es la única fuente; si la persona cambia su email en el workspace, la herramienta falla con un mensaje claro en lugar de escribir como el dueño del token.
-- **Espacio en disco** → los worktrees y `node_modules` enlazados se limpian tras el merge; `release` y la documentación lo recuerdan.
+- **Espacio en disco** → los worktrees se limpian con `cleanup` solo después de validar el merge; `release` cubre los claims abandonados y la documentación recuerda ambas vías.
 - **Doble commit al registrar la PR** → `done` actualiza el manifiesto y lo publica después de abrir la PR; la CI vuelve a ejecutarse. Es el precio de dejar la URL versionada.
 
 ## Migration Plan
@@ -251,7 +257,7 @@ No hay migración de datos ni cambios de runtime.
 1. Los changes y tarjetas existentes siguen funcionando: sin `workflow.json`, `done` usa la coincidencia por título o marcador; `start` sigue creando la tarjeta si falta.
 2. `kan.config.json` puede añadir `lists.review` cuando el tablero tenga la lista; sin ella, `claim`, `done` y `release` funcionan y solo `review` falla con un mensaje claro.
 3. El `.env` existente en el checkout principal se sigue usando; los worktrees dejan de necesitar una copia.
-4. Los worktrees antiguos no se tocan; se limpian con `git worktree remove` cuando su rama se mergee. La primera vez que ejecutan `dev:worktree` o `e2e:worktree` reciben su `.opsx/ports.json` con el puerto 3100 si está libre; los claims nuevos lo crean al reclamar.
+4. Los worktrees antiguos no se tocan automáticamente: una vez confirmado el merge se limpian con `kan-sync cleanup <change-id>` (o a mano con `git worktree remove`). La primera vez que ejecutan `dev:worktree` o `e2e:worktree` reciben su `.opsx/ports.json` con el puerto 3100 si está libre; los claims nuevos lo crean al reclamar.
 5. `.opsx/` se añade a `.gitignore`; si un worktree antiguo ya tenía un puerto manual, se puede forzar con `--dev-port`/`--e2e-port` o borrar el fichero para que se reasigne desde 3100.
 6. Los changes y ramas archivados con prefijo `feat/` no se renombran: sus manifiestos siguen en el archivo y no se validan al abrir un change nuevo. El change abierto `mejorar-flujo-colaborativo` actualiza su manifiesto a la rama `mejorar-flujo-colaborativo`.
 7. Los `.env` existentes ya tienen `kan_CURRENT_USER`; si no, la herramienta falla con un mensaje antes de escribir en Kan y la persona lo añade.

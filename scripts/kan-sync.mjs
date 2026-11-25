@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, symlinkSync } from 'node:fs';
-import { dirname, join, resolve } from 'node:path';
+import { dirname, join, resolve, sep } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { parseArgs } from 'node:util';
 import {
@@ -103,6 +103,7 @@ const USAGE = `Uso:
   node scripts/kan-sync.mjs review <change-id> [--dry-run]
   node scripts/kan-sync.mjs done <change-id> [--pr <url>] [--card <publicId>] [--no-check] [--dry-run]
   node scripts/kan-sync.mjs release <change-id> [--force] [--dry-run]
+  node scripts/kan-sync.mjs cleanup <change-id> [--pr <url>] [--force] [--dry-run]
   node scripts/kan-sync.mjs pr-body <change-id> [--archive]
   node scripts/kan-sync.mjs check <change-id>
   node scripts/kan-sync.mjs whoami
@@ -880,6 +881,102 @@ async function releaseCommand({ changeId, config, env, fetchImpl, dryRun, force,
   return { released: true, changeId };
 }
 
+function defaultRunGh(args, { cwd } = {}) {
+  return spawnSync('gh', args, { cwd, encoding: 'utf8' });
+}
+
+function parseMergeState(result) {
+  if (result?.error) {
+    throw new KanSyncError(`No se pudo ejecutar gh: ${result.error.message}`, 'GH_UNAVAILABLE');
+  }
+  if (result?.status !== 0) {
+    const detail = (result?.stderr || result?.stdout || '').trim();
+    throw new KanSyncError(`No se pudo consultar la PR con gh${detail ? `: ${detail}` : '.'}`, 'GH_PR_FAILED');
+  }
+  try {
+    return JSON.parse(result.stdout || '{}');
+  } catch {
+    throw new KanSyncError('gh devolvió una respuesta que no es JSON válido.', 'GH_PR_INVALID');
+  }
+}
+
+/**
+ * Borra el worktree y la rama local de un change solo después de que GitHub
+ * confirme que su PR está mergeada. No toca etiquetas ni la rama remota.
+ */
+export async function cleanupCommand({
+  changeId,
+  prUrl,
+  runGit = execGit,
+  runGh = defaultRunGh,
+  dryRun = false,
+  force = false,
+  log = () => {},
+  cwd = process.cwd(),
+} = {}) {
+  const { root, manifest } = readManifestForCommand({ changeId, cwd, runGit });
+  if (!manifest) throw new KanSyncError(`No existe workflow.json para "${changeId}".`, 'MANIFEST_MISSING');
+  const url = prUrl?.trim() || manifest.prUrl;
+  if (!url) throw new KanSyncError(`El change "${changeId}" no tiene PR registrada; pasa --pr <url>.`, 'PR_URL_MISSING');
+  if (!/^https?:\/\//.test(url)) throw new KanSyncError('--pr debe ser una URL http(s).', 'PR_URL_INVALID');
+
+  const pr = parseMergeState(
+    runGh(['pr', 'view', url, '--json', 'number,state,mergedAt,headRefName'], { cwd: root })
+  );
+  if (pr.state !== 'MERGED' || !pr.mergedAt) {
+    throw new KanSyncError(
+      `La PR ${url} no está mergeada (estado: ${pr.state ?? 'desconocido'}); no se borra el worktree de "${changeId}".`,
+      'PR_NOT_MERGED'
+    );
+  }
+
+  const mainRoot = resolveMainRoot({ cwd: root, runGit });
+  if (resolve(root) === resolve(mainRoot)) {
+    throw new KanSyncError('El change no tiene un worktree propio; no se borra el checkout principal.', 'MAIN_CHECKOUT_PROTECTED');
+  }
+
+  if (dryRun) {
+    log(`[dry-run] limpiar ${changeId}: worktree ${root} y rama local ${manifest.branch} (PR #${pr.number ?? '?'} mergeada).`);
+    return { cleaned: true, dryRun: true, changeId, worktree: root, branch: manifest.branch, prUrl: url };
+  }
+
+  const status = runGit(['status', '--porcelain'], { cwd: root }).stdout
+    .split(/\r?\n/)
+    .map((line) => line.trimEnd())
+    .filter(Boolean)
+    .filter((line) => {
+      const path = line.slice(3).trim();
+      return path !== 'node_modules' && !path.startsWith('node_modules/') &&
+        path !== '.opsx' && !path.startsWith('.opsx/') &&
+        path !== '.env' && !path.startsWith('.env.');
+    })
+    .join('\n');
+  if (status && !force) {
+    throw new KanSyncError(`El worktree tiene cambios sin commitear:\n${status}\nUsa --force para descartarlos.`, 'WORKTREE_DIRTY');
+  }
+
+  const current = process.cwd();
+  if (resolve(current) === resolve(root) || current.startsWith(`${resolve(root)}${sep}`)) {
+    process.chdir(mainRoot);
+  }
+  removeWorktree({ runGit, mainRoot, worktree: root, force: Boolean(force) });
+  if (existsSync(root)) {
+    throw new KanSyncError(`No se pudo eliminar el worktree ${root}; revísalo a mano.`, 'WORKTREE_REMOVE_FAILED');
+  }
+
+  const soft = runGit(['branch', '-d', manifest.branch], { cwd: mainRoot, allowFailure: true });
+  let branchDeleted = soft.status === 0;
+  if (!branchDeleted) {
+    branchDeleted = runGit(['branch', '-D', manifest.branch], { cwd: mainRoot, allowFailure: true }).status === 0;
+  }
+  if (!branchDeleted && runGit(['branch', '--list', manifest.branch], { cwd: mainRoot, allowFailure: true }).stdout.trim()) {
+    throw new KanSyncError(`No se pudo borrar la rama local ${manifest.branch}; revísalo a mano.`, 'BRANCH_DELETE_FAILED');
+  }
+
+  log(`Worktree y rama local ${manifest.branch} eliminados tras verificar el merge de ${url}. Etiquetas y rama remota conservadas.`);
+  return { cleaned: true, dryRun: false, changeId, worktree: root, branch: manifest.branch, prUrl: url };
+}
+
 function resolveBaseUrl({ configFile, baseUrl, env }) {
   if (baseUrl) return baseUrl.trim().replace(/\/+$/, '');
 
@@ -1067,6 +1164,8 @@ export async function run(argv, { env = process.env, log = console.log, logError
       await reviewCommand(options);
     } else if (command === 'release') {
       await releaseCommand({ ...options, force: Boolean(values.force) });
+    } else if (command === 'cleanup') {
+      await cleanupCommand({ changeId, prUrl: values.pr, runGit, dryRun: Boolean(values['dry-run']), force: Boolean(values.force), log });
     } else {
       logError(`Error: comando desconocido "${command}".`);
       logError(USAGE);

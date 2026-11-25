@@ -162,7 +162,7 @@ Después de abrir la PR:
 node scripts/kan-sync.mjs done mejorar-facturas --pr https://github.com/.../pull/123
 ```
 
-`done` mueve todas las tarjetas del manifiesto a `DONE`, añade la URL de la PR a sus descripciones, actualiza `workflow.json` y publica ese cambio en la rama. **No mergea la PR.** `DONE` significa «archivado y PR abierta»; GitHub sigue siendo la fuente de verdad del merge.
+`done` mueve todas las tarjetas del manifiesto a `DONE`, añade la URL de la PR a sus descripciones, actualiza `workflow.json` y publica ese cambio en la rama. **No mergea la PR.** `DONE` significa «archivado y PR abierta»; GitHub sigue siendo la fuente de verdad del merge. El agente **no borra el worktree al archivar**: lo conserva hasta que una persona confirme el merge y ejecute la limpieza descrita más abajo.
 
 Si abres una PR antes de archivar:
 
@@ -210,17 +210,20 @@ Ejemplo de dos sesiones:
 - Los changes que tocan esos ficheros se coordinan y se mergean en serie.
 - `done` ejecuta el aviso de `check` salvo que pases `--no-check`; no bloquea.
 
-## Limpieza y claims abandonados
+## Limpieza tras el merge y claims abandonados
 
-Tras el merge:
+Archivar deja el worktree intacto a propósito. Cuando una persona confirma que la PR está mergeada, el agente ejecuta:
 
 ```bash
-git worktree remove /ruta/a/akari-worktrees/mejorar-facturas
-git branch -d facturas-panel
-git push origin --delete facturas-panel
+node scripts/kan-sync.mjs cleanup facturas-panel
+node scripts/kan-sync.mjs cleanup facturas-panel --dry-run
+node scripts/kan-sync.mjs cleanup facturas-panel --pr https://github.com/.../pull/123
+node scripts/kan-sync.mjs cleanup facturas-panel --force
 ```
 
-Las etiquetas `claims/*` se borran al liberar el claim. Para abandonar uno:
+`cleanup` toma la URL de `workflow.json` (o `--pr`) y consulta `gh pr view <url> --json state,mergedAt,headRefName`. Sin `mergedAt`, falla con `PR_NOT_MERGED` y no toca nada; si `gh` no está disponible o no autentica, falla con `GH_UNAVAILABLE`/`GH_PR_FAILED`. Solo con el merge confirmado elimina el directorio del worktree y la rama local (`git branch -d`, con `-D` como respaldo). **No borra las etiquetas `claims/*` ni la rama remota**, y se niega a borrar el checkout principal de `main`. `--dry-run` imprime la acción sin ejecutarla; `--force` permite retirar un worktree con cambios sin commitear. El agente debe esperar a esta validación antes de dar el worktree por limpio.
+
+Las etiquetas `claims/*` se borran al liberar un claim abandonado:
 
 ```bash
 node scripts/kan-sync.mjs release mejorar-facturas

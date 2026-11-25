@@ -1,10 +1,11 @@
-import { mkdtempSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import {
   addCardComment,
   buildCommentText,
+  cleanupCommand,
   buildCreateCard,
   claimCommand,
   commentCommand,
@@ -742,5 +743,162 @@ describe('identidad y comentarios en Kan', () => {
     };
     await addCardComment({ client, card: { publicId: 'card-1' }, text: 'texto' });
     expect(calls[0].path).toBe('/cards/card-1/comments');
+  });
+});
+
+const cleanupTemps = [];
+afterEach(() => {
+  for (const dir of cleanupTemps.splice(0)) rmSync(dir, { recursive: true, force: true });
+});
+
+function writeCleanupManifest(root, changeId) {
+  const changeDir = join(root, 'openspec', 'changes', changeId);
+  mkdirSync(changeDir, { recursive: true });
+  writeFileSync(
+    join(changeDir, 'workflow.json'),
+    JSON.stringify({
+      changeId,
+      branch: changeId,
+      cards: [{ publicId: 'card-1', title: 'Tarjeta' }],
+      prUrl: 'https://github.com/org/repo/pull/42',
+    })
+  );
+}
+
+function cleanupFixture({ dirty = false, atMain = false } = {}) {
+  const base = mkdtempSync(join(tmpdir(), 'akari-cleanup-'));
+  cleanupTemps.push(base);
+  const mainRoot = join(base, 'main');
+  const worktree = join(base, 'worktree');
+  const changeId = 'cleanup-change';
+  mkdirSync(mainRoot, { recursive: true });
+  writeCleanupManifest(worktree, changeId);
+  if (atMain) writeCleanupManifest(mainRoot, changeId);
+
+  const calls = [];
+  const runGit = (args, { cwd } = {}) => {
+    calls.push({ args, cwd });
+    const [sub, ...rest] = args;
+    if (sub === 'rev-parse' && args.includes('--show-toplevel')) {
+      return { status: 0, stdout: `${cwd ?? worktree}\n`, stderr: '' };
+    }
+    if (sub === 'rev-parse' && args.includes('--git-common-dir')) {
+      return { status: 0, stdout: join(mainRoot, '.git'), stderr: '' };
+    }
+    if (sub === 'status' && rest[0] === '--porcelain') {
+      return { status: 0, stdout: dirty ? 'M  fichero.ts\n?? .opsx/\n' : '', stderr: '' };
+    }
+    if (sub === 'worktree' && rest[0] === 'remove') {
+      rmSync(worktree, { recursive: true, force: true });
+      return { status: 0, stdout: '', stderr: '' };
+    }
+    if (sub === 'branch' && (rest[0] === '-d' || rest[0] === '-D')) {
+      return { status: 0, stdout: '', stderr: '' };
+    }
+    if (sub === 'branch' && rest[0] === '--list') {
+      return { status: 0, stdout: '', stderr: '' };
+    }
+    return { status: 0, stdout: '', stderr: '' };
+  };
+  return { mainRoot, worktree, changeId, runGit, calls };
+}
+
+function ghMerged(calls = []) {
+  return (args) => {
+    calls.push(args);
+    return {
+      status: 0,
+      stdout: JSON.stringify({
+        number: 42,
+        state: 'MERGED',
+        mergedAt: '2026-11-25T18:00:25Z',
+        headRefName: 'cleanup-change',
+      }),
+      stderr: '',
+    };
+  };
+}
+
+describe('cleanupCommand', () => {
+  it('no borra nada si la PR sigue abierta', async () => {
+    const fixture = cleanupFixture();
+    const gh = () => ({
+      status: 0,
+      stdout: JSON.stringify({ number: 42, state: 'OPEN', mergedAt: null }),
+      stderr: '',
+    });
+    await expect(
+      cleanupCommand({ changeId: fixture.changeId, cwd: fixture.worktree, runGit: fixture.runGit, runGh: gh })
+    ).rejects.toMatchObject({ code: 'PR_NOT_MERGED' });
+    expect(existsSync(fixture.worktree)).toBe(true);
+    expect(fixture.calls.some(({ args }) => args[0] === 'worktree' || args[0] === 'branch')).toBe(false);
+  });
+
+  it('falla sin borrar si gh no está disponible', async () => {
+    const fixture = cleanupFixture();
+    const gh = () => ({ status: null, stdout: '', stderr: '', error: new Error('ENOENT') });
+    await expect(
+      cleanupCommand({ changeId: fixture.changeId, cwd: fixture.worktree, runGit: fixture.runGit, runGh: gh })
+    ).rejects.toMatchObject({ code: 'GH_UNAVAILABLE' });
+    expect(existsSync(fixture.worktree)).toBe(true);
+  });
+
+  it('falla sin borrar si gh no puede consultar la PR', async () => {
+    const fixture = cleanupFixture();
+    const gh = () => ({ status: 1, stdout: '', stderr: 'auth required' });
+    await expect(
+      cleanupCommand({ changeId: fixture.changeId, cwd: fixture.worktree, runGit: fixture.runGit, runGh: gh })
+    ).rejects.toMatchObject({ code: 'GH_PR_FAILED' });
+    expect(existsSync(fixture.worktree)).toBe(true);
+  });
+
+  it('con --dry-run imprime la acción y no modifica Git', async () => {
+    const fixture = cleanupFixture();
+    const logs = [];
+    const result = await cleanupCommand({
+      changeId: fixture.changeId,
+      cwd: fixture.worktree,
+      runGit: fixture.runGit,
+      runGh: ghMerged(),
+      dryRun: true,
+      log: (line) => logs.push(line),
+    });
+    expect(result).toMatchObject({ cleaned: true, dryRun: true, branch: fixture.changeId });
+    expect(logs.join('\n')).toContain('dry-run');
+    expect(existsSync(fixture.worktree)).toBe(true);
+    expect(fixture.calls.some(({ args }) => args[0] === 'worktree')).toBe(false);
+  });
+
+  it('borra el worktree y la rama local tras el merge sin tocar etiquetas ni el remoto', async () => {
+    const fixture = cleanupFixture();
+    const logs = [];
+    const result = await cleanupCommand({
+      changeId: fixture.changeId,
+      cwd: fixture.worktree,
+      runGit: fixture.runGit,
+      runGh: ghMerged(),
+      log: (line) => logs.push(line),
+    });
+    expect(result).toMatchObject({ cleaned: true, dryRun: false, prUrl: 'https://github.com/org/repo/pull/42' });
+    expect(existsSync(fixture.worktree)).toBe(false);
+    expect(fixture.calls.filter(({ args }) => args[0] === 'branch' && (args[1] === '-d' || args[1] === '-D')).map(({ args }) => args[1])).toEqual(['-d']);
+    expect(fixture.calls.some(({ args }) => args[0] === 'tag' || (args[0] === 'push' && args[1] === 'origin'))).toBe(false);
+    expect(logs.join('\n')).toContain('Etiquetas y rama remota conservadas');
+  });
+
+  it('se niega con cambios sin commitear salvo con --force', async () => {
+    const fixture = cleanupFixture({ dirty: true });
+    await expect(
+      cleanupCommand({ changeId: fixture.changeId, cwd: fixture.worktree, runGit: fixture.runGit, runGh: ghMerged() })
+    ).rejects.toMatchObject({ code: 'WORKTREE_DIRTY' });
+    expect(existsSync(fixture.worktree)).toBe(true);
+  });
+
+  it('no borra el checkout principal', async () => {
+    const fixture = cleanupFixture({ atMain: true });
+    await expect(
+      cleanupCommand({ changeId: fixture.changeId, cwd: fixture.mainRoot, runGit: fixture.runGit, runGh: ghMerged() })
+    ).rejects.toMatchObject({ code: 'MAIN_CHECKOUT_PROTECTED' });
+    expect(existsSync(fixture.mainRoot)).toBe(true);
   });
 });

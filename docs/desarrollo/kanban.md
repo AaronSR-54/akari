@@ -42,6 +42,7 @@
 | `review <change-id>` | Mueve las tarjetas del manifiesto a `REVIEW`. |
 | `done <change-id> [--pr <url>]` | Mueve las tarjetas a `DONE` y registra la PR. |
 | `release <change-id> [--force]` | Abandona el claim: devuelve tarjetas y limpia rama, worktree y etiquetas. |
+| `cleanup <change-id> [--pr <url>] [--force] [--dry-run]` | Tras validar el merge con `gh`, borra el worktree y la rama local; conserva etiquetas y rama remota. |
 | `pr-body <change-id>` | Imprime un borrador de cuerpo de PR. |
 | `check <change-id>` | Avisa si la rama toca ficheros compartidos. |
 | `whoami` | Imprime el email y el miembro configurados, sin secretos. |
@@ -104,6 +105,15 @@ node scripts/kan-sync.mjs release facturas-panel
 `done` se ejecuta después de abrir la PR. Mueve todas las tarjetas del manifiesto, añade la URL a sus descripciones y actualiza `workflow.json`. No mergea la PR: `DONE` significa «archivado y PR abierta».
 
 `release` retira tu asignación, devuelve las tarjetas a `TO DO`, borra el marcador y las etiquetas y limpia el worktree si no hay trabajo pendiente. Sin `--force` se niega si hay una PR abierta o cambios sin commitear.
+
+Para limpiar un change ya mergeado, usa `cleanup` en lugar de `release`:
+
+```bash
+node scripts/kan-sync.mjs cleanup facturas-panel --dry-run
+node scripts/kan-sync.mjs cleanup facturas-panel
+```
+
+`cleanup` consulta `gh pr view` y solo borra el worktree y la rama local cuando la PR tiene `mergedAt`. Si la PR no está mergeada o `gh` falla, termina con error y no modifica Git. No borra etiquetas ni la rama remota y se niega a eliminar el checkout principal. `--force` permite limpiar un worktree con cambios sin commitear.
 
 ## Manifiesto
 

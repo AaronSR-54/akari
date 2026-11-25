@@ -57,8 +57,15 @@
 - [x] 7.5 Actualizar `AGENTS.md`, `.opencode/commands/opsx-apply.md` y `opsx-archive.md` para registrar los pasos automáticos del agente, y `docs/desarrollo/flujo-colaborativo.md`, `docs/desarrollo/kanban.md` y `.env.example` con la nueva convención, puertos, frontal e identidad; verificar que no aparece ningún correo real.
 - [x] 7.6 Ejecutar `npm run typecheck`, `npm run lint`, `npm test` y `npm run build`, además de `openspec validate mejorar-flujo-colaborativo`, y corregir cualquier regresión.
 
+## 8. Limpieza de worktrees tras merge validado
+
+- [x] 8.1 Implementar `kan-sync cleanup <change-id>` con runners de `gh` y Git inyectables: tomar la URL de `workflow.json` o `--pr`, consultar `state` y `mergedAt`, y fallar sin borrar nada si la PR no está mergeada o no se puede consultar; verificar con tests de PR abierta, cerrada sin merge y `gh` indisponible.
+- [x] 8.2 Hacer que la limpieza elimine solo el worktree y la rama local desde el checkout principal, con `--dry-run` y `--force`, sin tocar etiquetas ni la rama remota y negándose a borrar `main`; verificar con tests de rama borrada, etiquetas intactas y checkout principal protegido.
+- [x] 8.3 Actualizar `AGENTS.md`, `docs/desarrollo/flujo-colaborativo.md` y `docs/desarrollo/kanban.md` para indicar que el agente conserva el worktree tras archivar y ejecuta `cleanup` solo cuando una persona confirma el merge; verificar que los comandos documentados coinciden con la CLI.
+- [x] 8.4 Ejecutar `npm run typecheck`, `npm run lint`, `npm test`, `npm run build` y `openspec validate mejorar-flujo-colaborativo`, y corregir cualquier regresión.
+
 ## Workflow follow-up
 
 - Archivar este change, ejecutar `done` con la URL de la PR, commitear y publicar la rama, y abrir la PR con la plantilla.
 - Configurar la lista `REVIEW` en Kan.bn y la protección de `main` si el administrador del repositorio lo autoriza.
-- Tras el merge, limpiar el worktree y la rama, y borrar las etiquetas de claim de las tarjetas de este change.
+- Tras el merge, ejecutar `kan-sync cleanup mejorar-flujo-colaborativo` para borrar el worktree y la rama; las etiquetas de claim se retiran con `release` si el claim se abandona.
