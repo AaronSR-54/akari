@@ -1,472 +1,819 @@
 #!/usr/bin/env node
-import { existsSync, readFileSync } from 'node:fs';
-import { dirname, resolve } from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { spawnSync } from 'node:child_process';
+import { existsSync, mkdirSync, readFileSync, symlinkSync } from 'node:fs';
+import { dirname, join, resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { parseArgs } from 'node:util';
+import {
+  DEFAULT_CONFIG_FILE,
+  readConfig,
+  readEnv,
+  resolveMainRoot,
+} from './lib/config.mjs';
+import { KanSyncError } from './lib/errors.mjs';
+import {
+  DEFAULT_TIMEOUT_MS,
+  appendChangeMarker,
+  assignCard,
+  createClient,
+  discover,
+  doneChange,
+  extractChangeId,
+  findCardByPublicId,
+  memberName,
+  moveCard,
+  queue,
+  removeChangeMarker,
+  removeCardMember,
+  requireApiKey,
+  resolveList,
+  resolveTargetMember,
+  reviewChange,
+  setCardDescription,
+  startChange,
+} from './lib/kan.mjs';
+import {
+  addCardsToManifest,
+  archivedManifest,
+  branchName,
+  buildPrBody,
+  claimTag,
+  createManifest,
+  deriveChangeId,
+  execGit,
+  hotFilesChanged,
+  isArchivedChange,
+  isValidChangeId,
+  parseClaimRef,
+  pushAtomicClaim,
+  pushAtomicTags,
+  readManifest,
+  writeManifestFile,
+  worktreePath,
+  writeManifest,
+} from './lib/workflow.mjs';
+import { describePorts, resolvePorts } from './lib/ports.mjs';
 
-export const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-export const DEFAULT_CONFIG_FILE = resolve(ROOT, 'kan.config.json');
-export const DEFAULT_ENV_FILE = resolve(ROOT, '.env');
-export const DEFAULT_TIMEOUT_MS = 10_000;
+export {
+  DEFAULT_CONFIG_FILE,
+  DEFAULT_ENV_FILE,
+  ROOT,
+  loadEnvText,
+  parseConfig,
+  readConfig,
+  readEnv,
+  resolveMainRoot,
+} from './lib/config.mjs';
+export { KanSyncError } from './lib/errors.mjs';
+export {
+  DEFAULT_TIMEOUT_MS,
+  appendChangeMarker,
+  appendPrUrl,
+  buildCreateCard,
+  buildMoveCard,
+  changeLine,
+  changeMarker,
+  createClient,
+  discover,
+  doneChange,
+  extractChangeId,
+  findCardByPublicId,
+  flattenCards,
+  matchCards,
+  memberName,
+  queue,
+  queuePayload,
+  removeChangeMarker,
+  resolveAssignee,
+  resolveList,
+  reviewChange,
+  startChange,
+} from './lib/kan.mjs';
 
 const USAGE = `Uso:
+  node scripts/kan-sync.mjs queue [--json]
+  node scripts/kan-sync.mjs claim <card-id...> [--change <id>] [--worktree-root <ruta>] [--dev-port <puerto>] [--e2e-port <puerto>] [--dry-run]
+  node scripts/kan-sync.mjs link <change-id> --cards <card-id,...> [--dry-run]
+  node scripts/kan-sync.mjs review <change-id> [--dry-run]
+  node scripts/kan-sync.mjs done <change-id> [--pr <url>] [--card <publicId>] [--no-check] [--dry-run]
+  node scripts/kan-sync.mjs release <change-id> [--force] [--dry-run]
+  node scripts/kan-sync.mjs pr-body <change-id> [--archive]
+  node scripts/kan-sync.mjs check <change-id>
   node scripts/kan-sync.mjs start <change-id> [--title "texto"] [--card <publicId>] [--dry-run]
-  node scripts/kan-sync.mjs done <change-id> [--card <publicId>] [--dry-run]
   node scripts/kan-sync.mjs discover [--base-url URL] [--board <publicId>] [--json]
 
 Opciones:
-  --config <ruta>   kan.config.json alternativo.
-  --env <ruta>      fichero .env alternativo.
-  --base-url <url>  URL de la API (por defecto, la de kan.config.json).
-  --board <id>      tablero para discover.
-  --card <id>       publicId de la tarjeta; evita la búsqueda por título.
-  --title <texto>   título legible al crear una tarjeta.
-  --dry-run         resuelve y muestra la acción sin escribir en el tablero.
-  --json            salida JSON para discover.
-  --timeout <ms>    timeout por petición (${DEFAULT_TIMEOUT_MS} por defecto).
-  -h, --help        muestra esta ayuda.`;
+  --config <ruta>        kan.config.json alternativo.
+  --env <ruta>           fichero .env alternativo.
+  --base-url <url>       URL de la API (por defecto, la de kan.config.json).
+  --board <id>           tablero para discover.
+  --card <id>            publicId de la tarjeta; evita la búsqueda por título.
+  --cards <id,...>       tarjetas para link.
+  --change <id>          change-id explícito para claim.
+  --title <texto>        título legible al crear una tarjeta.
+  --worktree-root <ruta> raíz de los worktrees (por defecto, hermana del repo).
+  --dev-port <puerto>    fuerza el puerto de desarrollo.
+  --e2e-port <puerto>    fuerza el puerto de E2E.
+  --pr <url>             URL de la PR que se registra en las tarjetas.
+  --force                permite limpiar un claim con trabajo pendiente.
+  --no-check             omite el aviso de ficheros compartidos en done.
+  --dry-run              resuelve y muestra la acción sin escribir.
+  --json                 salida JSON para queue y discover.
+  --timeout <ms>         timeout por petición (${DEFAULT_TIMEOUT_MS} por defecto).
+  -h, --help             muestra esta ayuda.`;
 
-export class KanSyncError extends Error {
-  constructor(message, code = 'ERROR') {
-    super(message);
-    this.name = 'KanSyncError';
-    this.code = code;
-  }
+function parseCardList(value) {
+  if (!value) return [];
+  return String(value)
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean);
 }
 
-export function loadEnvText(text) {
-  const values = {};
-  for (const rawLine of text.split(/\r?\n/)) {
-    const line = rawLine.trim();
-    if (!line || line.startsWith('#')) continue;
-    const separator = line.indexOf('=');
-    if (separator === -1) continue;
-    const key = line.slice(0, separator).trim();
-    if (!key) continue;
-    let value = line.slice(separator + 1).trim();
-    const quoted =
-      (value.startsWith('"') && value.endsWith('"')) ||
-      (value.startsWith("'") && value.endsWith("'"));
-    if (quoted && value.length >= 2) value = value.slice(1, -1);
-    values[key] = value;
-  }
-  return values;
-}
-
-export function readEnv({ envFile = DEFAULT_ENV_FILE, env = process.env } = {}) {
-  const fromFile = existsSync(envFile) ? loadEnvText(readFileSync(envFile, 'utf8')) : {};
-  const merged = { ...fromFile };
-  for (const [key, value] of Object.entries(env)) {
-    if (typeof value === 'string') merged[key] = value;
-  }
-  return merged;
-}
-
-export function parseConfig(text, source = DEFAULT_CONFIG_FILE) {
-  let data;
+function gitTopLevel({ runGit = execGit, cwd = process.cwd() } = {}) {
   try {
-    data = JSON.parse(text);
-  } catch (error) {
-    throw new KanSyncError(`No se pudo leer ${source}: ${error.message}`, 'CONFIG_INVALID');
+    return runGit(['rev-parse', '--show-toplevel'], { cwd }).stdout.trim() || cwd;
+  } catch {
+    return cwd;
   }
-  if (!data || typeof data !== 'object' || Array.isArray(data)) {
-    throw new KanSyncError(`${source} debe contener un objeto JSON.`, 'CONFIG_INVALID');
-  }
-
-  const baseUrl = typeof data.baseUrl === 'string' ? data.baseUrl.trim().replace(/\/+$/, '') : '';
-  if (!baseUrl) {
-    throw new KanSyncError(`Falta "baseUrl" en ${source}, por ejemplo "https://kan.example.com/api/v1".`, 'CONFIG_INVALID');
-  }
-  if (!/^https?:\/\//.test(baseUrl)) {
-    throw new KanSyncError(`"baseUrl" en ${source} debe empezar por http:// o https://.`, 'CONFIG_INVALID');
-  }
-
-  const boardPublicId = typeof data.boardPublicId === 'string' ? data.boardPublicId.trim() : '';
-  if (!boardPublicId) {
-    throw new KanSyncError(`Falta "boardPublicId" en ${source}; obtenlo con "npm exec -- node scripts/kan-sync.mjs discover".`, 'CONFIG_INVALID');
-  }
-
-  const lists = data.lists;
-  const normalizedLists = {};
-  for (const key of ['todo', 'inProgress', 'done']) {
-    const value = typeof lists?.[key] === 'string' ? lists[key].trim() : '';
-    if (!value) {
-      throw new KanSyncError(`Falta "lists.${key}" en ${source}.`, 'CONFIG_INVALID');
-    }
-    normalizedLists[key] = value;
-  }
-
-  return { baseUrl, boardPublicId, lists: normalizedLists, source };
 }
 
-export function readConfig({ configFile = DEFAULT_CONFIG_FILE } = {}) {
-  if (!existsSync(configFile)) {
+function listRemoteTags({ runGit = execGit, cwd } = {}) {
+  const output = runGit(['ls-remote', '--tags', 'origin', 'refs/tags/claims/*'], { cwd }).stdout;
+  const tags = new Map();
+  for (const line of output.split(/\r?\n/)) {
+    const [, rawRef] = line.split(/\s+/);
+    if (!rawRef) continue;
+    const ref = rawRef.replace(/\^\{\}$/, '');
+    const parsed = parseClaimRef(ref);
+    if (!parsed) continue;
+    if (!tags.has(parsed.cardId)) tags.set(parsed.cardId, []);
+    tags.get(parsed.cardId).push(parsed.changeId);
+  }
+  return tags;
+}
+
+function remoteBranchExists({ runGit = execGit, cwd, branch }) {
+  const output = runGit(['ls-remote', '--heads', 'origin', `refs/heads/${branch}`], { cwd }).stdout;
+  return output.trim().length > 0;
+}
+
+function localTagExists({ runGit = execGit, cwd, tag }) {
+  return runGit(['tag', '--list', tag], { cwd }).stdout.trim() === tag;
+}
+
+function createLocalTag({ runGit = execGit, cwd, tag, message }) {
+  if (localTagExists({ runGit, cwd, tag })) return false;
+  runGit(['tag', '-a', tag, '-m', message], { cwd });
+  return true;
+}
+
+function deleteLocalTag({ runGit = execGit, cwd, tag }) {
+  runGit(['tag', '-d', tag], { cwd, allowFailure: true });
+}
+
+function deleteRemoteTag({ runGit = execGit, cwd, tag }) {
+  runGit(['push', 'origin', `:refs/tags/${tag}`], { cwd, allowFailure: true });
+}
+
+function createWorktree({ runGit = execGit, mainRoot, worktree, branch, base = 'origin/main' }) {
+  mkdirSync(dirname(worktree), { recursive: true });
+  runGit(['fetch', 'origin', base.replace(/^origin\//, '')], { cwd: mainRoot, allowFailure: true });
+  const localBranch = runGit(['branch', '--list', branch], { cwd: mainRoot }).stdout.trim();
+  if (localBranch) {
+    runGit(['worktree', 'add', worktree, branch], { cwd: mainRoot });
+  } else {
+    runGit(['worktree', 'add', '-b', branch, worktree, base], { cwd: mainRoot });
+  }
+}
+
+function linkNodeModules({ mainRoot, worktree }) {
+  const source = join(mainRoot, 'node_modules');
+  const target = join(worktree, 'node_modules');
+  if (!existsSync(source) || existsSync(target)) return;
+  try {
+    symlinkSync(source, target, 'dir');
+  } catch {
+    // Sin enlace, el worktree puede instalar sus propias dependencias.
+  }
+}
+
+function removeWorktree({ runGit = execGit, mainRoot, worktree, force = false }) {
+  if (!existsSync(worktree)) return;
+  runGit(['worktree', 'remove', ...(force ? ['--force'] : []), worktree], {
+    cwd: mainRoot,
+    allowFailure: true,
+  });
+}
+
+function cleanupClaim({ runGit = execGit, mainRoot, worktree, branch, tags }) {
+  removeWorktree({ runGit, mainRoot, worktree, force: true });
+  runGit(['branch', '-D', branch], { cwd: mainRoot, allowFailure: true });
+  for (const tag of tags) deleteLocalTag({ runGit, cwd: mainRoot, tag });
+}
+
+function ensureChangeScaffold({ worktree, changeId }) {
+  const changeDir = join(worktree, 'openspec', 'changes', changeId);
+  if (existsSync(join(changeDir, '.openspec.yaml'))) return changeDir;
+  const result = spawnSync('openspec', ['new', 'change', changeId], {
+    cwd: worktree,
+    encoding: 'utf8',
+  });
+  if (result.error) {
     throw new KanSyncError(
-      `No existe ${configFile}. Crea kan.config.json con "baseUrl", "boardPublicId" y "lists". Consulta docs/desarrollo/kanban.md.`,
-      'CONFIG_MISSING'
+      `No se pudo crear el change "${changeId}" en el worktree: ${result.error.message}`,
+      'OPENSPEC_FAILED'
     );
   }
-  return parseConfig(readFileSync(configFile, 'utf8'), configFile);
-}export function resolveList(boardLists, name) {
-  const wanted = name.trim().toLowerCase();
-  const matches = boardLists.filter((list) => list.name.trim().toLowerCase() === wanted);
-  if (matches.length === 0) {
-    const available = boardLists.map((list) => `"${list.name}"`).join(', ') || '(ninguna)';
-    throw new KanSyncError(`No existe la lista "${name}". Listas disponibles: ${available}.`, 'LIST_NOT_FOUND');
-  }
-  if (matches.length > 1) {
-    throw new KanSyncError(`La lista "${name}" aparece ${matches.length} veces en el tablero; renómbralas para que sea única.`, 'LIST_AMBIGUOUS');
-  }
-  return matches[0];
-}
-
-export function matchCards(cards, changeId) {
-  const escaped = changeId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const pattern = new RegExp(`(?<![a-z0-9-])${escaped}(?![a-z0-9-])`, 'i');
-  return cards.filter((card) => pattern.test(card.title));
-}
-
-export function flattenCards(board) {
-  return board.lists.flatMap((list) =>
-    list.cards.map((card) => ({ ...card, listName: list.name, listPublicId: list.publicId }))
-  );
-}
-
-export function buildCreateCard({ changeId, title, listPublicId, memberPublicId, description }) {
-  return {
-    title: title ? `[${changeId}] ${title}` : `[${changeId}]`,
-    description: description ?? `Change de OpenSpec: \`openspec/changes/${changeId}/\`.`,
-    listPublicId,
-    labelPublicIds: [],
-    memberPublicIds: memberPublicId ? [memberPublicId] : [],
-    position: 'end',
-  };
-}
-
-export function buildMoveCard(listPublicId) {
-  return { listPublicId, index: 0 };
-}
-
-export function resolveAssignee(members, email) {
-  if (!email) return null;
-  const active = members.filter((member) => member.status === 'active');
-  const match = active.find(
-    (member) => member.email.trim().toLowerCase() === email.trim().toLowerCase()
-  );
-  if (!match) {
-    const available = active.map((member) => member.email).join(', ') || '(ninguno)';
+  if (result.status !== 0) {
     throw new KanSyncError(
-      `No hay un miembro activo con el email "${email}". Miembros disponibles: ${available}.`,
-      'ASSIGNEE_NOT_FOUND'
+      `openspec new change "${changeId}" falló: ${(result.stderr || result.stdout).trim()}`,
+      'OPENSPEC_FAILED'
     );
   }
-  return match;
+  return changeDir;
 }
 
-export function memberName(member) {
-  return member.user?.name || member.email;
+function commitClaim({ runGit = execGit, worktree, changeId, message, changePath }) {
+  const changeDir = changePath ?? join('openspec', 'changes', changeId);
+  runGit(['add', '--', changeDir], { cwd: worktree });
+  const status = runGit(['diff', '--cached', '--quiet'], { cwd: worktree, allowFailure: true });
+  if (status.status === 0) return false;
+  runGit(['commit', '-m', message], { cwd: worktree });
+  return true;
 }
 
-function describeHttpError(status, detail) {
-  const base =
-    {
-      401: 'kan_API_KEY no es válida o ha sido revocada',
-      403: 'kan_API_KEY no tiene permisos para esta operación',
-      404: 'el recurso no existe o el token no puede verlo',
-      429: 'Kan.bn ha limitado las peticiones; espera un minuto',
-    }[status] ??
-    (status >= 500 ? 'Kan.bn ha devuelto un error interno' : `la API ha respondido con ${status}`);
-  return detail ? `${base}: ${detail}` : `${base}.`;
-}
-
-export function createClient({ baseUrl, apiKey, fetchImpl = globalThis.fetch, timeoutMs = DEFAULT_TIMEOUT_MS }) {
-  async function request(path, { method = 'GET', body } = {}) {
-    const url = `${baseUrl}${path}`;
-    const headers = { Authorization: `Bearer ${apiKey}` };
-    if (body !== undefined) headers['content-type'] = 'application/json';
-
-    let response;
-    try {
-      response = await fetchImpl(url, {
-        method,
-        headers,
-        body: body === undefined ? undefined : JSON.stringify(body),
-        signal: AbortSignal.timeout(timeoutMs),
-      });
-    } catch (error) {
-      throw new KanSyncError(`No se pudo conectar con ${url}: ${error.message}`, 'NETWORK');
-    }
-
-    if (!response.ok) {
-      let detail = '';
-      try {
-        const payload = await response.json();
-        if (typeof payload?.message === 'string') detail = payload.message;
-      } catch {
-        detail = '';
-      }
-      throw new KanSyncError(describeHttpError(response.status, detail), `HTTP_${response.status}`);
-    }
-
-    if (response.status === 204) return null;
-    return response.json();
+export async function validateClaimCards({ board, config, env, client, cardIds, changeId, allowNonTodo = false }) {
+  const todoList = resolveList(board.lists, config.lists.todo);
+  const allowedLists = new Set([todoList.name]);
+  for (const name of [config.lists.inProgress, config.lists.review].filter(Boolean)) {
+    const match = board.lists.find((list) => list.name.trim().toLowerCase() === name.trim().toLowerCase());
+    if (match) allowedLists.add(match.name);
   }
-
-  return { request };
-}
-
-function requireApiKey(env) {
-  const apiKey = env.kan_API_KEY?.trim();
-  if (!apiKey) {
-    throw new KanSyncError(
-      'Falta kan_API_KEY. Añádela a .env (kan_API_KEY=kan_...) o expórtala en el entorno.',
-      'MISSING_API_KEY'
-    );
-  }
-  return apiKey;
-}
-
-function pickCard(board, { changeId, cardPublicId }) {
-  const cards = flattenCards(board);
-  if (cardPublicId) {
-    const card = cards.find((candidate) => candidate.publicId === cardPublicId);
+  const assignee = await resolveTargetMember({ board, env, client });
+  const cards = [];
+  for (const publicId of cardIds) {
+    const card = findCardByPublicId(board, publicId);
     if (!card) {
-      throw new KanSyncError(`No hay ninguna tarjeta con publicId "${cardPublicId}" en el tablero.`, 'CARD_NOT_FOUND');
+      throw new KanSyncError(`No hay ninguna tarjeta con publicId "${publicId}" en el tablero.`, 'CARD_NOT_FOUND');
     }
-    return card;
+    if (card.listPublicId !== todoList.publicId) {
+      if (!allowNonTodo || !allowedLists.has(card.listName)) {
+        throw new KanSyncError(
+          `La tarjeta ${card.publicId} está en "${card.listName}", no en "${todoList.name}".`,
+          'CARD_NOT_IN_QUEUE'
+        );
+      }
+    }
+    const members = card.members ?? [];
+    if (members.some((member) => member.publicId !== assignee.publicId)) {
+      const names = members.map((member) => memberName(member)).join(', ');
+      throw new KanSyncError(
+        `La tarjeta ${card.publicId} está asignada a ${names}; no se puede reclamar.`,
+        'CARD_ASSIGNED'
+      );
+    }
+    const linked = extractChangeId(card);
+    if (linked && linked !== changeId) {
+      throw new KanSyncError(
+        `La tarjeta ${card.publicId} ya está vinculada al change "${linked}".`,
+        'CARD_ALREADY_LINKED'
+      );
+    }
+    cards.push(card);
   }
-
-  const matches = matchCards(cards, changeId);
-  if (matches.length === 0) return null;
-  if (matches.length > 1) {
-    const candidates = matches
-      .map((card) => `  - "${card.title}" en "${card.listName}" (${card.publicId})`)
-      .join('\n');
-    throw new KanSyncError(
-      `Hay ${matches.length} tarjetas que coinciden con "${changeId}":\n${candidates}\nUsa --card <publicId> para elegir una.`,
-      'CARD_AMBIGUOUS'
-    );
-  }
-  return matches[0];
+  return { cards, assignee, todoList };
 }
 
-async function resolveTargetMember({ board, env, client }) {
-  const members = board.workspace?.members ?? [];
-  const configured = resolveAssignee(members, env.kan_CURRENT_USER);
-  if (configured) return configured;
-
-  const me = await client.request('/users/me');
-  return resolveAssignee(members, me.email);
-}
-
-export async function startChange({
+export async function claimCommand({
+  cardIds,
   changeId,
   config,
   env,
   fetchImpl,
-  dryRun = false,
-  cardPublicId,
-  title,
-  log = () => {},
+  dryRun,
+  worktreeRoot,
+  devPort,
+  e2ePort,
+  log,
+  cwd,
+  runGit,
 }) {
+  if (cardIds.length === 0) {
+    throw new KanSyncError('claim necesita al menos un publicId de tarjeta.', 'CARD_REQUIRED');
+  }
   const client = createClient({
     baseUrl: config.baseUrl,
     apiKey: requireApiKey(env),
     fetchImpl,
     timeoutMs: config.timeoutMs,
   });
-
   const board = await client.request(`/boards/${config.boardPublicId}`);
-  const todoList = resolveList(board.lists, config.lists.todo);
   const inProgressList = resolveList(board.lists, config.lists.inProgress);
-  const assignee = await resolveTargetMember({ board, env, client });
-  const card = pickCard(board, { changeId, cardPublicId });
-  const prefix = dryRun ? '[dry-run] ' : '';
 
-  if (!card) {
-    const payload = buildCreateCard({
-      changeId,
-      title,
-      listPublicId: todoList.publicId,
-      memberPublicId: assignee.publicId,
-    });
-    if (dryRun) {
-      log(
-        `${prefix}crear tarjeta "${payload.title}" en "${todoList.name}", asignarla a ${memberName(assignee)} y moverla a "${inProgressList.name}".`
-      );
-      return { dryRun: true, created: true, assigned: true, moved: true };
+  const firstCard = findCardByPublicId(board, cardIds[0]);
+  if (!firstCard) {
+    throw new KanSyncError(`No hay ninguna tarjeta con publicId "${cardIds[0]}" en el tablero.`, 'CARD_NOT_FOUND');
+  }
+  const resolvedChangeId = changeId || deriveChangeId(firstCard.title);
+  if (!isValidChangeId(resolvedChangeId)) {
+    throw new KanSyncError(`El change-id "${resolvedChangeId}" no es kebab-case válido.`, 'CHANGE_ID_INVALID');
+  }
+  if (cardIds.length > 1 && !changeId) {
+    throw new KanSyncError('Para reclamar varias tarjetas, pasa --change con el id del grupo.', 'CHANGE_ID_REQUIRED');
+  }
+  if (isArchivedChange(gitTopLevel({ runGit, cwd }), resolvedChangeId)) {
+    throw new KanSyncError(`El change "${resolvedChangeId}" ya está archivado; no se puede reclamar.`, 'CHANGE_ARCHIVED');
+  }
+
+  const mainRoot = resolveMainRoot({ cwd, runGit });
+  const branch = branchName(resolvedChangeId);
+  const worktree = worktreePath({ mainRoot, changeId: resolvedChangeId, worktreeRoot, env });
+  const remoteTags = listRemoteTags({ runGit, cwd: mainRoot });
+  for (const publicId of cardIds) {
+    for (const owner of remoteTags.get(publicId) ?? []) {
+      if (owner !== resolvedChangeId) {
+        throw new KanSyncError(
+          `La tarjeta ${publicId} ya está reclamada por el change "${owner}".`,
+          'CARD_ALREADY_CLAIMED'
+        );
+      }
     }
-    const created = await client.request('/cards', { method: 'POST', body: payload });
-    await client.request(`/cards/${created.publicId}`, {
-      method: 'PUT',
-      body: buildMoveCard(inProgressList.publicId),
+  }
+  const taggedCards = cardIds.filter((publicId) => (remoteTags.get(publicId) ?? []).includes(resolvedChangeId));
+  const hasRemoteBranch = remoteBranchExists({ runGit, cwd: mainRoot, branch });
+  const localBranch = runGit(['branch', '--list', branch], { cwd: mainRoot }).stdout.trim();
+  const sameClaim = taggedCards.length === cardIds.length && hasRemoteBranch;
+  if (taggedCards.length > 0 && !hasRemoteBranch) {
+    throw new KanSyncError(
+      `Existen etiquetas del claim "${resolvedChangeId}" pero falta la rama ${branch}; revisa el remoto.`,
+      'CLAIM_INCONSISTENT'
+    );
+  }
+  if ((hasRemoteBranch || localBranch) && !sameClaim) {
+    throw new KanSyncError(
+      `La rama ${branch} ya existe y no pertenece a este claim; elige otro --change o libera el claim anterior.`,
+      'BRANCH_EXISTS'
+    );
+  }
+  if (existsSync(worktree) && !sameClaim) {
+    throw new KanSyncError(
+      `La ruta del worktree ya existe: ${worktree}. No se sobrescribe; elige otro --change o libera el claim.`,
+      'WORKTREE_EXISTS'
+    );
+  }
+
+  const { cards, assignee } = await validateClaimCards({
+    board,
+    config,
+    env,
+    client,
+    cardIds,
+    changeId: resolvedChangeId,
+    allowNonTodo: sameClaim,
+  });
+
+  if (dryRun) {
+    const ports = await resolvePorts({
+      root: worktree,
+      changeId: resolvedChangeId,
+      devPort,
+      e2ePort,
+      persist: false,
     });
     log(
-      `Tarjeta ${created.publicId} creada en "${todoList.name}", asignada a ${memberName(assignee)} y movida a "${inProgressList.name}".`
+      `[dry-run] ${sameClaim ? 'reanudar' : 'reclamar'} el change "${resolvedChangeId}" con ${cards.length} tarjeta(s).`
     );
-    return { dryRun: false, created: true, assignedNow: true, moved: true, cardPublicId: created.publicId };
+    log(`  Rama: ${branch}`);
+    log(`  Worktree: ${worktree}`);
+    log(`  Puertos: ${describePorts(ports)}`);
+    log(`  Tarjetas: ${cards.map((card) => card.publicId).join(', ')}`);
+    return { dryRun: true, changeId: resolvedChangeId, branch, worktree, cards: cards.map((card) => card.publicId), ports, sameClaim };
   }
 
-  const assigned = Boolean(card.members?.some((member) => member.publicId === assignee.publicId));
-  if (!assigned) {
-    if (dryRun) {
-      log(`${prefix}asignar la tarjeta ${card.publicId} a ${memberName(assignee)}.`);
+  let manifest;
+  if (sameClaim) {
+    if (existsSync(worktree)) {
+      const currentBranch = runGit(['rev-parse', '--abbrev-ref', 'HEAD'], { cwd: worktree }).stdout.trim();
+      if (currentBranch !== branch) {
+        throw new KanSyncError(
+          `El worktree ${worktree} está en "${currentBranch}", no en "${branch}".`,
+          'WORKTREE_BRANCH_MISMATCH'
+        );
+      }
+      manifest = readManifest(worktree, resolvedChangeId);
+      if (!manifest) {
+        throw new KanSyncError(
+          `El worktree ${worktree} existe pero no contiene workflow.json para "${resolvedChangeId}".`,
+          'MANIFEST_MISSING'
+        );
+      }
     } else {
-      await client.request(`/cards/${card.publicId}/members/${assignee.publicId}`, { method: 'PUT' });
+      createWorktree({ runGit, mainRoot, worktree, branch, base: `origin/${branch}` });
+      linkNodeModules({ mainRoot, worktree });
+      manifest = readManifest(worktree, resolvedChangeId);
+      if (!manifest) {
+        throw new KanSyncError(
+          `La rama ${branch} existe pero no contiene workflow.json para "${resolvedChangeId}".`,
+          'MANIFEST_MISSING'
+        );
+      }
     }
-  }
-
-  const list = board.lists.find((candidate) => candidate.publicId === card.listPublicId);
-  const alreadyInProgress = list?.publicId === inProgressList.publicId;
-  if (!alreadyInProgress) {
-    if (dryRun) {
-      log(`${prefix}mover la tarjeta ${card.publicId} de "${card.listName}" a "${inProgressList.name}".`);
-    } else {
-      await client.request(`/cards/${card.publicId}`, {
-        method: 'PUT',
-        body: buildMoveCard(inProgressList.publicId),
+    const manifestIds = new Set(manifest.cards.map((card) => card.publicId));
+    const missing = cards.filter((card) => !manifestIds.has(card.publicId));
+    if (missing.length > 0) {
+      throw new KanSyncError(
+        `El claim "${resolvedChangeId}" no incluye ${missing.map((card) => card.publicId).join(', ')}; usa link para añadirlas.`,
+        'CLAIM_INCOMPLETE'
+      );
+    }
+  } else {
+    createWorktree({ runGit, mainRoot, worktree, branch });
+    linkNodeModules({ mainRoot, worktree });
+    try {
+      ensureChangeScaffold({ worktree, changeId: resolvedChangeId });
+      manifest = createManifest({ changeId: resolvedChangeId, cards });
+      writeManifest(worktree, manifest);
+      await resolvePorts({
+        root: worktree,
+        changeId: resolvedChangeId,
+        devPort,
+        e2ePort,
       });
+      commitClaim({
+        runGit,
+        worktree,
+        changeId: resolvedChangeId,
+        message: `chore(${resolvedChangeId}): reclamar tarjetas y crear worktree`,
+      });
+      const tags = cards.map((card) => claimTag(card.publicId, resolvedChangeId));
+      for (const card of cards) {
+        createLocalTag({
+          runGit,
+          cwd: worktree,
+          tag: claimTag(card.publicId, resolvedChangeId),
+          message: `change=${resolvedChangeId} card=${card.publicId}`,
+        });
+      }
+      pushAtomicClaim({ runGit, cwd: worktree, branch, tags });
+    } catch (error) {
+      cleanupClaim({ runGit, mainRoot, worktree, branch, tags: cards.map((card) => claimTag(card.publicId, resolvedChangeId)) });
+      throw error;
     }
   }
 
-  if (!dryRun) {
-    const assignedText = assigned ? 'ya estaba asignada' : `asignada a ${memberName(assignee)}`;
-    const movedText = alreadyInProgress
-      ? `ya estaba en "${inProgressList.name}"`
-      : `movida a "${inProgressList.name}"`;
-    log(`Tarjeta ${card.publicId} ${movedText} y ${assignedText}.`);
-  } else if (alreadyInProgress && assigned) {
-    log(`${prefix}la tarjeta ${card.publicId} ya está en "${inProgressList.name}" y asignada a ${memberName(assignee)}.`);
+  let kanError = null;
+  try {
+    await syncCardsToProgressWithList({
+      client,
+      board,
+      cards,
+      changeId: resolvedChangeId,
+      assignee,
+      inProgressList,
+      log,
+    });
+  } catch (error) {
+    kanError = error;
+    log(`Aviso: el claim está publicado en Git, pero Kan.bn falló: ${error.message}`);
+    log('Puedes reintentar `claim` para volver a sincronizar sin recrear la rama.');
   }
 
-  return {
-    dryRun,
-    created: false,
-    assignedNow: !assigned,
-    moved: !alreadyInProgress,
-    cardPublicId: card.publicId,
-  };
+  const ports = await resolvePorts({
+    root: worktree,
+    changeId: resolvedChangeId,
+    devPort,
+    e2ePort,
+  });
+
+  log(`Change: ${resolvedChangeId}`);
+  log(`Rama: ${branch}`);
+  log(`Worktree: ${worktree}`);
+  log(`Puertos: ${describePorts(ports)}`);
+  log(`Tarjetas: ${cards.map((card) => card.publicId).join(', ')}`);
+  log(`Abrir: opencode ${worktree}`);
+  log(`Dev:   npm run dev:worktree`);
+  log(`E2E:   npm run e2e:worktree`);
+  if (kanError) log(`Kan pendiente: ${kanError.message}`);
+  return { dryRun: false, changeId: resolvedChangeId, branch, worktree, cards: cards.map((card) => card.publicId), ports, kanError: kanError?.message ?? null, sameClaim };
 }
 
-export async function doneChange({
-  changeId,
-  config,
-  env,
-  fetchImpl,
-  dryRun = false,
-  cardPublicId,
-  log = () => {},
-}) {
+async function syncCardsToProgressWithList({ client, board, cards, changeId, assignee, inProgressList, log }) {
+  const results = [];
+  for (const manifestCard of cards) {
+    const card = findCardByPublicId(board, manifestCard.publicId);
+    if (!card) {
+      log(`Aviso: no se encontró la tarjeta ${manifestCard.publicId}; se omite.`);
+      results.push({ publicId: manifestCard.publicId, found: false });
+      continue;
+    }
+    const description = appendChangeMarker(card.description, changeId);
+    if (description !== (card.description ?? '')) {
+      await setCardDescription({ client, card, description });
+    }
+    const assignedNow = await assignCard({ client, card, assignee });
+    const moved = await moveCard({ client, card, list: inProgressList });
+    results.push({ publicId: card.publicId, found: true, assignedNow, moved });
+    log(`Tarjeta ${card.publicId}: ${moved ? 'movida' : 'ya estaba'} y ${assignedNow ? 'asignada' : 'ya asignada'}.`);
+  }
+  return results;
+}
+
+async function linkCommand({ changeId, cardIds, config, env, fetchImpl, dryRun, log, cwd, runGit }) {
+  if (!changeId) throw new KanSyncError('link necesita el id del change.', 'CHANGE_ID_REQUIRED');
+  if (cardIds.length === 0) throw new KanSyncError('link necesita --cards con al menos una tarjeta.', 'CARD_REQUIRED');
+  const root = gitTopLevel({ runGit, cwd });
+  if (isArchivedChange(root, changeId)) {
+    throw new KanSyncError(`El change "${changeId}" ya está archivado; no se pueden enlazar tarjetas.`, 'CHANGE_ARCHIVED');
+  }
+  const manifest = readManifest(root, changeId);
+  if (!manifest) {
+    throw new KanSyncError(
+      `No existe workflow.json para "${changeId}" en ${root}. Ejecuta link desde el worktree del claim.`,
+      'MANIFEST_MISSING'
+    );
+  }
   const client = createClient({
     baseUrl: config.baseUrl,
     apiKey: requireApiKey(env),
     fetchImpl,
     timeoutMs: config.timeoutMs,
   });
-
   const board = await client.request(`/boards/${config.boardPublicId}`);
-  const doneList = resolveList(board.lists, config.lists.done);
-  const card = pickCard(board, { changeId, cardPublicId });
-  if (!card) {
-    throw new KanSyncError(
-      `No hay ninguna tarjeta para el change "${changeId}". No se ha creado ninguna; el archivado puede continuar.`,
-      'CARD_NOT_FOUND'
-    );
-  }
+  const inProgressList = resolveList(board.lists, config.lists.inProgress);
+  const assignee = await resolveTargetMember({ board, env, client });
+  const existingIds = new Set(manifest.cards.map((card) => card.publicId));
+  const newIds = cardIds.filter((id) => !existingIds.has(id));
+  const { cards } = await validateClaimCards({ board, config, env, client, cardIds: newIds, changeId });
 
-  const prefix = dryRun ? '[dry-run] ' : '';
-  if (card.listPublicId === doneList.publicId) {
-    log(`${prefix}la tarjeta ${card.publicId} ya está en "${doneList.name}".`);
-    return { dryRun, moved: false, cardPublicId: card.publicId };
+  const remoteTags = listRemoteTags({ runGit, cwd: root });
+  for (const card of cards) {
+    const owners = remoteTags.get(card.publicId) ?? [];
+    for (const owner of owners) {
+      if (owner !== changeId) {
+        throw new KanSyncError(
+          `La tarjeta ${card.publicId} ya está reclamada por el change "${owner}".`,
+          'CARD_ALREADY_CLAIMED'
+        );
+      }
+    }
   }
 
   if (dryRun) {
-    log(`${prefix}mover la tarjeta ${card.publicId} de "${card.listName}" a "${doneList.name}".`);
-    return { dryRun: true, moved: true, cardPublicId: card.publicId };
+    log(`[dry-run] enlazar ${cards.map((card) => card.publicId).join(', ')} al change ${changeId}.`);
+    return { dryRun: true, changeId, cards: cards.map((card) => card.publicId) };
   }
 
-  await client.request(`/cards/${card.publicId}`, {
-    method: 'PUT',
-    body: buildMoveCard(doneList.publicId),
-  });
-  log(`Tarjeta ${card.publicId} movida a "${doneList.name}".`);
-  return { dryRun: false, moved: true, cardPublicId: card.publicId };
-}
-
-export async function discover({
-  baseUrl,
-  apiKey,
-  boardPublicId,
-  fetchImpl,
-  timeoutMs,
-  json = false,
-  log = () => {},
-}) {
-  const client = createClient({ baseUrl, apiKey, fetchImpl, timeoutMs });
-
-  const workspaces = await client.request('/workspaces');
-  const summaries = [];
-  for (const item of workspaces) {
-    const boards = await client.request(`/workspaces/${item.workspace.publicId}/boards`);
-    summaries.push({
-      publicId: item.workspace.publicId,
-      name: item.workspace.name,
-      role: item.role,
-      boards,
-    });
-  }
-
-  const board = boardPublicId ? await client.request(`/boards/${boardPublicId}`) : null;
-
-  if (json) {
-    const payload = {
-      workspaces: summaries.map((workspace) => ({
-        publicId: workspace.publicId,
-        name: workspace.name,
-        role: workspace.role,
-        boards: workspace.boards.map((item) => ({
-          publicId: item.publicId,
-          name: item.name,
-          lists: item.lists.map((list) => ({ publicId: list.publicId, name: list.name })),
-        })),
-      })),
-      board: board
-        ? {
-            publicId: board.publicId,
-            name: board.name,
-            lists: board.lists.map((list) => ({ publicId: list.publicId, name: list.name })),
-            members: (board.workspace?.members ?? []).map((member) => ({
-              publicId: member.publicId,
-              email: member.email,
-              name: member.user?.name ?? null,
-              status: member.status,
-            })),
-          }
-        : null,
-    };
-    log(JSON.stringify(payload, null, 2));
-    return payload;
-  }
-
-  for (const workspace of summaries) {
-    log(`Workspace ${workspace.name} (${workspace.publicId}) [${workspace.role}]`);
-    for (const item of workspace.boards) {
-      log(`  Tablero ${item.name} (${item.publicId})`);
-      if (!boardPublicId) {
-        for (const list of item.lists) log(`    Lista "${list.name}" (${list.publicId})`);
+  const created = [];
+  try {
+    for (const card of cards) {
+      if (createLocalTag({ runGit, cwd: root, tag: claimTag(card.publicId, changeId), message: `change=${changeId} card=${card.publicId}` })) {
+        created.push(claimTag(card.publicId, changeId));
       }
     }
+    if (created.length > 0) pushAtomicTags({ runGit, cwd: root, tags: created });
+  } catch (error) {
+    for (const tag of created) deleteLocalTag({ runGit, cwd: root, tag });
+    throw error;
   }
 
-  if (board) {
-    log(`Tablero ${board.name} (${board.publicId})`);
-    for (const list of board.lists) log(`  Lista "${list.name}" (${list.publicId})`);
-    for (const member of board.workspace?.members ?? []) {
-      log(`  Miembro ${memberName(member)} <${member.email}> (${member.publicId}) [${member.status}]`);
+  const next = addCardsToManifest(manifest, cards);
+  writeManifest(root, next);
+  commitClaim({
+    runGit,
+    worktree: root,
+    changeId,
+    message: `chore(${changeId}): enlazar ${cards.map((card) => card.publicId).join(', ')}`,
+  });
+  runGit(['push', 'origin', `HEAD:refs/heads/${next.branch}`], { cwd: root });
+
+  await syncCardsToProgressWithList({
+    client,
+    board,
+    cards,
+    changeId,
+    assignee,
+    inProgressList,
+    log,
+  });
+  log(`Enlazadas ${cards.length} tarjeta(s) al change ${changeId}.`);
+  return { dryRun: false, changeId, cards: next.cards.map((card) => card.publicId) };
+}
+
+function readManifestForCommand({ changeId, cwd, runGit }) {
+  const root = gitTopLevel({ runGit, cwd });
+  const manifest = readManifest(root, changeId);
+  if (manifest) return { root, manifest, changePath: join('openspec', 'changes', changeId) };
+  const archived = archivedManifest(root, changeId);
+  if (archived) return { root, manifest: archived.manifest, changePath: archived.changePath };
+  return { root, manifest: null, changePath: null };
+}
+
+async function reviewCommand({ changeId, config, env, fetchImpl, dryRun, log, cwd, runGit }) {
+  const { root, manifest } = readManifestForCommand({ changeId, cwd, runGit });
+  if (isArchivedChange(root, changeId)) {
+    throw new KanSyncError(`El change "${changeId}" está archivado; no se puede revisar.`, 'CHANGE_ARCHIVED');
+  }
+  await reviewChange({
+    changeId,
+    config,
+    env,
+    fetchImpl,
+    dryRun,
+    cards: manifest?.cards,
+    log,
+  });
+}
+
+async function doneCommand({ changeId, config, env, fetchImpl, dryRun, cardPublicId, prUrl, noCheck, log, cwd, runGit }) {
+  if (prUrl && !/^https?:\/\//.test(prUrl)) {
+    throw new KanSyncError('--pr debe ser una URL http(s).', 'PR_URL_INVALID');
+  }
+  const { root, manifest, changePath } = readManifestForCommand({ changeId, cwd, runGit });
+  if (!noCheck) {
+    try {
+      const changed = checkCommand({ changeId, cwd: root, runGit, log });
+      if (changed.length > 0) {
+        log('Aviso: la rama toca ficheros compartidos; coordina el merge antes de abrir la PR.');
+      }
+    } catch {
+      // check es advisory: no bloquea done.
+    }
+  }
+  const result = await doneChange({
+    changeId,
+    config,
+    env,
+    fetchImpl,
+    dryRun,
+    cardPublicId,
+    cards: manifest?.cards,
+    prUrl,
+    log,
+  });
+  if (manifest && prUrl && !dryRun) {
+    const next = { ...manifest, prUrl };
+    writeManifestFile(join(root, changePath, 'workflow.json'), next);
+    commitClaim({
+      runGit,
+      worktree: root,
+      changeId,
+      changePath,
+      message: `chore(${changeId}): registrar la PR`,
+    });
+    runGit(['push', 'origin', `HEAD:refs/heads/${next.branch}`], { cwd: root });
+  }
+  if (!prUrl) log('Aviso: no se registró ninguna PR; pasa --pr <url> cuando la abras.');
+  return result;
+}
+
+function checkCommand({ changeId, cwd, runGit = execGit, log = () => {} }) {
+  const root = gitTopLevel({ runGit, cwd });
+  runGit(['fetch', 'origin', 'main'], { cwd: root, allowFailure: true });
+  const base = runGit(['rev-parse', '--verify', 'origin/main'], { cwd: root, allowFailure: true }).status === 0
+    ? 'origin/main'
+    : 'main';
+  const outputs = [
+    runGit(['diff', '--name-only', `${base}...HEAD`], { cwd: root }).stdout,
+    runGit(['diff', '--name-only'], { cwd: root, allowFailure: true }).stdout,
+    runGit(['diff', '--name-only', '--cached'], { cwd: root, allowFailure: true }).stdout,
+    runGit(['ls-files', '--others', '--exclude-standard'], { cwd: root, allowFailure: true }).stdout,
+  ];
+  const files = [...new Set(outputs.flatMap((output) => output.split(/\r?\n/).filter(Boolean)))];
+  const hot = hotFilesChanged(files);
+  if (hot.length > 0) {
+    log(`Ficheros compartidos tocados por ${changeId}:`);
+    for (const file of hot) log(`  - ${file}`);
+  } else {
+    log(`Sin ficheros compartidos en ${changeId}.`);
+  }
+  return hot;
+}
+
+async function releaseCommand({ changeId, config, env, fetchImpl, dryRun, force, log, cwd, runGit }) {
+  const root = gitTopLevel({ runGit, cwd });
+  if (isArchivedChange(root, changeId)) {
+    throw new KanSyncError(`El change "${changeId}" está archivado; no se puede liberar.`, 'CHANGE_ARCHIVED');
+  }
+  const manifest = readManifest(root, changeId);
+  if (!manifest) {
+    log(`No hay workflow.json para "${changeId}"; el claim ya no existe o no se creó con este flujo.`);
+    return { released: false, reason: 'manifest-missing' };
+  }
+  if (isArchivedChange(root, changeId)) {
+    throw new KanSyncError(`El change "${changeId}" está archivado; no se puede liberar.`, 'CHANGE_ARCHIVED');
+  }
+  const statusLines = runGit(['status', '--porcelain'], { cwd: root }).stdout
+    .split(/\r?\n/)
+    .map((line) => line.trimEnd())
+    .filter(Boolean)
+    .filter((line) => {
+      const path = line.slice(3).trim();
+      return path !== 'node_modules' && !path.startsWith('node_modules/') &&
+        path !== '.opsx' && !path.startsWith('.opsx/') &&
+        path !== '.env' && !path.startsWith('.env.');
+    });
+  const status = statusLines.join('\n');
+  if (status && !force) {
+    throw new KanSyncError(`El worktree tiene cambios sin commitear:\n${status}\nUsa --force para descartarlos.`, 'WORKTREE_DIRTY');
+  }
+  const base = runGit(['rev-parse', '--verify', 'origin/main'], { cwd: root, allowFailure: true }).status === 0
+    ? 'origin/main'
+    : 'main';
+  const commits = runGit(['log', '--oneline', `${base}..HEAD`], { cwd: root, allowFailure: true }).stdout
+    .split(/\r?\n/)
+    .filter(Boolean);
+  const claimCommitPrefixes = [
+    `chore(${changeId}): reclamar`,
+    `chore(${changeId}): enlazar`,
+    `chore(${changeId}): registrar la PR`,
+  ];
+  const workCommits = commits.filter(
+    (line) => !claimCommitPrefixes.some((prefix) => line.includes(prefix))
+  );
+  if (workCommits.length > 0 && !force) {
+    throw new KanSyncError(
+      `La rama tiene ${workCommits.length} commit(s) además del claim; usa --force si de verdad quieres descartarlos.`,
+      'COMMITS_PENDING'
+    );
+  }
+  const gh = spawnSync('gh', ['pr', 'list', '--head', manifest.branch, '--state', 'open', '--json', 'number'], {
+    cwd: root,
+    encoding: 'utf8',
+  });
+  let openPr = false;
+  if (gh.error) {
+    log('Aviso: gh no está disponible; comprueba a mano si la rama tiene una PR abierta.');
+  } else if (gh.status === 0) {
+    try {
+      openPr = JSON.parse(gh.stdout || '[]').length > 0;
+    } catch {
+      openPr = false;
+    }
+  } else {
+    log('Aviso: no se pudo comprobar con gh si la rama tiene una PR abierta; revísalo a mano.');
+  }
+  if (openPr && !force) {
+    throw new KanSyncError(`La rama ${manifest.branch} tiene una PR abierta; ciérrala o usa --force.`, 'PR_OPEN');
+  }
+
+  if (dryRun) {
+    log(`[dry-run] liberar ${changeId}: ${manifest.cards.length} tarjeta(s), worktree ${root}, rama ${manifest.branch}.`);
+    return { dryRun: true, released: true, changeId };
+  }
+
+  const client = createClient({
+    baseUrl: config.baseUrl,
+    apiKey: requireApiKey(env),
+    fetchImpl,
+    timeoutMs: config.timeoutMs,
+  });
+  const board = await client.request(`/boards/${config.boardPublicId}`);
+  const todoList = resolveList(board.lists, config.lists.todo);
+  const assignee = await resolveTargetMember({ board, env, client });
+
+  for (const manifestCard of manifest.cards) {
+    const card = findCardByPublicId(board, manifestCard.publicId);
+    if (!card) {
+      log(`Aviso: no se encontró la tarjeta ${manifestCard.publicId}; se omite.`);
+      continue;
+    }
+    const removed = await removeCardMember({ client, card, member: assignee });
+    const remaining = (card.members ?? []).filter((member) => member.publicId !== assignee.publicId);
+    const description = removeChangeMarker(card.description, changeId);
+    if (description !== (card.description ?? '')) {
+      await setCardDescription({ client, card, description });
+    }
+    const escaped = changeId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const title = (card.title ?? '').replace(new RegExp(`^\\[${escaped}\\]\\s*`, 'i'), '');
+    if (title !== card.title) {
+      await client.request(`/cards/${card.publicId}`, { method: 'PUT', body: { title } });
+    }
+    if (remaining.length === 0) {
+      await moveCard({ client, card, list: todoList });
+    } else if (removed) {
+      log(`La tarjeta ${card.publicId} sigue asignada a ${remaining.map((member) => memberName(member)).join(', ')}; no se mueve.`);
     }
   }
 
-  return { workspaces: summaries, board };
+  for (const card of manifest.cards) {
+    const tag = claimTag(card.publicId, changeId);
+    deleteRemoteTag({ runGit, cwd: root, tag });
+    deleteLocalTag({ runGit, cwd: root, tag });
+  }
+
+  const mainRoot = resolveMainRoot({ cwd: root, runGit });
+  if (root !== mainRoot) {
+    process.chdir(mainRoot);
+    removeWorktree({ runGit, mainRoot, worktree: root, force: true });
+    if (existsSync(root)) {
+      throw new KanSyncError(`No se pudo eliminar el worktree ${root}; revísalo a mano.`, 'WORKTREE_REMOVE_FAILED');
+    }
+    runGit(['branch', '-D', manifest.branch], { cwd: mainRoot, allowFailure: true });
+    runGit(['push', 'origin', '--delete', manifest.branch], { cwd: mainRoot, allowFailure: true });
+  }
+  log(`Claim ${changeId} liberado: tarjetas devueltas, etiquetas y worktree limpiados.`);
+  return { released: true, changeId };
 }
 
 function resolveBaseUrl({ configFile, baseUrl, env }) {
@@ -490,7 +837,7 @@ function resolveBaseUrl({ configFile, baseUrl, env }) {
   );
 }
 
-export async function run(argv, { env = process.env, log = console.log, logError = console.error } = {}) {
+export async function run(argv, { env = process.env, log = console.log, logError = console.error, cwd = process.cwd(), runGit = execGit } = {}) {
   let parsed;
   try {
     parsed = parseArgs({
@@ -503,9 +850,18 @@ export async function run(argv, { env = process.env, log = console.log, logError
         'base-url': { type: 'string' },
         board: { type: 'string' },
         card: { type: 'string' },
+        cards: { type: 'string' },
+        change: { type: 'string' },
         title: { type: 'string' },
+        'worktree-root': { type: 'string' },
+        'dev-port': { type: 'string' },
+        'e2e-port': { type: 'string' },
+        pr: { type: 'string' },
+        force: { type: 'boolean' },
+        'no-check': { type: 'boolean' },
         'dry-run': { type: 'boolean' },
         json: { type: 'boolean' },
+        archive: { type: 'boolean' },
         timeout: { type: 'string' },
       },
     });
@@ -533,9 +889,9 @@ export async function run(argv, { env = process.env, log = console.log, logError
     return 1;
   }
 
-  const envFile = values.env ? resolve(values.env) : DEFAULT_ENV_FILE;
+  const envFile = values.env ? resolve(values.env) : undefined;
   const configFile = values.config ? resolve(values.config) : DEFAULT_CONFIG_FILE;
-  const mergedEnv = readEnv({ envFile, env });
+  const mergedEnv = readEnv({ envFile, env, cwd, runGit });
 
   try {
     if (command === 'discover') {
@@ -551,10 +907,63 @@ export async function run(argv, { env = process.env, log = console.log, logError
       return 0;
     }
 
-    if (command !== 'start' && command !== 'done') {
-      logError(`Error: comando desconocido "${command}".`);
-      logError(USAGE);
-      return 1;
+    if (command === 'pr-body' || command === 'check') {
+      if (!changeId) {
+        logError(`Error: ${command} necesita el id del change.`);
+        logError(USAGE);
+        return 1;
+      }
+      if (command === 'pr-body') {
+        const { root, manifest } = readManifestForCommand({ changeId, cwd, runGit });
+        if (!manifest) throw new KanSyncError(`No existe workflow.json para "${changeId}".`, 'MANIFEST_MISSING');
+        checkCommand({ changeId, cwd: root, runGit, log });
+        log(buildPrBody(manifest, { archive: Boolean(values.archive) }));
+      } else {
+        checkCommand({ changeId, cwd, runGit, log });
+      }
+      return 0;
+    }
+
+    const config = { ...readConfig({ configFile }), timeoutMs };
+
+    if (command === 'queue') {
+      await queue({ config, env: mergedEnv, fetchImpl: globalThis.fetch, json: values.json, log });
+      return 0;
+    }
+
+    if (command === 'claim') {
+      const cardIds = [...positionals.slice(1), ...parseCardList(values.cards)];
+      await claimCommand({
+        cardIds,
+        changeId: values.change,
+        config,
+        env: mergedEnv,
+        fetchImpl: globalThis.fetch,
+        dryRun: Boolean(values['dry-run']),
+        worktreeRoot: values['worktree-root'],
+        devPort: values['dev-port'],
+        e2ePort: values['e2e-port'],
+        log,
+        cwd,
+        runGit,
+      });
+      return 0;
+    }
+
+    if (command === 'link') {
+      const cardIds = [...positionals.slice(2), ...parseCardList(values.cards)];
+      await linkCommand({
+        changeId,
+        cardIds,
+        config,
+        env: mergedEnv,
+        fetchImpl: globalThis.fetch,
+        dryRun: Boolean(values['dry-run']),
+        log,
+        cwd,
+        runGit,
+      });
+      return 0;
     }
 
     if (!changeId) {
@@ -563,21 +972,30 @@ export async function run(argv, { env = process.env, log = console.log, logError
       return 1;
     }
 
-    const config = { ...readConfig({ configFile }), timeoutMs };
     const options = {
       changeId,
       config,
       env: mergedEnv,
       fetchImpl: globalThis.fetch,
       dryRun: Boolean(values['dry-run']),
-      cardPublicId: values.card,
       log,
+      cwd,
+      runGit,
     };
 
     if (command === 'start') {
-      await startChange({ ...options, title: values.title });
+      const { manifest } = readManifestForCommand({ changeId, cwd, runGit });
+      await startChange({ ...options, title: values.title, cardPublicId: values.card, cards: manifest?.cards });
+    } else if (command === 'done') {
+      await doneCommand({ ...options, cardPublicId: values.card, prUrl: values.pr, noCheck: Boolean(values['no-check']) });
+    } else if (command === 'review') {
+      await reviewCommand(options);
+    } else if (command === 'release') {
+      await releaseCommand({ ...options, force: Boolean(values.force) });
     } else {
-      await doneChange(options);
+      logError(`Error: comando desconocido "${command}".`);
+      logError(USAGE);
+      return 1;
     }
     return 0;
   } catch (error) {

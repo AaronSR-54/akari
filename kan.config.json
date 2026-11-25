@@ -4,6 +4,7 @@
   "lists": {
     "todo": "TO DO",
     "inProgress": "IN PROGRESS",
-    "done": "DONE"
+    "done": "DONE",
+    "review": "REVIEW"
   }
 }

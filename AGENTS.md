@@ -50,34 +50,91 @@ La fase de diseño está **parada**. Los changes de OpenSpec se dedican solo a c
 - La rama y la PR de un change no incluyen cambios en `docs/diseno/`, `design/` ni `openspec/specs/diseno/*`. Si aparecen en el working tree, déjalos fuera.
 - Solo el usuario puede reabrir la fase de diseño; hasta entonces, cualquier propuesta visual se limita a una nota en `docs/desarrollo/desviaciones.md`.
 
-## OpenSpec: rama por change y cierre
+## Flujo colaborativo: cola, claim y worktrees
 
-Cada change vive en su propia rama `feat/<change-id>` desde el momento en que se crea, y solo termina cuando sus cambios están commiteados en esa rama y con una PR abierta a `main`.
+Cada trabajo nuevo empieza en una tarjeta de `TO DO` del tablero autoalojado de Kan.bn (`akari/akari`). El flujo canónico es:
 
-- **Al crear un change** (`openspec new`, `/opsx-propose`, skill `openspec-propose`): lo primero es actualizar `main` (`git fetch origin`, `git switch main`, `git pull --ff-only`) y crear `feat/<change-id>` desde ese HEAD. No escribas proposal, design, specs ni tasks en `main`; todo el ciclo (artefactos, código, specs y archivo) ocurre en esa rama. El change nace ya acotado a código y comportamiento: no incluye diseño ni trabajo en FigCraft (ver «Diseño congelado»).
-- **Al aplicar o retomar** (skill `openspec-apply-change`, `/opsx-apply`): confirma que estás en `feat/<change-id>`. Si la rama no existe (change antiguo), créala desde `main` actualizado antes de seguir.
-- **Al archivar** (`openspec archive`, skill `openspec-archive-change`): completa estos pasos.
+1. Revisar la cola.
+2. Reclamar una o varias tarjetas con `claim`.
+3. Trabajar en el worktree y la sesión que imprime el claim.
+4. Proponer, aplicar y archivar el change.
+5. Abrir la PR, mover las tarjetas a `DONE` y limpiar el claim.
 
-1. **Rama.** Trabaja en la `feat/<change-id>` ya creada; si no existe, créala desde `main` actualizado antes de commitear. No la recrees si ya existe.
-2. **Alcance del commit.** Incluye solo lo del change: `openspec/changes/archive/<fecha>-<change-id>/`, los specs de comportamiento que el archivado sincronice en `openspec/specs/producto/` y el código y pruebas derivados de sus tareas. No incluyas `docs/diseno/`, `design/` ni `openspec/specs/diseno/*`: el diseño está congelado. No mezcles cambios ajenos: si el working tree tiene trabajo no relacionado, déjalo fuera; si no puedes distinguir qué pertenece al change, párate y pregunta.
-3. **Commit.** Conventional commits en español, p. ej. `feat(<change-id>): archivar el change y sincronizar specs`. No amendes commits ya publicados ni uses `--force`.
-4. **Push.** `git push -u origin feat/<change-id>`.
-5. **PR.** `gh pr create --base main --title "<tipo>(<change-id>): <resumen>"` con cuerpo en español: resumen del change, deltas de specs, tareas completadas y resultado de las verificaciones (lint/tests/build). Enlaza la carpeta archivada.
-6. **Sin merge.** La PR queda abierta para revisión: no la mergees ni la cierres. Termina informando la URL de la PR y las verificaciones ejecutadas.
+Un change = una rama `feat/<change-id>` = un worktree = una sesión. No edites `main` ni abras dos sesiones sobre el mismo worktree.
 
-Guardas:
+### Revisar la cola
+
+`node scripts/kan-sync.mjs queue --json` es una consulta de solo lectura. Devuelve `todo` (tarjetas libres y su `claimable`) y `claimed` (tarjetas con change, rama y persona). No mueve ni asigna nada.
+
+Los disparadores son: «revisa la cola», «mira el Kan», «qué tareas hay», «qué puedo hacer», «busca trabajo», «tareas libres», «siguiente tarea», «estado del tablero» y `/kan-queue`. Ante cualquiera de ellos, ejecuta `queue --json`, resume las tarjetas libres y reclamadas, y espera a que se pida un `claim` explícito.
+
+### Reclamar
+
+```bash
+# Una tarjeta. El id se deriva del título si no pasas --change.
+node scripts/kan-sync.mjs claim <card-public-id>
+
+# Varias tarjetas relacionadas en un solo change, rama, worktree y PR.
+node scripts/kan-sync.mjs claim <id-a> <id-b> --change <change-id>
+
+# Añadir una tarjeta libre a un claim existente, antes de archivar.
+node scripts/kan-sync.mjs link <change-id> --cards <card-public-id>
+```
+
+`claim` valida que estén en `TO DO`, libres o asignadas a ti y sin otro change; crea rama, worktree y `workflow.json`; publica la rama y las etiquetas `claims/<card-id>/<change-id>` en un push atómico; y mueve las tarjetas a `IN PROGRESS`. Si dos personas reclaman la misma tarjeta, solo una gana.
+
+El claim crea el scaffold del change. Si el change ya existe, `/opsx-propose` debe continuar ese change; no ejecutes `openspec new change` para duplicarlo y, si el comando avisa de que ya existe, sigue con el change existente.
+
+### Worktree y sesión
+
+El claim imprime la ruta, por ejemplo:
+
+```text
+Worktree: /ruta/a/akari-worktrees/<change-id>
+Abrir: opencode /ruta/a/akari-worktrees/<change-id>
+Dev:   npm run dev:worktree
+E2E:   npm run e2e:worktree
+```
+
+- Abre una sesión por worktree. Desde OpenCode, usa la ruta con `opencode <ruta>` o mueve la sesión actual a esa ruta.
+- No abras dos sesiones sobre el mismo worktree ni edites dos worktrees desde una sola sesión.
+- El checkout principal permanece en `main`; no lo uses para editar una tarea.
+- `.env` se lee del checkout principal mediante el directorio común de Git. No copies `.env` a los worktrees.
+- Los puertos se guardan en `.opsx/ports.json` (ignorado por Git). `dev:worktree` arranca Next en el puerto del worktree y `e2e:worktree` ejecuta Playwright con su `E2E_PORT`. No ejecutes los dos a la vez en el mismo worktree: comparten `.next`.
+
+### Aplicar y archivar
+
+- **Al aplicar o retomar** (`/opsx-apply`): confirma que estás en el worktree del change y en `feat/<change-id>`. No muevas la tarjeta; sigue en `IN PROGRESS` o `REVIEW`.
+- **Al archivar** (`openspec archive`, skill `openspec-archive-change`): trabaja en la rama del change, archiva, commitear solo el alcance del change, publica la rama y abre la PR.
+- **PR.** Usa `node scripts/kan-sync.mjs pr-body <change-id>` como borrador, `gh pr create --base main` con la plantilla y no mergees ni cierres la PR.
+- **DONE.** Después de abrir la PR, ejecuta `node scripts/kan-sync.mjs done <change-id> --pr <url>`. Mueve todas las tarjetas del manifiesto a `DONE`, registra la URL y commitea el manifiesto. La PR sigue abierta: `DONE` significa «archivado y PR abierta», no «mergeado».
+- **Sin merge.** La revisión y el merge quedan en manos de una persona. Al terminar, informa la URL de la PR y las verificaciones.
+
+### Revisión y liberación
+
+```bash
+# PR abierta antes de archivar.
+node scripts/kan-sync.mjs review <change-id>
+
+# Abandonar un claim: devuelve tarjetas, borra etiquetas y limpia worktree/rama.
+node scripts/kan-sync.mjs release <change-id> [--force]
+```
+
+`review` requiere que exista `lists.review` en `kan.config.json` y la lista `REVIEW` en el tablero. `release` se niega si el change está archivado, hay una PR abierta o el worktree tiene cambios sin commitear, salvo `--force`.
+
+### Conflictos y limpieza
+
+- Los archivados compiten por `openspec/specs/**`. Deja solo una PR de archivado lista a la vez o rebasa sobre `main` actualizado antes de pedir revisión; vuelve a ejecutar la CI.
+- `check <change-id>` avisa si la rama toca ficheros compartidos (`AGENTS.md`, `package.json`, CI, configuración, documentación de flujo). Coordina esos cambios y mergea en serie.
+- Tras el merge, limpia el worktree, la rama y las etiquetas del claim. Un claim abandonado se libera con `release`.
+- Si Kan falla antes de reclamar, `claim` aborta sin tocar Git. Si falla después de publicar el claim, conserva rama y worktree, informa y permite reintentar; no bloquees OpenSpec.
+- `start` sigue existiendo para changes antiguos sin claim previo.
+
+### Guardas
 
 - Revisa `git status` antes de añadir: nunca subas `.env`, credenciales ni artefactos ignorados.
 - Un change = una rama = una PR. No reutilices la rama de otro change.
-- Ningún change se abre, implementa ni archiva en `main`: si detectas que estás en `main`, crea la rama antes de continuar.
+- Ningún change se abre, implementa ni archiva en `main`: usa el worktree del claim.
+- No incluyas `docs/diseno/`, `design/` ni `openspec/specs/diseno/*`: el diseño está congelado.
 - Si `gh` falla, deja la rama subida y reporta el error junto con el comando exacto para crear la PR a mano.
-
-## Kan.bn: tarjeta por change
-
-Cada change tiene una tarjeta en el tablero autoalojado de Kan.bn (`akari/akari`). El título contiene el id del change y la tarjeta se asigna a `kan_CURRENT_USER`. La configuración está en `kan.config.json` (sin secretos) y el token en `.env` (`kan_API_KEY`); los detalles están en `docs/desarrollo/kanban.md`.
-
-- **Al crear un change** (`openspec new`, `/opsx-propose`, skill `openspec-propose`): después de crear la rama y los artefactos, ejecuta `node scripts/kan-sync.mjs start <change-id>`. Crea la tarjeta en `TO DO` si no existe, la asigna y la mueve a `IN PROGRESS`.
-- **Al aplicar o retomar** (`/opsx-apply`): no muevas la tarjeta; sigue en `IN PROGRESS`. Usa `--dry-run` y `--card <publicId>` si necesitas comprobar o desambiguar sin escribir.
-- **Al archivar** (`openspec archive`, skill `openspec-archive-change`): después de archivar y antes del commit, ejecuta `node scripts/kan-sync.mjs done <change-id>` para mover la tarjeta a `DONE`. No crea tarjetas nuevas.
-- **Si la sincronización falla** (sin `.env`, token revocado, red o lista inexistente): muestra el error, indica que la tarjeta no se ha actualizado y continúa con el propose o el archivado. Nunca bloquees el flujo de OpenSpec por el tablero.
-- **Nunca commitees** `.env`, el token ni datos personales. En un worktree, copia el `.env` desde el checkout principal antes de sincronizar; `kan.config.json` sí se versiona.
+- Nunca commitees `.env`, el token, correos ni datos personales. `workflow.json` y `kan.config.json` no contienen secretos.
