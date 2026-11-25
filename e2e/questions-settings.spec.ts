@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { seedDemo } from './helpers';
+import { chooseOption, seedDemo } from './helpers';
 
 test.describe('preguntas y ajustes', () => {
   test('las preguntas rápidas responden con datos de ejemplo', async ({ page }) => {
@@ -15,12 +15,12 @@ test.describe('preguntas y ajustes', () => {
   test('cambia tema y shell y persiste el tema', async ({ page }) => {
     await seedDemo(page);
     await page.goto('/ajustes');
-    await page.getByLabel('Tema').selectOption('dark');
+    await chooseOption(page, 'Tema', 'Oscuro');
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
     await page.reload();
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
 
-    await page.getByLabel('Navegación de escritorio').selectOption('header');
+    await chooseOption(page, 'Navegación de escritorio', 'Header');
     await expect(page.locator('aside')).toHaveCount(0);
     await expect(page.getByRole('navigation', { name: 'Navegación principal' }).first()).toBeVisible();
   });

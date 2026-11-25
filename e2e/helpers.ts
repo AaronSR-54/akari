@@ -17,3 +17,10 @@ export async function openNav(page: Page, name: string) {
   await page.getByRole('link', { name, exact: true }).first().click();
   await expect(page.getByRole('heading', { name, exact: true }).first()).toBeVisible();
 }
+
+export async function chooseOption(page: Page, label: string, option: string) {
+  const trigger = page.getByLabel(label).first();
+  await trigger.click();
+  await page.getByRole('option', { name: option, exact: true }).click();
+  await expect(trigger).toHaveAttribute('aria-expanded', 'false');
+}

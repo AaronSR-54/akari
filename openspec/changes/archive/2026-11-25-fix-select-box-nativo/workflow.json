@@ -1,0 +1,12 @@
+{
+  "changeId": "fix-select-box-nativo",
+  "branch": "feat/fix-select-box-nativo",
+  "cards": [
+    {
+      "publicId": "ncrusx8a7924",
+      "title": "fix: adaptar iconos en select box y adaptar la ui para no usar la api del navegador"
+    }
+  ],
+  "prUrl": "https://github.com/AaronSR-54/akari/pull/5",
+  "claimedAt": "2026-11-25T10:02:05.351Z"
+}

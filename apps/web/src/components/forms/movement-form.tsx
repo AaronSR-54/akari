@@ -137,7 +137,7 @@ export function MovementForm({
           <SelectField
             label="Cuenta"
             value={accountId}
-            onChange={(event) => setAccountId(event.target.value)}
+            onValueChange={setAccountId}
             options={accounts.map((item) => ({ value: item.id, label: item.name }))}
             error={errors.accountId}
             required
@@ -154,7 +154,7 @@ export function MovementForm({
             <SelectField
               label="Categoría"
               value={category}
-              onChange={(event) => setCategory(event.target.value)}
+              onValueChange={setCategory}
               options={movementCategoryOptions}
             />
           </div>
@@ -176,7 +176,7 @@ export function MovementForm({
                 <SelectField
                   label="Frecuencia"
                   value={frequency}
-                  onChange={(event) => setFrequency(event.target.value as typeof frequency)}
+                  onValueChange={(value) => setFrequency(value as typeof frequency)}
                   options={frequencyOptions}
                 />
               ) : null}

@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { seedDemo, startEmpty } from './helpers';
+import { chooseOption, seedDemo, startEmpty } from './helpers';
 
 function visible(page: Page, text: string | RegExp) {
   return page.getByText(text).filter({ visible: true }).first();
@@ -28,7 +28,7 @@ test.describe('cuentas y movimientos', () => {
     await expect(page).toHaveURL(/\/movimientos\/nuevo\?cuenta=/);
     await page.getByLabel('Importe').fill('50');
     await page.getByLabel('Concepto').fill('Cine');
-    await page.getByLabel('Categoría').selectOption({ label: 'Ocio' });
+    await chooseOption(page, 'Categoría', 'Ocio');
     await page.getByRole('button', { name: 'Guardar movimiento' }).click();
     await expect(page).toHaveURL(/\/movimientos/);
     await expect(visible(page, 'Cine')).toBeVisible();
@@ -93,7 +93,7 @@ test.describe('cuentas y movimientos', () => {
     await page.getByLabel('Importe').fill('700');
     await page.getByLabel('Concepto').fill('Alquiler extra');
     await page.getByRole('switch', { name: 'Repetir este movimiento' }).click();
-    await page.getByLabel('Frecuencia').selectOption('monthly');
+    await chooseOption(page, 'Frecuencia', 'Mensual');
     await page.getByRole('button', { name: 'Guardar movimiento' }).click();
     await expect(page).toHaveURL(/\/movimientos/);
     await expect(visible(page, 'Alquiler extra')).toBeVisible();

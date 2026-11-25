@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { seedDemo } from './helpers';
+import { chooseOption, seedDemo } from './helpers';
 
 test.describe('gastos grupales', () => {
   test('liquida un grupo y conserva el historial', async ({ page }) => {
@@ -9,7 +9,7 @@ test.describe('gastos grupales', () => {
     await expect(page.getByRole('heading', { name: 'Piso compartido' })).toBeVisible();
     await expect(page.getByText(/Quedan 50,00/)).toBeVisible();
 
-    await page.getByLabel('Rol de Luis').selectOption('admin');
+    await chooseOption(page, 'Rol de Luis', 'Administración');
     await expect(page.getByText('Rol actualizado')).toBeVisible();
     await page.getByRole('button', { name: 'Marcar saldada' }).first().click();
     await expect(page.getByText(/Quedan 20,00/)).toBeVisible();
@@ -58,7 +58,7 @@ test.describe('gastos grupales', () => {
     await page.goto('/grupos/demo-grp-flat');
     await page.getByLabel('Concepto').fill('Hotel');
     await page.getByLabel('Importe').fill('100');
-    await page.getByLabel('Divisa del gasto').selectOption('USD');
+    await chooseOption(page, 'Divisa del gasto', 'Dólar (USD)');
     await page.getByLabel(/Tipo de cambio/).fill('0,9');
     await page.getByRole('button', { name: 'Guardar y repartir' }).click();
     await expect(page.getByText('Hotel').first()).toBeVisible();

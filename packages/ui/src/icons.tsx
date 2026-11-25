@@ -112,6 +112,14 @@ export function IconChevronLeft(props: IconProps) {
   );
 }
 
+export function IconChevronDown(props: IconProps) {
+  return (
+    <svg {...baseProps(props)}>
+      <path d="m5.5 9.5 6.5 6.5 6.5-6.5" />
+    </svg>
+  );
+}
+
 export function IconSliders(props: IconProps) {
   return (
     <svg {...baseProps(props)}>
