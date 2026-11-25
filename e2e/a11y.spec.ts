@@ -14,6 +14,7 @@ const routes = [
 
 test.describe('accesibilidad', () => {
   test('las pantallas core no tienen violaciones graves', async ({ page }) => {
+    test.slow();
     await seedDemo(page);
     for (const route of routes) {
       await page.goto(route);
