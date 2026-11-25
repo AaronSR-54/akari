@@ -34,6 +34,7 @@ import {
 import { useAccountSummary, useRecurrences } from '../../components/hooks';
 import { PageTitle } from '../../components/page-title';
 import { PageHeaderResponsive } from '../../components/page-header-responsive';
+import { HeadingMeta } from '../../components/heading-meta';
 import { useData } from '../../components/providers';
 import { ActionLink } from '../../components/action-link';
 import { PageSkeleton } from '../../components/page-skeleton';
@@ -129,7 +130,6 @@ export function AccountDetailScreen({ accountId }: { accountId: string }) {
               {account.name}
             </span>
           }
-          meta={`${typeLabel[account.type] ?? account.type} · ${account.currency} · ${formatUpdated(account.updatedAt)}`}
           actions={
             <>
               <ActionLink href={`/cuentas/${account.id}/editar`} variant="secondary">
@@ -143,6 +143,10 @@ export function AccountDetailScreen({ accountId }: { accountId: string }) {
               </Button>
             </>
           }
+        />
+        <HeadingMeta
+          label={typeLabel[account.type] ?? account.type}
+          detail={`${account.currency} · ${formatUpdated(account.updatedAt)}`}
         />
 
         {projected.minor < 0 ? (
