@@ -79,12 +79,14 @@ El esquema Dexie está versionado en `packages/data/src/db.ts`; la versión 2 a�
 | `/cuentas/nueva` | `M06` en shell web | A · Alta de cuenta |
 | `/cuentas/[id]` | `W02` | E · Detalle |
 | `/cuentas/[id]/editar` | `M06` edición | A · Edición |
-| `/movimientos` | `W03` | B/E · Movimientos |
-| `/movimientos/nuevo` | `M09` en shell web | B · Registro |
+| `/movimientos` | `W03` + modal de alta y edición | B/E · Movimientos |
+| `/movimientos/nuevo` | `M09` en shell web (enlace directo) | B · Registro |
 | `/grupos` | índice de grupos | C/F · Grupos |
 | `/grupos/[id]` | `W04` + `M12` | C · Gasto y liquidación |
 | `/preguntas` | `W05` | D · Preguntas |
 | `/ajustes` | `W06` | F · Datos |
+
+El alta desde `/movimientos` y la edición de un movimiento comparten un modal que reutiliza el formulario de `M09`; la ruta `/movimientos/nuevo` sigue disponible como enlace directo.
 
 `W07` se verifica como comportamiento responsive y `W08` con el modo `header` del mismo shell.
 

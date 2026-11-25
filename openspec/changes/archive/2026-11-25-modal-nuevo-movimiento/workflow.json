@@ -1,0 +1,12 @@
+{
+  "changeId": "modal-nuevo-movimiento",
+  "branch": "feat/modal-nuevo-movimiento",
+  "cards": [
+    {
+      "publicId": "yl01i29avjsp",
+      "title": "feat: al crear o editar movimiento, crear una modal con las funcionalidades actuales de la ruta de nuevo movimiento"
+    }
+  ],
+  "prUrl": "https://github.com/AaronSR-54/akari/pull/13",
+  "claimedAt": "2026-11-25T11:52:14.927Z"
+}
