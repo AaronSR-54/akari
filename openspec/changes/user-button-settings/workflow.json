@@ -1,0 +1,12 @@
+{
+  "changeId": "user-button-settings",
+  "branch": "user-button-settings",
+  "cards": [
+    {
+      "publicId": "syq5yifbebmi",
+      "title": "fix: mover acceso a panel de ajustes, entrando por el botón del usuario"
+    }
+  ],
+  "prUrl": null,
+  "claimedAt": "2026-11-25T18:32:33.194Z"
+}
