@@ -29,7 +29,10 @@ test.describe('modal de movimiento', () => {
     await page.goto('/movimientos');
     await page.getByRole('searchbox', { name: 'Buscar movimientos' }).fill('Cena con amigos');
 
-    await page.getByRole('button', { name: 'Editar' }).first().click();
+    await page.getByRole('button', { name: /Cena con amigos/ }).first().click();
+    const detail = page.getByRole('dialog', { name: 'Cena con amigos' });
+    await expect(detail).toBeVisible();
+    await detail.getByRole('button', { name: 'Editar' }).click();
     const dialog = page.getByRole('dialog', { name: 'Editar movimiento' });
     await expect(dialog).toBeVisible();
     await expect(dialog.getByLabel('Cuenta')).toBeVisible();
@@ -46,6 +49,11 @@ test.describe('modal de movimiento', () => {
 
     await expect(dialog).toBeHidden();
     await expect(page).toHaveURL(/\/movimientos$/);
+
+    const updated = page.getByRole('dialog', { name: 'Cena reembolsada' });
+    await expect(updated).toBeVisible();
+    await updated.getByRole('button', { name: 'Cerrar' }).click();
+    await expect(updated).toBeHidden();
 
     await page.getByRole('searchbox', { name: 'Buscar movimientos' }).fill('Cena reembolsada');
     await expect(visible(page, 'Cena reembolsada')).toBeVisible();
