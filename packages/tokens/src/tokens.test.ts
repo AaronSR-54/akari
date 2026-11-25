@@ -114,6 +114,33 @@ describe('tokens de diseño', () => {
     expect(generated).toContain('prefers-reduced-motion');
   });
 
+  it('cada color semántico expone canales RGB para aplicar opacidad', () => {
+    const channels = (hex: string) => {
+      const value = hex.replace('#', '');
+      return [0, 2, 4].map((offset) => Number.parseInt(value.slice(offset, offset + 2), 16)).join(' ');
+    };
+    const blockFrom = (marker: string) => {
+      const start = generated.indexOf(marker);
+      const open = generated.indexOf('{', start);
+      const end = generated.indexOf('}', open);
+      return generated.slice(open, end);
+    };
+    const light = blockFrom(':root, [data-theme="light"]');
+    const dark = blockFrom('[data-theme="dark"]');
+
+    for (const [name, values] of Object.entries(semanticColors)) {
+      const key = `--color-${name.replace('/', '-')}-rgb:`;
+      expect(light, name).toContain(`${key} ${channels(values.light)};`);
+      expect(dark, name).toContain(`${key} ${channels(values.dark)};`);
+    }
+
+    const presetSource = readFileSync(
+      path.resolve(here, '../generated/tailwind-preset.cjs'),
+      'utf8',
+    );
+    expect(presetSource).toContain('rgb(var(--color-overlay-scrim-rgb) / <alpha-value>)');
+  });
+
   it('el preset de Tailwind conserva la escala que usan las pantallas del archivo', () => {
     const presetSource = readFileSync(
       path.resolve(here, '../generated/tailwind-preset.cjs'),

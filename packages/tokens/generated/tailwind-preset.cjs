@@ -3,56 +3,56 @@ module.exports = {
   "theme": {
     "colors": {
       "surface": {
-        "canvas": "var(--color-surface-canvas)",
-        "default": "var(--color-surface-default)",
-        "raised": "var(--color-surface-raised)",
-        "sunken": "var(--color-surface-sunken)",
-        "inverse": "var(--color-surface-inverse)"
+        "canvas": "rgb(var(--color-surface-canvas-rgb) / <alpha-value>)",
+        "default": "rgb(var(--color-surface-default-rgb) / <alpha-value>)",
+        "raised": "rgb(var(--color-surface-raised-rgb) / <alpha-value>)",
+        "sunken": "rgb(var(--color-surface-sunken-rgb) / <alpha-value>)",
+        "inverse": "rgb(var(--color-surface-inverse-rgb) / <alpha-value>)"
       },
       "text": {
-        "primary": "var(--color-text-primary)",
-        "secondary": "var(--color-text-secondary)",
-        "tertiary": "var(--color-text-tertiary)",
-        "disabled": "var(--color-text-disabled)",
-        "placeholder": "var(--color-text-placeholder)",
-        "inverse": "var(--color-text-inverse)"
+        "primary": "rgb(var(--color-text-primary-rgb) / <alpha-value>)",
+        "secondary": "rgb(var(--color-text-secondary-rgb) / <alpha-value>)",
+        "tertiary": "rgb(var(--color-text-tertiary-rgb) / <alpha-value>)",
+        "disabled": "rgb(var(--color-text-disabled-rgb) / <alpha-value>)",
+        "placeholder": "rgb(var(--color-text-placeholder-rgb) / <alpha-value>)",
+        "inverse": "rgb(var(--color-text-inverse-rgb) / <alpha-value>)"
       },
       "border": {
-        "subtle": "var(--color-border-subtle)",
-        "strong": "var(--color-border-strong)"
+        "subtle": "rgb(var(--color-border-subtle-rgb) / <alpha-value>)",
+        "strong": "rgb(var(--color-border-strong-rgb) / <alpha-value>)"
       },
       "accent": {
-        "default": "var(--color-accent-default)",
-        "strong": "var(--color-accent-strong)",
-        "soft": "var(--color-accent-soft)",
-        "ink": "var(--color-accent-ink)"
+        "default": "rgb(var(--color-accent-default-rgb) / <alpha-value>)",
+        "strong": "rgb(var(--color-accent-strong-rgb) / <alpha-value>)",
+        "soft": "rgb(var(--color-accent-soft-rgb) / <alpha-value>)",
+        "ink": "rgb(var(--color-accent-ink-rgb) / <alpha-value>)"
       },
       "status": {
-        "positive": "var(--color-status-positive)",
-        "positive-text": "var(--color-status-positive-text)",
-        "positive-soft": "var(--color-status-positive-soft)",
-        "danger": "var(--color-status-danger)",
-        "danger-text": "var(--color-status-danger-text)",
-        "danger-soft": "var(--color-status-danger-soft)",
-        "info": "var(--color-status-info)",
-        "info-text": "var(--color-status-info-text)",
-        "info-soft": "var(--color-status-info-soft)",
-        "warning": "var(--color-status-warning)",
-        "warning-text": "var(--color-status-warning-text)",
-        "warning-soft": "var(--color-status-warning-soft)"
+        "positive": "rgb(var(--color-status-positive-rgb) / <alpha-value>)",
+        "positive-text": "rgb(var(--color-status-positive-text-rgb) / <alpha-value>)",
+        "positive-soft": "rgb(var(--color-status-positive-soft-rgb) / <alpha-value>)",
+        "danger": "rgb(var(--color-status-danger-rgb) / <alpha-value>)",
+        "danger-text": "rgb(var(--color-status-danger-text-rgb) / <alpha-value>)",
+        "danger-soft": "rgb(var(--color-status-danger-soft-rgb) / <alpha-value>)",
+        "info": "rgb(var(--color-status-info-rgb) / <alpha-value>)",
+        "info-text": "rgb(var(--color-status-info-text-rgb) / <alpha-value>)",
+        "info-soft": "rgb(var(--color-status-info-soft-rgb) / <alpha-value>)",
+        "warning": "rgb(var(--color-status-warning-rgb) / <alpha-value>)",
+        "warning-text": "rgb(var(--color-status-warning-text-rgb) / <alpha-value>)",
+        "warning-soft": "rgb(var(--color-status-warning-soft-rgb) / <alpha-value>)"
       },
       "focus": {
-        "ring": "var(--color-focus-ring)"
+        "ring": "rgb(var(--color-focus-ring-rgb) / <alpha-value>)"
       },
       "overlay": {
-        "scrim": "var(--color-overlay-scrim)"
+        "scrim": "rgb(var(--color-overlay-scrim-rgb) / <alpha-value>)"
       },
       "data": {
-        "1": "var(--color-data-1)",
-        "2": "var(--color-data-2)",
-        "3": "var(--color-data-3)",
-        "4": "var(--color-data-4)",
-        "5": "var(--color-data-5)"
+        "1": "rgb(var(--color-data-1-rgb) / <alpha-value>)",
+        "2": "rgb(var(--color-data-2-rgb) / <alpha-value>)",
+        "3": "rgb(var(--color-data-3-rgb) / <alpha-value>)",
+        "4": "rgb(var(--color-data-4-rgb) / <alpha-value>)",
+        "5": "rgb(var(--color-data-5-rgb) / <alpha-value>)"
       }
     },
     "borderRadius": {

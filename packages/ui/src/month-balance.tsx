@@ -58,8 +58,8 @@ export function MonthBalance({
   const rawRange = rawMax - rawMin;
   const padding = rawRange === 0 ? Math.max(Math.abs(rawMax) * 0.02, 1) : rawRange * 0.15;
   const min = rawMin - padding;
-  const max = rawMax + padding;
-  const scale = (value: number) => 34 - ((value - min) / (max - min)) * 28;
+  const max = rawMax;
+  const scale = (value: number) => 34 - ((value - min) / (max - min)) * 34;
   const openingPoint = { x: 0, y: scale(openingBalanceMinor) };
   const points = [
     openingPoint,
@@ -75,7 +75,17 @@ export function MonthBalance({
         .join(' ')}`
     : '';
   const last = points[points.length - 1];
-  const area = line && last ? `${line} L 100 ${last.y} L 100 46 L 0 46 Z` : '';
+  // Final redondeado del relleno (radio del panel ≈ 20px ≈ 3.2 unidades del
+  // viewBox 100×38): solo cuando el mes sigue abierto, el área se extiende en
+  // plano hasta el borde derecho y la esquina superior redondeada evita el
+  // corte recto contra el fondo. El inicio se deja recto.
+  const endRadius = 3.2;
+  const area =
+    line && last
+      ? elapsed < totalDays
+        ? `${line} L ${100 - endRadius} ${last.y} Q 100 ${last.y} 100 ${last.y + endRadius} L 100 46 L 0 46 Z`
+        : `${line} L 100 ${last.y} L 100 46 L 0 46 Z`
+      : '';
   const selectedIndex = activeIndex ?? (points.length > 0 ? points.length - 1 : null);
   const point = selectedIndex !== null ? points[selectedIndex] : undefined;
   const activeIsOpening = selectedIndex === 0;

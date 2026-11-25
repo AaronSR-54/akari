@@ -94,6 +94,35 @@ describe('month balance', () => {
     expect(screen.queryByText('Saldo tras el día')).not.toBeInTheDocument();
   });
 
+  it('el punto más alto toca el borde superior', () => {
+    const { container } = renderMonth();
+    const line = container.querySelector('path[fill="none"]');
+    expect(line?.getAttribute('d')).toContain('L 25 0');
+  });
+
+  it('redondea el final del área cuando el mes sigue abierto', () => {
+    const { container } = renderMonth();
+    const area = container.querySelector('path[fill^="url"]');
+    expect(area?.getAttribute('d')).toContain('Q 100');
+  });
+
+  it('no redondea el final del área cuando el mes está completo', () => {
+    const { container } = render(
+      <MonthBalance
+        days={days}
+        openingBalanceMinor={1200000}
+        openingLabel="sáb 31 oct"
+        openingTotal="12.000,00 €"
+        openingAriaLabel="sábado 31 de octubre: saldo de cierre 12.000,00 €"
+        elapsedDays={4}
+        ariaLabel="Saldo del mes por día"
+      />,
+    );
+    const area = container.querySelector('path[fill^="url"]');
+    expect(area?.getAttribute('d')).not.toContain('Q 100');
+    expect(area?.getAttribute('d')).toContain('L 100');
+  });
+
   it('empieza en el cierre del mes anterior y sigue con el día 1', () => {
     const { container } = render(
       <MonthBalance

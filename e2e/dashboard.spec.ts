@@ -12,10 +12,68 @@ test.describe('dashboard hero', () => {
 
     const balance = page.locator('[data-hero="balance"]');
     const monthBlock = page.locator('[data-hero="month"]');
+    const quick = page.locator('[data-hero="quick"]');
+    const recent = page.locator('[data-hero="recent"]');
     const summary = page.locator('[data-hero="month-summary"]');
     await expect(balance).toContainText('Saldo total');
     await expect(monthBlock).toBeVisible();
     await expect(monthBlock).not.toContainText('Base 1 nov');
+    await expect(recent).toContainText('Últimos movimientos');
+    await expect(recent.getByRole('link', { name: 'Ver todos' })).toHaveAttribute(
+      'href',
+      '/movimientos',
+    );
+    await expect(quick).toBeVisible();
+    await expect(quick).toHaveAttribute('aria-label', 'Accesos rápidos');
+    const isDesktopWidth = (page.viewportSize()?.width ?? 1280) >= 768;
+    const nuevoQuick = quick.getByRole('link', { name: 'Nuevo movimiento' });
+    if (isDesktopWidth) {
+      await expect(nuevoQuick).toHaveAttribute('href', '/movimientos/nuevo');
+      await expect(nuevoQuick).toBeVisible();
+    } else {
+      await expect(nuevoQuick).toBeHidden();
+    }
+    await expect(quick.getByRole('link', { name: 'Nueva cuenta' })).toHaveAttribute(
+      'href',
+      '/cuentas/nueva',
+    );
+    await expect(quick.getByRole('link', { name: 'Preguntas rápidas' })).toHaveAttribute(
+      'href',
+      '/preguntas',
+    );
+    await expect(quick.getByRole('link', { name: 'Exportar' })).toHaveAttribute(
+      'href',
+      '/ajustes',
+    );
+    const addNav = page.locator('nav[aria-label="Navegación principal"] a[aria-label="Añadir movimiento"]');
+    await expect(addNav).toHaveAttribute('href', '/movimientos/nuevo');
+    if (isDesktopWidth) {
+      await expect(addNav).toBeHidden();
+      const deskPills = [
+        nuevoQuick,
+        quick.getByRole('link', { name: 'Nueva cuenta' }),
+        quick.getByRole('link', { name: 'Preguntas rápidas' }),
+        quick.getByRole('link', { name: 'Exportar' }),
+      ];
+      for (const pill of deskPills) await expect(pill).toBeVisible();
+      const deskTops = await Promise.all(
+        deskPills.map(async (pill) => (await pill.boundingBox())?.y ?? 0),
+      );
+      expect(Math.max(...deskTops) - Math.min(...deskTops)).toBeLessThanOrEqual(2);
+    } else {
+      await expect(addNav).toBeVisible();
+      const pills = [
+        quick.getByRole('link', { name: 'Nueva cuenta' }),
+        quick.getByRole('link', { name: 'Preguntas rápidas' }),
+        quick.getByRole('link', { name: 'Exportar' }),
+      ];
+      for (const pill of pills) await expect(pill).toBeVisible();
+      const pillTops = await Promise.all(
+        pills.map(async (pill) => (await pill.boundingBox())?.y ?? 0),
+      );
+      expect(Math.max(...pillTops) - Math.min(...pillTops)).toBeLessThanOrEqual(2);
+    }
+    await expect(recent.getByRole('link', { name: 'Preguntas rápidas' })).toHaveCount(0);
     await expect(summary).toContainText('Balance del mes');
     await expect(summary).toContainText('+2.152,01 €');
     await expect(summary).toContainText('Saldo total estimado a fin de mes: 15.898,84 €');
@@ -30,31 +88,102 @@ test.describe('dashboard hero', () => {
     expect(await summaryCard.evaluate((el) => getComputedStyle(el).borderTopWidth)).toBe('0px');
     expect(await summaryCard.evaluate((el) => getComputedStyle(el).boxShadow)).not.toBe('none');
 
-    const chartBox = await monthBlock.boundingBox();
+    const chartBox = await monthBlock.evaluate(async (element) => {
+      try {
+        await Promise.all(
+          element.getAnimations().map((animation) => animation.finished.catch(() => undefined)),
+        );
+      } catch {
+        /* sin Web Animations: seguir con la medición */
+      }
+      return null;
+    }).then(() => monthBlock.boundingBox());
     const summaryBox = await summary.boundingBox();
     expect(chartBox).not.toBeNull();
     expect(summaryBox).not.toBeNull();
     if (chartBox && summaryBox) {
-      expect(summaryBox.y - (chartBox.y + chartBox.height)).toBeLessThanOrEqual(1);
+      const lineTop = await monthBlock.evaluate((element) => {
+        const path = element.querySelector('svg path[fill="none"]');
+        if (!path) return null;
+        const box = element.getBoundingClientRect();
+        return path.getBoundingClientRect().top - box.top;
+      });
+      expect(lineTop).not.toBeNull();
+      if (lineTop !== null) expect(Math.abs(lineTop)).toBeLessThanOrEqual(2);
+      const svgFill = await monthBlock.evaluate((element) => {
+        const svg = element.querySelector('svg');
+        if (!svg) return null;
+        const box = element.getBoundingClientRect();
+        return svg.getBoundingClientRect().height - box.height;
+      });
+      expect(svgFill).not.toBeNull();
+      if (svgFill !== null) expect(Math.abs(svgFill)).toBeLessThanOrEqual(1);
+      if ((page.viewportSize()?.width ?? 0) >= 1024) {
+        expect(summaryBox.y - (chartBox.y + chartBox.height)).toBeLessThanOrEqual(1);
+      } else {
+        const recentBox = await recent.boundingBox();
+        expect(recentBox).not.toBeNull();
+        if (recentBox) {
+          expect(recentBox.y).toBeGreaterThan(chartBox.y);
+          expect(summaryBox.y).toBeGreaterThan(recentBox.y);
+          const quickBoxM = await quick.boundingBox();
+          expect(quickBoxM).not.toBeNull();
+          if (quickBoxM) {
+            expect(quickBoxM.y).toBeGreaterThan(summaryBox.y + summaryBox.height);
+          }
+          expect(Math.abs(recentBox.y - (chartBox.y + chartBox.height))).toBeLessThanOrEqual(1);
+          await expect(balance).toHaveCSS('text-align', 'center');
+          const recentCard = recent.locator('div').first();
+          expect(await recentCard.evaluate((el) => getComputedStyle(el).borderTopWidth)).toBe(
+            '0px',
+          );
+        }
+      }
 
       if ((page.viewportSize()?.width ?? 0) >= 1024) {
         const balanceBox = await balance.boundingBox();
-        const upcomingBox = await page.locator('[data-hero="upcoming"]').boundingBox();
+        const recentBox = await recent.boundingBox();
         expect(balanceBox).not.toBeNull();
-        expect(upcomingBox).not.toBeNull();
-        if (balanceBox && upcomingBox) {
+        expect(recentBox).not.toBeNull();
+        if (balanceBox && recentBox) {
           expect(Math.abs(chartBox.y - balanceBox.y)).toBeLessThanOrEqual(1);
-          expect(Math.abs(summaryBox.y + summaryBox.height - (upcomingBox.y + upcomingBox.height))).toBeLessThanOrEqual(1);
+          const quickBox = await quick.boundingBox();
+          expect(quickBox).not.toBeNull();
+          if (quickBox) {
+            expect(quickBox.y).toBeGreaterThan(summaryBox.y + summaryBox.height);
+            expect(quickBox.y - (summaryBox.y + summaryBox.height)).toBeGreaterThanOrEqual(16);
+          }
+          expect(quickBox ? quickBox.height : 0).toBeGreaterThan(0);
+          const leftBottom = recentBox.y + recentBox.height;
+          const rightBottom = quickBox.y + quickBox.height;
+          expect(Math.abs(leftBottom - rightBottom)).toBeLessThanOrEqual(2);
         }
       }
+
+      if ((page.viewportSize()?.width ?? 0) >= 1024) {
+        const amountSize = await balance
+          .locator('[data-amount]')
+          .first()
+          .evaluate((element) => getComputedStyle(element).fontSize);
+        expect(amountSize).toBe('52px');
+        await expect(balance).not.toContainText('estimado a fin de mes');
+        await expect(balance).not.toContainText('Sin proyección');
+        await expect(balance).not.toHaveCSS('text-align', 'center');
+        const recentCard = recent.locator('div').first();
+        expect(await recentCard.evaluate((el) => getComputedStyle(el).borderTopWidth)).toBe(
+          '1px',
+        );
+      }
     }
+
+    await expect(page.locator('[data-hero="upcoming"]')).toHaveCount(0);
 
     const bar = monthBlock.getByRole('group', { name: /Saldo del mes por día/ });
     await expect(bar).toBeVisible();
     expect(await page.getByText('Gastos por semana').count()).toBe(0);
     expect(await page.getByRole('img', { name: /Movimientos de la semana/ }).count()).toBe(0);
 
-    const questions = page.getByRole('link', { name: 'Preguntas rápidas →' });
+    const questions = quick.getByRole('link', { name: 'Preguntas rápidas' });
     await expect(questions).toBeVisible();
     await expect(questions).toHaveAttribute('href', '/preguntas');
 
@@ -95,7 +224,12 @@ test.describe('dashboard hero', () => {
     const total = summary.locator('p.font-tabular').first();
     const before = await total.textContent();
 
-    await page.getByRole('link', { name: 'Añadir movimiento' }).first().click();
+    const addNavLink = page.locator('nav[aria-label="Navegación principal"] a[aria-label="Añadir movimiento"]');
+    if (await addNavLink.isVisible()) {
+      await addNavLink.click();
+    } else {
+      await page.getByRole('link', { name: 'Nuevo movimiento' }).first().click();
+    }
     await page.getByLabel('Importe').fill('25');
     await page.getByLabel('Concepto').fill('Entradas');
     await chooseOption(page, 'Categoría', 'Ocio');
