@@ -114,17 +114,21 @@ La rejilla se calcula con 6 filas × 7 columnas empezando en lunes, coherente co
 ### API de `DateField` y migración de formularios
 
 ```ts
-type DateFieldProps = Omit<InputHTMLAttributes<HTMLInputElement>, 'id' | 'type' | 'value' | 'onChange'> & {
+type DateFieldProps = {
   label: string;
   value?: string;
   onValueChange: (value: string) => void;
   help?: string;
   error?: string;
   id?: string;
+  name?: string;
+  required?: boolean;
+  disabled?: boolean;
+  className?: string;
 };
 ```
 
-Los tres formularios pasan de `onChange={(event) => setDate(event.target.value)}` a `onValueChange={setDate}`, y `required` se traduce a `aria-required` en el disparador. La validación sigue en los casos de uso (`ValidationError`); los formularios ya usan `noValidate`.
+Los tres formularios pasan de `onChange={(event) => setDate(event.target.value)}` a `onValueChange={setDate}`, y `required` se traduce a `aria-required` en el disparador. La validación sigue en los casos de uso (`ValidationError`); los formularios ya usan `noValidate`. El campo no reenvía atributos de `<input>`: al ser un botón, solo expone `name`, `required`, `disabled` y las props de estado que usa la librería.
 
 - **Por qué:** mantiene el contrato de campos controlados que ya usan `SelectField` y `AmountField`, y evita exponer un evento sintético que ya no existe.
 - **Alternativas descartadas:** mantener `onChange` con un objeto falso con `target.value` (mentira de tipo y confuso) y duplicar `DateField` en `apps/web` (rompe la regla de librería única).

@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { axe } from 'jest-axe';
 import { describe, expect, it } from 'vitest';
 import { Button } from './buttons.js';
-import { SelectField, TextField } from './fields.js';
+import { DateField, SelectField, TextField } from './fields.js';
 import {
   Badge,
   BalanceSummary,
@@ -71,6 +71,7 @@ describe('accessibility', () => {
             { value: 'deposit', label: 'Depósito' },
           ]}
         />
+        <DateField label="Fecha" value="2026-11-25" onValueChange={() => undefined} />
         <Button>Guardar</Button>
         <StatePage type="empty" title="Sin movimientos" description="Añade el primero para empezar." />
       </main>,
@@ -124,6 +125,20 @@ describe('accessibility', () => {
       />,
     );
     expect(screen.getByRole('button', { name: 'Añadir movimiento' })).toBeInTheDocument();
+  });
+
+  it('el campo de fecha abierto no tiene violaciones graves', async () => {
+    const user = userEvent.setup();
+    const { container } = render(
+      <main>
+        <DateField label="Fecha" value="2026-11-25" onValueChange={() => undefined} />
+      </main>,
+    );
+    await user.click(screen.getByRole('button', { name: 'Fecha' }));
+    expect(screen.getByRole('grid', { name: 'Fecha' })).toBeInTheDocument();
+
+    const results = await axe(container, { rules: { 'color-contrast': { enabled: false } } });
+    expect(results).toHaveNoViolations();
   });
 
   it('el selector abierto no tiene violaciones graves', async () => {

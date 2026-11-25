@@ -112,6 +112,17 @@ export function IconChevronLeft(props: IconProps) {
   );
 }
 
+export function IconCalendar(props: IconProps) {
+  return (
+    <svg {...baseProps(props)}>
+      <rect x="3.5" y="5" width="17" height="15" rx="3" />
+      <path d="M3.5 10h17" />
+      <path d="M8 3.5v3" />
+      <path d="M16 3.5v3" />
+    </svg>
+  );
+}
+
 export function IconChevronDown(props: IconProps) {
   return (
     <svg {...baseProps(props)}>

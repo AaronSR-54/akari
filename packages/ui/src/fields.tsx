@@ -4,7 +4,6 @@ import {
   useCallback,
   useEffect,
   useId,
-  useLayoutEffect,
   useRef,
   useState,
   type InputHTMLAttributes,
@@ -13,7 +12,12 @@ import {
   type TextareaHTMLAttributes,
 } from 'react';
 import { cn } from './cn.js';
-import { IconChevronDown, IconSearch } from './icons.js';
+import { Calendar } from './calendar.js';
+import { formatBusinessDate } from './dates.js';
+import { BottomSheet } from './feedback.js';
+import { useFloatingPanel } from './floating.js';
+import { IconCalendar, IconChevronDown, IconSearch } from './icons.js';
+import { MOBILE_MEDIA_QUERY, useMediaQuery } from './media.js';
 
 const controlClass =
   'w-full rounded-lg border border-border-subtle bg-surface-default px-3.5 text-ui-14 text-text-primary placeholder:text-text-placeholder transition-colors duration-fast focus-visible:border-accent-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring disabled:bg-surface-sunken disabled:text-text-disabled';
@@ -32,7 +36,7 @@ function FieldShell({ id, label, help, error, required, children, className }: F
   const describedBy = error ? `${id}-error` : help ? `${id}-help` : undefined;
   return (
     <div className={cn('flex flex-col gap-1.5', className)} data-describedby={describedBy}>
-      <label htmlFor={id} className="text-ui-12-strong text-text-primary">
+      <label id={`${id}-label`} htmlFor={id} className="text-ui-12-strong text-text-primary">
         {label}
         {required ? (
           <>
@@ -133,45 +137,132 @@ export function TextareaField({
   );
 }
 
-export type DateFieldProps = Omit<InputHTMLAttributes<HTMLInputElement>, 'id' | 'type'> & {
+export type DateFieldProps = {
   label: string;
+  value?: string;
+  onValueChange: (value: string) => void;
   help?: string;
   error?: string;
   id?: string;
+  name?: string;
+  required?: boolean;
+  disabled?: boolean;
+  className?: string;
 };
 
-export function DateField({ label, help, error, id, required, className, ...props }: DateFieldProps) {
+export function DateField({
+  label,
+  value,
+  onValueChange,
+  help,
+  error,
+  id,
+  name,
+  required,
+  disabled,
+  className,
+}: DateFieldProps) {
+  const generated = useId();
+  const fieldId = id ?? generated;
+  const panelId = `${fieldId}-panel`;
+  const [open, setOpen] = useState(false);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const isMobile = useMediaQuery(MOBILE_MEDIA_QUERY);
+  const showPanel = open && !isMobile;
+
+  const close = useCallback((focusTrigger = true) => {
+    setOpen(false);
+    if (focusTrigger) triggerRef.current?.focus();
+  }, []);
+
+  const position = useFloatingPanel({
+    open: showPanel,
+    anchorRef: triggerRef,
+    panelRef,
+    minWidth: 320,
+    onDismiss: () => close(false),
+  });
+
+  const selectDate = (next: string) => {
+    onValueChange(next);
+    close();
+  };
+
+  const displayValue = value ? formatBusinessDate(value) : 'Elegir fecha';
+
   return (
-    <TextField
-      type="date"
+    <FieldShell
+      id={fieldId}
       label={label}
       help={help}
       error={error}
-      id={id}
       required={required}
       className={className}
-      {...props}
-    />
+    >
+      <button
+        ref={triggerRef}
+        id={fieldId}
+        type="button"
+        aria-haspopup="dialog"
+        aria-expanded={open}
+        aria-controls={showPanel ? panelId : undefined}
+        aria-invalid={error ? true : undefined}
+        aria-describedby={error ? `${fieldId}-error` : help ? `${fieldId}-help` : undefined}
+        disabled={disabled}
+        onClick={() => setOpen((current) => !current)}
+        className={cn(
+          controlClass,
+          'flex h-12 items-center justify-between gap-2 pr-3.5 text-left',
+          error && 'border-status-danger',
+        )}
+      >
+        <span className={cn('truncate', !value && 'text-text-placeholder')}>{displayValue}</span>
+        <IconCalendar size={16} className="shrink-0 text-text-secondary" />
+      </button>
+      {name ? <input type="hidden" name={name} value={value ?? ''} /> : null}
+      {showPanel ? (
+        <div
+          id={panelId}
+          ref={panelRef}
+          role="dialog"
+          aria-modal="false"
+          aria-labelledby={`${fieldId}-label`}
+          style={{
+            position: 'fixed',
+            left: position?.left,
+            width: position?.width,
+            top: position?.top,
+            bottom: position?.bottom,
+            visibility: position ? 'visible' : 'hidden',
+          }}
+          className="z-50 rounded-lg border border-border-subtle bg-surface-raised p-3 elevation-2"
+        >
+          <Calendar
+            value={value}
+            onSelect={selectDate}
+            onCancel={() => close()}
+            labelledBy={`${fieldId}-label`}
+          />
+        </div>
+      ) : null}
+      {open && isMobile ? (
+        <BottomSheet open onClose={() => close()} title={label}>
+          <Calendar
+            value={value}
+            onSelect={selectDate}
+            onCancel={() => close()}
+            labelledBy={`${fieldId}-label`}
+          />
+        </BottomSheet>
+      ) : null}
+    </FieldShell>
   );
 }
 
 export type SelectOption = { value: string; label: string; icon?: ReactNode };
 
-const useIsomorphicLayoutEffect = typeof window === 'undefined' ? useEffect : useLayoutEffect;
-
-const SELECT_PANEL_GAP = 4;
-const SELECT_PANEL_MAX_HEIGHT = 280;
-const SELECT_PANEL_MIN_HEIGHT = 96;
-const SELECT_VIEWPORT_MARGIN = 8;
 const SELECT_TYPEAHEAD_TIMEOUT = 500;
-
-type SelectPanelPosition = {
-  left: number;
-  width: number;
-  top?: number;
-  bottom?: number;
-  maxHeight: number;
-};
 
 type SelectControlProps = {
   id: string;
@@ -205,7 +296,6 @@ function SelectControl({
   className,
 }: SelectControlProps) {
   const [open, setOpen] = useState(false);
-  const [position, setPosition] = useState<SelectPanelPosition | null>(null);
   const [activeIndex, setActiveIndex] = useState(-1);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -220,7 +310,6 @@ function SelectControl({
 
   const closePanel = useCallback((focusTrigger = false) => {
     setOpen(false);
-    setPosition(null);
     if (focusTrigger) triggerRef.current?.focus();
   }, []);
 
@@ -230,56 +319,13 @@ function SelectControl({
     setOpen(true);
   }, [options.length, selectedIndex]);
 
-  useIsomorphicLayoutEffect(() => {
-    if (!open) return;
-    const update = () => {
-      const trigger = triggerRef.current;
-      if (!trigger || typeof window === 'undefined') return;
-      const rect = trigger.getBoundingClientRect();
-      const viewportWidth = window.innerWidth;
-      const viewportHeight = window.innerHeight;
-      const width = Math.min(
-        Math.max(rect.width, variant === 'pill' ? 192 : rect.width),
-        viewportWidth - SELECT_VIEWPORT_MARGIN * 2,
-      );
-      const left = Math.max(
-        SELECT_VIEWPORT_MARGIN,
-        Math.min(rect.left, viewportWidth - width - SELECT_VIEWPORT_MARGIN),
-      );
-      const spaceBelow = viewportHeight - rect.bottom - SELECT_PANEL_GAP - SELECT_VIEWPORT_MARGIN;
-      const spaceAbove = rect.top - SELECT_PANEL_GAP - SELECT_VIEWPORT_MARGIN;
-      const placeAbove = spaceBelow < SELECT_PANEL_MIN_HEIGHT && spaceAbove > spaceBelow;
-      const maxHeight = Math.max(
-        SELECT_PANEL_MIN_HEIGHT,
-        Math.min(SELECT_PANEL_MAX_HEIGHT, placeAbove ? spaceAbove : spaceBelow),
-      );
-      setPosition(
-        placeAbove
-          ? { left, width, bottom: viewportHeight - rect.top + SELECT_PANEL_GAP, maxHeight }
-          : { left, width, top: rect.bottom + SELECT_PANEL_GAP, maxHeight },
-      );
-    };
-
-    update();
-    window.addEventListener('resize', update);
-    window.addEventListener('scroll', update, true);
-    return () => {
-      window.removeEventListener('resize', update);
-      window.removeEventListener('scroll', update, true);
-    };
-  }, [open, variant]);
-
-  useEffect(() => {
-    if (!open) return;
-    const handlePointerDown = (event: PointerEvent) => {
-      const target = event.target as Node | null;
-      if (!target) return;
-      if (triggerRef.current?.contains(target) || panelRef.current?.contains(target)) return;
-      closePanel();
-    };
-    document.addEventListener('pointerdown', handlePointerDown);
-    return () => document.removeEventListener('pointerdown', handlePointerDown);
-  }, [open, closePanel]);
+  const position = useFloatingPanel({
+    open,
+    anchorRef: triggerRef,
+    panelRef,
+    minWidth: variant === 'pill' ? 192 : undefined,
+    onDismiss: closePanel,
+  });
 
   useEffect(() => {
     if (!open || activeIndex < 0) return;

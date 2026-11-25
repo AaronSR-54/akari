@@ -2,7 +2,7 @@ import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { Banner, Modal, ToastProvider, useToast } from './feedback.js';
+import { Banner, BottomSheet, Modal, ToastProvider, useToast } from './feedback.js';
 
 function ModalHarness({ wide = false }: { wide?: boolean }) {
   const [open, setOpen] = useState(false);
@@ -40,6 +40,20 @@ function StackedModalHarness() {
       <Modal open={second} onClose={() => setSecond(false)} title="Segundo">
         Contenido
       </Modal>
+    </>
+  );
+}
+
+function BottomSheetHarness() {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <button type="button" onClick={() => setOpen(true)}>
+        Abrir hoja
+      </button>
+      <BottomSheet open={open} onClose={() => setOpen(false)} title="Fecha">
+        Contenido de la hoja
+      </BottomSheet>
     </>
   );
 }
@@ -137,6 +151,44 @@ describe('feedback', () => {
     await user.click(within(first).getByRole('button', { name: 'Cerrar' }));
     expect(document.body.style.overflow).toBe('');
     expect(document.documentElement.style.overflow).toBe('');
+  });
+
+  it('con modales apilados Escape cierra solo el superior', async () => {
+    const user = userEvent.setup();
+    render(<StackedModalHarness />);
+    await user.click(screen.getByRole('button', { name: 'Abrir' }));
+    const first = screen.getByRole('dialog', { name: 'Primero' });
+    await user.click(within(first).getByRole('button', { name: 'Abrir segundo' }));
+    expect(screen.getByRole('dialog', { name: 'Segundo' })).toBeInTheDocument();
+
+    await user.keyboard('{Escape}');
+    expect(screen.queryByRole('dialog', { name: 'Segundo' })).not.toBeInTheDocument();
+    expect(screen.getByRole('dialog', { name: 'Primero' })).toBeInTheDocument();
+
+    await user.keyboard('{Escape}');
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('la hoja inferior se ancla abajo, cierra con el scrim y devuelve el foco', async () => {
+    const user = userEvent.setup();
+    render(<BottomSheetHarness />);
+    const trigger = screen.getByRole('button', { name: 'Abrir hoja' });
+
+    await user.click(trigger);
+    const sheet = screen.getByRole('dialog', { name: 'Fecha' });
+    expect(sheet.className).toContain('rounded-t-3xl');
+    expect(sheet.className).toContain('max-w-sheet');
+    expect(sheet.parentElement?.className).toContain('items-end');
+
+    fireEvent.mouseDown(sheet.parentElement!);
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(trigger).toHaveFocus();
+
+    await user.click(trigger);
+    expect(screen.getByRole('dialog', { name: 'Fecha' })).toBeInTheDocument();
+    await user.keyboard('{Escape}');
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(trigger).toHaveFocus();
   });
 
   it('el toast confirma, ofrece deshacer y desaparece a los 5 s', () => {

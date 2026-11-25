@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { describe, expect, it, vi } from 'vitest';
@@ -13,6 +13,45 @@ import {
   TextField,
   TextareaField,
 } from './fields.js';
+import { Modal } from './feedback.js';
+
+function stubMatchMedia(matches: boolean) {
+  const listeners = new Set<(event: MediaQueryListEvent) => void>();
+  const queryList = {
+    matches,
+    media: '(max-width: 767px)',
+    onchange: null,
+    addEventListener: (_type: string, listener: (event: MediaQueryListEvent) => void) => {
+      listeners.add(listener);
+    },
+    removeEventListener: (_type: string, listener: (event: MediaQueryListEvent) => void) => {
+      listeners.delete(listener);
+    },
+    addListener: () => undefined,
+    removeListener: () => undefined,
+    dispatchEvent: () => false,
+  };
+  Object.defineProperty(window, 'matchMedia', {
+    configurable: true,
+    writable: true,
+    value: vi.fn(() => queryList),
+  });
+  return {
+    listeners,
+    restore() {
+      Object.defineProperty(window, 'matchMedia', {
+        configurable: true,
+        writable: true,
+        value: undefined,
+      });
+    },
+  };
+}
+
+function DateFieldHarness({ initial = '2026-11-25' }: { initial?: string }) {
+  const [value, setValue] = useState(initial);
+  return <DateField label="Fecha" value={value} onValueChange={setValue} required />;
+}
 
 const typeOptions = [
   { value: 'personal', label: 'Personal' },
@@ -52,14 +91,14 @@ describe('fields', () => {
     render(
       <>
         <SelectField label="Tipo" value="personal" onValueChange={() => undefined} options={typeOptions} />
-        <DateField label="Fecha" />
+        <DateField label="Fecha" value="2026-11-25" onValueChange={() => undefined} />
         <SearchField aria-label="Buscar" placeholder="Buscar" />
         <TextareaField label="Nota" />
         <Checkbox label="Acepto" />
       </>,
     );
     expect(screen.getByRole('combobox', { name: /Tipo/ })).toBeInTheDocument();
-    expect(screen.getByLabelText('Fecha')).toHaveAttribute('type', 'date');
+    expect(screen.getByLabelText(/Fecha/)).toHaveAttribute('aria-haspopup', 'dialog');
     expect(screen.getByRole('searchbox', { name: 'Buscar' })).toBeInTheDocument();
     expect(screen.getByRole('textbox', { name: /Nota/ }).tagName).toBe('TEXTAREA');
     expect(screen.getByRole('checkbox', { name: 'Acepto' })).toBeInTheDocument();
@@ -79,6 +118,127 @@ describe('fields', () => {
     const option = screen.getByRole('option', { name: 'Opción B' });
     expect(option.querySelector('[data-testid="icono-b"]')).toBeInTheDocument();
     expect(option).toHaveTextContent('Opción B');
+  });
+
+  it('muestra la fecha formateada y abre el panel propio en escritorio', async () => {
+    const user = userEvent.setup();
+    const { container } = render(<DateFieldHarness />);
+    const trigger = screen.getByRole('button', { name: /Fecha/ });
+
+    expect(container.querySelector('input[type="date"]')).toBeNull();
+    expect(trigger).toHaveTextContent('25 nov 2026');
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+
+    await user.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    const panel = screen.getByRole('dialog', { name: /Fecha/ });
+    expect(panel.className).not.toContain('rounded-t-3xl');
+    expect(screen.getByRole('button', { name: '25 nov 2026' })).toHaveFocus();
+  });
+
+  it('elige un día, cierra el panel y comunica el valor una sola vez', async () => {
+    const user = userEvent.setup();
+    const onValueChange = vi.fn();
+    render(<DateField label="Fecha" value="2026-11-25" onValueChange={onValueChange} />);
+
+    await user.click(screen.getByRole('button', { name: 'Fecha' }));
+    await user.click(screen.getByRole('button', { name: '27 nov 2026' }));
+
+    expect(onValueChange).toHaveBeenCalledTimes(1);
+    expect(onValueChange).toHaveBeenCalledWith('2026-11-27');
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('cierra con Escape y con un clic fuera sin cambiar la fecha', async () => {
+    const user = userEvent.setup();
+    render(<DateFieldHarness />);
+    const trigger = screen.getByRole('button', { name: /Fecha/ });
+
+    await user.click(trigger);
+    await user.keyboard('{Escape}');
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(trigger).toHaveFocus();
+    expect(trigger).toHaveTextContent('25 nov 2026');
+
+    await user.click(trigger);
+    await user.click(document.body);
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(trigger).toHaveTextContent('25 nov 2026');
+  });
+
+  it('en móvil abre una hoja inferior y no el panel flotante', async () => {
+    const media = stubMatchMedia(true);
+    const user = userEvent.setup();
+    try {
+      render(<DateFieldHarness />);
+      const trigger = screen.getByRole('button', { name: /Fecha/ });
+
+      await user.click(trigger);
+      const sheet = screen.getByRole('dialog', { name: /Fecha/ });
+      expect(sheet).toHaveAttribute('aria-modal', 'true');
+      expect(sheet.className).toContain('rounded-t-3xl');
+      expect(screen.getByRole('button', { name: '25 nov 2026' })).toHaveFocus();
+
+      await user.click(screen.getByRole('button', { name: '28 nov 2026' }));
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+      expect(trigger).toHaveTextContent('28 nov 2026');
+      expect(trigger).toHaveFocus();
+    } finally {
+      media.restore();
+    }
+  });
+
+  it('dentro de un modal, Escape cierra solo la hoja de fecha', async () => {
+    const media = stubMatchMedia(true);
+    const user = userEvent.setup();
+    const onClose = vi.fn();
+    try {
+      render(
+        <Modal open onClose={onClose} title="Editar movimiento">
+          <DateFieldHarness />
+        </Modal>,
+      );
+      await user.click(screen.getByRole('button', { name: /Fecha/ }));
+      expect(screen.getByRole('dialog', { name: /Fecha/ })).toBeInTheDocument();
+
+      await user.keyboard('{Escape}');
+      expect(screen.queryByRole('dialog', { name: /Fecha/ })).not.toBeInTheDocument();
+      const parent = screen.getByRole('dialog', { name: 'Editar movimiento' });
+      expect(parent).toBeInTheDocument();
+      expect(onClose).not.toHaveBeenCalled();
+
+      await user.click(within(parent).getByRole('button', { name: /Fecha/ }));
+      const reopened = screen.getByRole('dialog', { name: /Fecha/ });
+      within(reopened).getByRole('button', { name: 'Cerrar' }).focus();
+      await user.keyboard('{Escape}');
+      expect(screen.queryByRole('dialog', { name: /Fecha/ })).not.toBeInTheDocument();
+      expect(screen.getByRole('dialog', { name: 'Editar movimiento' })).toBeInTheDocument();
+      expect(onClose).not.toHaveBeenCalled();
+    } finally {
+      media.restore();
+    }
+  });
+
+  it('mantiene error, obligatoriedad y deshabilitado', async () => {
+    const user = userEvent.setup();
+    render(
+      <DateField
+        label="Fecha"
+        value="2026-11-25"
+        onValueChange={() => undefined}
+        error="Elige otra fecha"
+        required
+        disabled
+      />,
+    );
+    const trigger = screen.getByRole('button', { name: /Fecha/ });
+    expect(trigger).toBeDisabled();
+    expect(trigger).toHaveAttribute('aria-invalid', 'true');
+    expect(screen.getAllByText(/obligatorio/).length).toBeGreaterThan(0);
+    expect(trigger).toHaveAccessibleDescription('Elige otra fecha');
+
+    await user.click(trigger);
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
   it('abre un panel propio, elige una opción y lo cierra sin select nativo', async () => {
