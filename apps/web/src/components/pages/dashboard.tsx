@@ -2,14 +2,12 @@
 
 import Link from 'next/link';
 import { useLayoutEffect, useRef } from 'react';
-import { formatMinor, type Overview } from '@akari/domain';
+import { formatMinor, type AccountType, type Overview } from '@akari/domain';
 import {
-  AccountCard,
   Amount,
   Badge,
   Banner,
   Card,
-  Grid,
   Icon,
   MonthBalance,
   MovementRow,
@@ -38,6 +36,12 @@ function greeting() {
   if (hour < 20) return 'Buenas tardes';
   return 'Buenas noches';
 }
+
+const accountTypeLabel: Record<AccountType, string> = {
+  personal: 'Personal',
+  joint: 'Conjunta',
+  deposit: 'Depósito',
+};
 
 function OverviewBody({ overview }: { overview: Overview }) {
   const leftRef = useRef<HTMLDivElement>(null);
@@ -256,41 +260,51 @@ function OverviewBody({ overview }: { overview: Overview }) {
         </div>
       </section>
 
-      <section aria-labelledby="cuentas">
-        <SectionHeader
-          id="cuentas"
-          title="Cuentas"
-          action={
-            <Link
-              href="/cuentas/nueva"
-              className="text-ui-11-strong text-accent-strong underline-offset-4 hover:underline"
-            >
-              Gestionar cuentas
-            </Link>
-          }
-        />
-        <Grid columns={3} className="mt-2.5">
-          {overview.accounts.map((account) => (
-            <Link
-              key={account.id}
-              href={`/cuentas/${account.id}`}
-              className="rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
-            >
-              <AccountCard
-                name={account.name}
-                type={account.type}
-                currency={account.currency}
-                balanceMinor={overview.balancesByAccount[account.id]?.minor ?? 0}
-                badge={
+      <section aria-labelledby="cuentas" className="w-full">
+        <Card padding="lg" data-panel="accounts">
+          <SectionHeader
+            id="cuentas"
+            title="Cuentas"
+            action={
+              <Link
+                href="/cuentas/nueva"
+                className="text-ui-11-strong text-accent-strong underline-offset-4 hover:underline"
+              >
+                Gestionar cuentas
+              </Link>
+            }
+            className="mb-4"
+          />
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3 lg:gap-3">
+            {overview.accounts.map((account) => (
+              <Link
+                key={account.id}
+                href={`/cuentas/${account.id}`}
+                data-account={account.id}
+                className="flex h-full min-w-0 flex-col gap-2.5 rounded-xl bg-surface-sunken p-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <p className="min-w-0 truncate text-ui-13-strong text-text-primary">
+                    {account.name}
+                  </p>
                   <Badge tone={account.includeInTotal ? 'positive' : 'neutral'}>
                     {account.includeInTotal ? 'Al día' : 'Excluida'}
                   </Badge>
-                }
-                meta={formatUpdated(account.updatedAt)}
-              />
-            </Link>
-          ))}
-        </Grid>
+                </div>
+                <Amount
+                  minor={overview.balancesByAccount[account.id]?.minor ?? 0}
+                  currency={account.currency}
+                  className="text-ui-28-bold"
+                />
+                <p className="text-ui-11 text-text-secondary">Saldo disponible</p>
+                <div className="mt-auto flex items-center justify-between gap-2 text-ui-10 text-text-secondary">
+                  <span className="truncate">{formatUpdated(account.updatedAt)}</span>
+                  <span className="shrink-0">{accountTypeLabel[account.type]}</span>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </Card>
       </section>
 
       {upcoming ? (
