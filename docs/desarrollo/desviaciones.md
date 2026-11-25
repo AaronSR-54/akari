@@ -130,3 +130,11 @@ Quedan fuera, además de las superficies nativas: la creación de planes de plaz
 - **Motivo:** las tarjetas `c085qqmjex7u` y `s2du40zg6zju` piden que el hover se solape sobre el contenido y que se unifiquen los tamaños entre sidebar y header; el usuario eligió un término medio: conservar el logotipo de la sidebar y adoptar la altura de ítems del header.
 - **Consecuencia:** el logotipo de las cabeceras es mayor que en el frame aprobado y los ítems de la sidebar y la navegación tablet son más altos; al expandirse, el panel tapa la esquina superior izquierda de la cabecera. El diseño está congelado: no se han modificado FigCraft, `design/` ni `docs/diseno/`, y la desviación queda registrada aquí.
 - **Cierre:** solo si la persona usuaria reabre la fase de diseño; hasta entonces la implementación se mantiene y la trazabilidad vive en `producto/shell-web`.
+
+## 19. Alta y edición de movimientos en modal (change `modal-nuevo-movimiento`)
+
+- **Diseño:** `M09` plantea el alta como pantalla propia y `W03` describe la edición en línea desde la tabla de movimientos.
+- **Implementación:** el alta desde `/movimientos` y la edición de un movimiento abren un modal con el formulario completo de `M09` (tipo, importe, cuenta, concepto, fecha, categoría y nota, y repetición al crear) en un panel ancho de 672 px, mayor que el token de 440 px. La ruta `/movimientos/nuevo` sigue existiendo como enlace directo para resumen, cuentas y preguntas. La edición conserva el borrado con deshacer.
+- **Motivo:** evitar salir del listado y unificar alta y edición en una sola superficie; el diálogo anterior no permitía cambiar cuenta, tipo ni nota.
+- **Consecuencia:** la composición no coincide con `M09`/`W03` aprobados. El diseño está congelado: no se han modificado FigCraft, `design/` ni `docs/diseno/`.
+- **Cierre:** solo si la persona usuaria reabre la fase de diseño; hasta entonces la implementación se mantiene y la trazabilidad vive en `producto/finanzas-personales`.

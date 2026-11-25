@@ -20,13 +20,14 @@ export type ModalProps = {
   title: string;
   children: ReactNode;
   footer?: ReactNode;
+  width?: 'default' | 'wide';
   className?: string;
 };
 
 const FOCUSABLE =
   'a[href], button:not([disabled]), textarea, input, select, [tabindex]:not([tabindex="-1"])';
 
-export function Modal({ open, onClose, title, children, footer, className }: ModalProps) {
+export function Modal({ open, onClose, title, children, footer, width = 'default', className }: ModalProps) {
   const panelRef = useRef<HTMLDivElement>(null);
   const titleId = useId();
   const onCloseRef = useRef(onClose);
@@ -94,7 +95,8 @@ export function Modal({ open, onClose, title, children, footer, className }: Mod
         aria-labelledby={titleId}
         tabIndex={-1}
         className={cn(
-          'max-h-[90vh] w-full max-w-modal overflow-y-auto rounded-xl border border-border-subtle bg-surface-raised p-6 elevation-3',
+          'max-h-[90vh] w-full overflow-y-auto rounded-xl border border-border-subtle bg-surface-raised p-6 elevation-3',
+          width === 'wide' ? 'max-w-2xl' : 'max-w-modal',
           className,
         )}
       >

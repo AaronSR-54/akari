@@ -19,7 +19,7 @@ import { useAccounts, useMovements } from '../../components/hooks';
 import { PageTitle } from '../../components/page-title';
 import { PageHeaderResponsive } from '../../components/page-header-responsive';
 import { MovementDetailDialog } from '../../components/movement-detail-dialog';
-import { ActionLink } from '../../components/action-link';
+import { MovementDialog } from '../../components/movement-dialog';
 import { PageSkeleton } from '../../components/page-skeleton';
 import { downloadCsv, movementsToCsv } from '../../lib/csv';
 import { formatMonthYear, formatShortDate } from '../../lib/format';
@@ -47,6 +47,7 @@ export function MovementsScreen() {
   const [page, setPage] = useState(1);
   const [visible, setVisible] = useState(10);
   const [detailId, setDetailId] = useState<string | null>(null);
+  const [creating, setCreating] = useState(false);
 
   const filtered = useMemo(() => {
     if (!movements) return [];
@@ -107,7 +108,7 @@ export function MovementsScreen() {
               <Button variant="secondary" onClick={exportCsv}>
                 Exportar CSV
               </Button>
-              <ActionLink href="/movimientos/nuevo">Añadir movimiento</ActionLink>
+              <Button onClick={() => setCreating(true)}>Añadir movimiento</Button>
             </>
           }
         />
@@ -187,7 +188,7 @@ export function MovementsScreen() {
               hasFilters ? (
                 <Button onClick={clearFilters}>Limpiar filtros</Button>
               ) : (
-                <ActionLink href="/movimientos/nuevo">Añadir movimiento</ActionLink>
+                <Button onClick={() => setCreating(true)}>Añadir movimiento</Button>
               )
             }
           />
@@ -313,6 +314,7 @@ export function MovementsScreen() {
           </>
         )}
       </Stack>
+      <MovementDialog accounts={accounts} open={creating} onClose={() => setCreating(false)} />
       <MovementDetailDialog
         movementId={detailId}
         open={Boolean(detailId)}

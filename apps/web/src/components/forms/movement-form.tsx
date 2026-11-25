@@ -35,11 +35,23 @@ export function MovementForm({
   movement,
   defaultAccountId,
   defaultType = 'expense',
+  formId = 'movement-form',
+  showActions = true,
+  framed = true,
+  onSaved,
+  onCancel,
+  onSavingChange,
 }: {
   accounts: Account[];
   movement?: Movement;
   defaultAccountId?: string;
   defaultType?: MovementType;
+  formId?: string;
+  showActions?: boolean;
+  framed?: boolean;
+  onSaved?: () => void;
+  onCancel?: () => void;
+  onSavingChange?: (saving: boolean) => void;
 }) {
   const router = useRouter();
   const { repositories } = useData();
@@ -77,6 +89,7 @@ export function MovementForm({
     if (Object.keys(nextErrors).length > 0) return;
 
     setSaving(true);
+    onSavingChange?.(true);
     try {
       if (movement) {
         await updateMovement(repositories, movement.id, {
@@ -101,97 +114,101 @@ export function MovementForm({
         });
       }
       toast({ title: movement ? 'Movimiento actualizado' : 'Movimiento guardado', tone: 'success' });
-      router.push('/movimientos');
+      if (onSaved) onSaved();
+      else router.push('/movimientos');
     } catch (error) {
       const message = errorMessage(error, 'No se ha podido guardar el movimiento');
       toast({ title: 'Revisa los datos', description: message, tone: 'error' });
       setSaving(false);
+      onSavingChange?.(false);
     }
   };
 
-  return (
-    <Card padding="lg">
-      <form onSubmit={submit} noValidate>
-        <Stack gap={4}>
-          <SegmentedControl
-            ariaLabel="Tipo de movimiento"
-            options={[
-              { value: 'expense', label: 'Gasto' },
-              { value: 'income', label: 'Ingreso' },
-            ]}
-            value={type}
-            onChange={setType}
-            size="lg"
-            fill
-          />
-          <AmountField
-            label="Importe"
-            value={amount}
-            currency={account?.currency ?? 'EUR'}
-            onChange={(event) => setAmount(event.target.value)}
-            placeholder="0,00"
-            error={errors.amount}
-            help={type === 'expense' ? 'Se restará del saldo de la cuenta.' : 'Se sumará al saldo de la cuenta.'}
-            required
-          />
+  const content = (
+    <form id={formId} onSubmit={submit} noValidate>
+      <Stack gap={4}>
+        <SegmentedControl
+          ariaLabel="Tipo de movimiento"
+          options={[
+            { value: 'expense', label: 'Gasto' },
+            { value: 'income', label: 'Ingreso' },
+          ]}
+          value={type}
+          onChange={setType}
+          size="lg"
+          fill
+        />
+        <AmountField
+          label="Importe"
+          value={amount}
+          currency={account?.currency ?? 'EUR'}
+          onChange={(event) => setAmount(event.target.value)}
+          placeholder="0,00"
+          error={errors.amount}
+          help={type === 'expense' ? 'Se restará del saldo de la cuenta.' : 'Se sumará al saldo de la cuenta.'}
+          required
+        />
+        <SelectField
+          label="Cuenta"
+          value={accountId}
+          onValueChange={setAccountId}
+          options={accounts.map((item) => ({ value: item.id, label: item.name }))}
+          error={errors.accountId}
+          required
+        />
+        <TextField
+          label="Concepto"
+          value={concept}
+          onChange={(event) => setConcept(event.target.value)}
+          error={errors.concept}
+          required
+        />
+        <div className="grid gap-4 md:grid-cols-2">
+          <DateField label="Fecha" value={date} onChange={(event) => setDate(event.target.value)} required />
           <SelectField
-            label="Cuenta"
-            value={accountId}
-            onValueChange={setAccountId}
-            options={accounts.map((item) => ({ value: item.id, label: item.name }))}
-            error={errors.accountId}
-            required
+            label="Categoría"
+            value={category}
+            onValueChange={setCategory}
+            options={movementCategoryOptions}
           />
-          <TextField
-            label="Concepto"
-            value={concept}
-            onChange={(event) => setConcept(event.target.value)}
-            error={errors.concept}
-            required
-          />
-          <div className="grid gap-4 md:grid-cols-2">
-            <DateField label="Fecha" value={date} onChange={(event) => setDate(event.target.value)} required />
-            <SelectField
-              label="Categoría"
-              value={category}
-              onValueChange={setCategory}
-              options={movementCategoryOptions}
+        </div>
+        <TextareaField
+          label="Nota"
+          value={note}
+          onChange={(event) => setNote(event.target.value)}
+          help="Opcional. No se muestra en las listas."
+        />
+        {movement ? null : (
+          <>
+            <Switch
+              checked={repeat}
+              onChange={setRepeat}
+              label="Repetir este movimiento"
+              help="Crea una suscripción o un ingreso periódico."
             />
-          </div>
-          <TextareaField
-            label="Nota"
-            value={note}
-            onChange={(event) => setNote(event.target.value)}
-            help="Opcional. No se muestra en las listas."
-          />
-          {movement ? null : (
-            <>
-              <Switch
-                checked={repeat}
-                onChange={setRepeat}
-                label="Repetir este movimiento"
-                help="Crea una suscripción o un ingreso periódico."
+            {repeat ? (
+              <SelectField
+                label="Frecuencia"
+                value={frequency}
+                onValueChange={(value) => setFrequency(value as typeof frequency)}
+                options={frequencyOptions}
               />
-              {repeat ? (
-                <SelectField
-                  label="Frecuencia"
-                  value={frequency}
-                  onValueChange={(value) => setFrequency(value as typeof frequency)}
-                  options={frequencyOptions}
-                />
-              ) : null}
-            </>
-          )}
+            ) : null}
+          </>
+        )}
+        {showActions ? (
           <div className="flex flex-wrap justify-end gap-2 pt-2">
-            <Button variant="tertiary" onClick={() => router.back()}>
+            <Button variant="tertiary" onClick={onCancel ?? (() => router.back())}>
               Cancelar
             </Button>
             <Button type="submit" loading={saving}>
               {movement ? 'Guardar cambios' : 'Guardar movimiento'}
             </Button>
           </div>
-        </Stack>
-      </form>
-    </Card>
+        ) : null}
+      </Stack>
+    </form>
   );
+
+  return framed ? <Card padding="lg">{content}</Card> : content;
 }
