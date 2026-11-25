@@ -3,6 +3,11 @@
 import { useId, useState, type KeyboardEvent, type PointerEvent } from 'react';
 import { cn } from './cn.js';
 
+/** Inset lateral de la capa visual (`left-2`/`right-2`). */
+const INLINE_INSET_PX = 8;
+/** Radio de las esquinas del área, en unidades del viewBox 100×38. */
+const CORNER = 3.2;
+
 export type MonthBalanceDay = {
   id: string;
   /** Cabecera del detalle, p. ej. «jue 26 nov». */
@@ -60,31 +65,49 @@ export function MonthBalance({
   const min = rawMin - padding;
   const max = rawMax;
   const scale = (value: number) => 34 - ((value - min) / (max - min)) * 34;
-  const openingPoint = { x: 0, y: scale(openingBalanceMinor) };
+  // El trazo vive entre las tangentes de las esquinas redondeadas del área:
+  // arranca y termina donde empieza el radio, no en los bordes del viewBox.
+  const openingPoint = { x: CORNER, y: scale(openingBalanceMinor) };
   const points = [
     openingPoint,
     ...elapsedDaysList.map((day, index) => ({
-      x: totalDays > 0 ? ((index + 1) / totalDays) * 100 : 0,
+      x: totalDays > 0 ? CORNER + ((index + 1) / totalDays) * (100 - 2 * CORNER) : CORNER,
       y: scale(day.balanceMinor),
     })),
   ];
-  const line = points.length
-    ? `M ${points[0]!.x} ${points[0]!.y} ${points
-        .slice(1)
-        .map((point) => `L ${point.x} ${point.y}`)
-        .join(' ')}`
-    : '';
+  // Curvas cúbicas tipo Catmull-Rom: pasan por cada punto y suavizan los
+  // cambios de dirección. Las ordenadas de control se limitan al viewBox para
+  // que la línea no sobresalga por encima del máximo ni por debajo del área.
+  const tension = 0.12;
+  const clampY = (value: number) => Math.min(Math.max(value, 0), 38);
+  const lineCommands = (() => {
+    if (!points.length) return [] as string[];
+    const start = `M ${points[0]!.x} ${points[0]!.y}`;
+    if (points.length < 3) {
+      return [start, ...points.slice(1).map((point) => `L ${point.x} ${point.y}`)];
+    }
+    const commands = [start];
+    for (let index = 0; index < points.length - 1; index += 1) {
+      const previous = points[Math.max(0, index - 1)]!;
+      const current = points[index]!;
+      const next = points[index + 1]!;
+      const following = points[Math.min(points.length - 1, index + 2)]!;
+      const control1X = current.x + (next.x - previous.x) * tension;
+      const control1Y = clampY(current.y + (next.y - previous.y) * tension);
+      const control2X = next.x - (following.x - current.x) * tension;
+      const control2Y = clampY(next.y - (following.y - current.y) * tension);
+      commands.push(`C ${control1X} ${control1Y} ${control2X} ${control2Y} ${next.x} ${next.y}`);
+    }
+    return commands;
+  })();
+  const line = lineCommands.join(' ');
   const last = points[points.length - 1];
-  // Final redondeado del relleno (radio del panel ≈ 20px ≈ 3.2 unidades del
-  // viewBox 100×38): solo cuando el mes sigue abierto, el área se extiende en
-  // plano hasta el borde derecho y la esquina superior redondeada evita el
-  // corte recto contra el fondo. El inicio se deja recto.
-  const endRadius = 3.2;
+  // El relleno se dibuja como una barra con las cuatro esquinas redondeadas y
+  // el trazo entra y sale por las tangentes. El mismo trazado aplica con el mes
+  // abierto y completo.
   const area =
-    line && last
-      ? elapsed < totalDays
-        ? `${line} L ${100 - endRadius} ${last.y} Q 100 ${last.y} 100 ${last.y + endRadius} L 100 46 L 0 46 Z`
-        : `${line} L 100 ${last.y} L 100 46 L 0 46 Z`
+    lineCommands.length && last
+      ? `M 0 ${openingPoint.y + CORNER} Q 0 ${openingPoint.y} ${CORNER} ${openingPoint.y} ${lineCommands.slice(1).join(' ')} L ${100 - CORNER} ${last.y} Q 100 ${last.y} 100 ${last.y + CORNER} L 100 ${46 - CORNER} Q 100 46 ${100 - CORNER} 46 L ${CORNER} 46 Q 0 46 0 ${46 - CORNER} Z`
       : '';
   const selectedIndex = activeIndex ?? (points.length > 0 ? points.length - 1 : null);
   const point = selectedIndex !== null ? points[selectedIndex] : undefined;
@@ -102,8 +125,11 @@ export function MonthBalance({
 
   const onPointerMove = (event: PointerEvent<HTMLDivElement>) => {
     const rect = event.currentTarget.getBoundingClientRect();
-    if (rect.width === 0) return;
-    const ratio = Math.min(Math.max((event.clientX - rect.left) / rect.width, 0), 1);
+    const innerWidth = rect.width - 2 * INLINE_INSET_PX;
+    if (innerWidth <= 0) return;
+    const plotLeft = rect.left + INLINE_INSET_PX + (CORNER / 100) * innerWidth;
+    const plotWidth = ((100 - 2 * CORNER) / 100) * innerWidth;
+    const ratio = Math.min(Math.max((event.clientX - plotLeft) / plotWidth, 0), 1);
     select(totalDays > 0 ? Math.round(ratio * totalDays) : 0);
   };
 
@@ -140,7 +166,7 @@ export function MonthBalance({
         onBlur={() => setActiveIndex(null)}
         className="relative min-h-32 w-full flex-1 cursor-default rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
       >
-        <div className="absolute inset-0">
+        <div className="absolute inset-y-0 left-2 right-2">
           <svg
             viewBox="0 0 100 38"
             preserveAspectRatio="none"
@@ -160,7 +186,7 @@ export function MonthBalance({
               <path
                 d={line}
                 fill="none"
-                stroke="var(--color-text-primary)"
+                stroke="var(--color-accent-default)"
                 strokeWidth="2"
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -171,56 +197,68 @@ export function MonthBalance({
           <span
             aria-hidden="true"
             className="pointer-events-none absolute block h-1.5 w-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-accent-strong/70"
-            style={{ left: 0, top: `${openingTop}%` }}
+            style={{ left: `${CORNER}%`, top: `${openingTop}%` }}
           />
           {point ? (
             <>
               <span
                 aria-hidden="true"
+                data-chart-point="halo"
                 className="pointer-events-none absolute block h-3.5 w-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-accent-default/20"
                 style={{ left: `${point.x}%`, top: `${activeTop}%` }}
               />
               <span
                 aria-hidden="true"
-                className="pointer-events-none absolute block h-2 w-2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-accent-strong ring-2 ring-surface-default"
+                data-chart-point="core"
+                className="pointer-events-none absolute block h-2 w-2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-accent-strong ring-2 ring-surface-sunken"
                 style={{ left: `${point.x}%`, top: `${activeTop}%` }}
               />
             </>
           ) : null}
           {activeVisible && point ? (
             <div
-              className="pointer-events-none z-30 w-56 rounded-lg bg-surface-inverse px-2.5 py-1.5 shadow-elevation-2"
+              data-testid="month-balance-detail"
+              className="pointer-events-none z-30 w-64 rounded-xl border border-border-subtle bg-surface-sunken p-3 shadow-elevation-2"
               style={{
                 position: 'absolute',
-                left: `clamp(0px, calc(${point.x}% - 7rem), calc(100% - 14rem))`,
+                left: `clamp(0px, calc(${point.x}% - 8rem), calc(100% - 16rem))`,
                 ...(tooltipAbove
                   ? { bottom: `calc(${100 - activeTop}% + 12px)` }
                   : { top: `calc(${activeTop}% + 12px)` }),
               }}
             >
-              <p className="text-ui-9 uppercase tracking-wide text-text-inverse">
+              <p className="text-ui-11-strong text-text-primary">
                 {activeIsOpening ? openingLabel : activeDay?.label}
               </p>
               {activeIsOpening ? (
-                <p className="mt-0.5 text-ui-9 text-text-inverse">Cierre del mes anterior</p>
+                <p className="mt-0.5 text-ui-11 text-text-secondary">Cierre del mes anterior</p>
               ) : activeDay?.items && activeDay.items.length > 0 ? (
-                <ul className="mt-1 flex flex-col gap-0.5">
-                  {activeDay.items.slice(0, 4).map((item) => (
-                    <li
-                      key={item.id}
-                      className="flex items-baseline justify-between gap-4 text-ui-9 text-text-inverse"
-                    >
-                      <span className="truncate">{item.label}</span>
-                      <span className="whitespace-nowrap font-tabular">{item.value}</span>
-                    </li>
-                  ))}
-                </ul>
+                <>
+                  <ul className="mt-2 flex flex-col gap-1.5">
+                    {activeDay.items.slice(0, 4).map((item) => (
+                      <li
+                        key={item.id}
+                        className="flex items-baseline justify-between gap-4 text-ui-11 text-text-primary"
+                      >
+                        <span className="truncate">{item.label}</span>
+                        <span className="whitespace-nowrap font-tabular text-ui-11-strong">
+                          {item.value}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                  {activeDay.items.length > 4 ? (
+                    <p className="mt-1 text-ui-10 text-text-secondary">
+                      y {activeDay.items.length - 4} más
+                    </p>
+                  ) : null}
+                </>
               ) : (
-                <p className="mt-0.5 text-ui-9 text-text-inverse">Sin movimientos</p>
+                <p className="mt-1 text-ui-11 text-text-secondary">Sin movimientos</p>
               )}
-              <div className="mt-1 flex items-baseline justify-between gap-4 border-t border-text-inverse/20 pt-1 text-ui-9 text-text-inverse">
+              <div className="mt-2 flex items-baseline justify-between gap-4 border-t border-border-subtle pt-2 text-ui-11 text-text-secondary">
                 <span>{activeIsOpening ? 'Saldo al cierre' : 'Saldo tras el día'}</span>
-                <span className="whitespace-nowrap font-tabular">
+                <span className="whitespace-nowrap font-tabular text-ui-12-strong text-text-primary">
                   {activeIsOpening ? openingTotal : activeDay?.total}
                 </span>
               </div>
