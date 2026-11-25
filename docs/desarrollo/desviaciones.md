@@ -114,3 +114,11 @@ Quedan fuera, además de las superficies nativas: la creación de planes de plaz
 - **Motivo:** la tarjeta pide un detalle por movimiento y retirar la edición de las tablas; el producto tiende a resolver crear, editar y detallar en modales, y el diseño no contempla esa superficie.
 - **Consecuencia:** la tabla de movimientos difiere del frame aprobado (sin columna «Acciones») y aparece una modal no diseñada. El diseño está congelado: no se han modificado FigCraft, `design/` ni `docs/diseno/`, y la desviación queda registrada aquí.
 - **Cierre:** solo si la persona usuaria reabre la fase de diseño; hasta entonces la implementación se mantiene y la trazabilidad vive en `producto/finanzas-personales`.
+
+## 17. Fila de cuentas sin encabezado en el resumen (change `fix-unificar-dashboard-en-un-mismo-bento`)
+
+- **Diseño:** `W01` presenta las cuentas como una sección con el encabezado «Cuentas» y el enlace «Gestionar cuentas» sobre la fila de tarjetas.
+- **Implementación:** el encabezado «Cuentas» con el enlace «Gestionar cuentas» a `/cuentas/nueva` vive dentro de la tarjeta, con el mismo estilo que «Ver todos» en Últimos movimientos. Todas las cuentas se presentan como bloques dentro de un único panel que ocupa todo el ancho del contenido. Los bloques se reparten lado a lado en escritorio y se apilan en móvil, sin tabla ni líneas divisorias: se distinguen por un fondo `surface-sunken` con esquinas redondeadas y espaciado entre ellos. El panel crece con el número de cuentas sin scroll propio.
+- **Motivo:** la tarjeta `xrngfyh3kjnb` pide unificar el dashboard en un mismo bento; el usuario pidió que todas las cuentas compartan un solo panel responsive y, después, que la fila conserve un título y un botón de gestión como «Últimos movimientos».
+- **Consecuencia:** el hero —saldo, gráfica del mes, últimos movimientos, balance del mes, accesos rápidos y el ajuste de altura de la gráfica— queda intacto; solo cambia la fila de cuentas.
+- **Cierre:** solo si la persona usuaria reabre la fase de diseño; hasta entonces la implementación se mantiene y la trazabilidad vive en `producto/dashboard-hero`.

@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { chooseOption, seedDemo } from './helpers';
+import { chooseOption, seedDemo, startEmpty } from './helpers';
 
 const toNumber = (text: string | null) => {
   const value = Number((text ?? '0').replace(/[^\d,]/g, '').replace(',', '.'));
@@ -262,6 +262,94 @@ test.describe('dashboard hero', () => {
     );
     expect(await monthBlock.evaluate((element) => getComputedStyle(element).opacity)).toBe('1');
     await expect(monthBlock.getByRole('group', { name: /Saldo del mes por día/ })).toBeVisible();
+
+    for (const width of [390, 768, 1440]) {
+      await page.setViewportSize({ width, height: 900 });
+      const overflow = await page.evaluate(
+        () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+      );
+      expect(overflow, `desbordamiento a ${width}px`).toBeLessThanOrEqual(1);
+    }
+  });
+
+  test('las cuentas son un único panel del bento con encabezado', async ({ page }) => {
+    await seedDemo(page);
+
+    const accounts = page.locator('section[aria-labelledby="cuentas"]');
+    await expect(accounts).toBeVisible();
+    const panel = accounts.locator('[data-panel="accounts"]');
+    await expect(panel).toHaveCount(1);
+    await expect(panel.getByRole('heading', { name: 'Cuentas', exact: true })).toBeVisible();
+    const manage = panel.getByRole('link', { name: 'Gestionar cuentas' });
+    await expect(manage).toHaveAttribute('href', '/cuentas/nueva');
+    const blocks = accounts.locator('a[data-account]');
+    await expect(blocks).toHaveCount(3);
+
+    const panelBackground = await panel.evaluate(
+      (element) => getComputedStyle(element).backgroundColor,
+    );
+    const blockBackground = await blocks.first().evaluate(
+      (element) => getComputedStyle(element).backgroundColor,
+    );
+    expect(blockBackground).not.toBe(panelBackground);
+
+    for (const name of ['Cuenta diaria', 'Depósito a plazo', 'Cuenta conjunta']) {
+      await expect(accounts.getByText(name)).toBeVisible();
+    }
+    await expect(accounts.locator('[data-accounts-header]')).toHaveCount(0);
+
+    const tops: number[] = [];
+    for (const block of await blocks.all()) {
+      const box = await block.boundingBox();
+      expect(box).not.toBeNull();
+      if (box) tops.push(box.y);
+    }
+    expect(tops).toHaveLength(3);
+    const width = page.viewportSize()?.width ?? 0;
+    if (width >= 1024) {
+      expect(new Set(tops.map((top) => Math.round(top))).size).toBe(1);
+    } else if (width >= 640) {
+      expect(Math.abs(tops[0]! - tops[1]!)).toBeLessThanOrEqual(1);
+      expect(tops[2]!).toBeGreaterThan(tops[1]!);
+    } else {
+      expect(tops[1]!).toBeGreaterThan(tops[0]!);
+      expect(tops[2]!).toBeGreaterThan(tops[1]!);
+    }
+
+    const hero = page.locator('section[aria-label="Resumen de saldo y gastos del mes"]');
+    const heroBox = await hero.boundingBox();
+    const accountsBox = await accounts.boundingBox();
+    expect(heroBox).not.toBeNull();
+    expect(accountsBox).not.toBeNull();
+    if (heroBox && accountsBox) {
+      expect(Math.abs(accountsBox.width - heroBox.width)).toBeLessThanOrEqual(1);
+      expect(accountsBox.y).toBeGreaterThan(heroBox.y + heroBox.height);
+    }
+  });
+
+  test('el panel de cuentas escala de ninguna a muchas cuentas', async ({ page }) => {
+    await startEmpty(page);
+    await expect(page.locator('section[aria-labelledby="cuentas"]')).toHaveCount(0);
+
+    const addAccount = async (name: string) => {
+      await page.goto('/cuentas/nueva');
+      await page.getByLabel('Nombre de la cuenta').fill(name);
+      await page.getByLabel('Saldo inicial').fill('100');
+      await page.getByRole('button', { name: 'Guardar cuenta' }).click();
+      await expect(page).toHaveURL(/\/cuentas\/acc_/);
+    };
+
+    await addAccount('Única');
+    await page.goto('/');
+    const accounts = page.locator('section[aria-labelledby="cuentas"]');
+    await expect(accounts.locator('a[href="/cuentas/nueva"]')).toHaveCount(1);
+    await expect(accounts.locator('a[data-account]')).toHaveCount(1);
+    await expect(accounts.getByText('Única')).toBeVisible();
+
+    for (const name of ['Segunda', 'Tercera', 'Cuarta', 'Quinta']) await addAccount(name);
+    await page.goto('/');
+    const rows = accounts.locator('a[data-account]');
+    await expect(rows).toHaveCount(5);
 
     for (const width of [390, 768, 1440]) {
       await page.setViewportSize({ width, height: 900 });
