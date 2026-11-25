@@ -10,6 +10,8 @@
   "scripts": {
     "predev": "npm run build -w @akari/tokens",
     "dev": "npm run dev -w @akari/web",
+    "dev:worktree": "node scripts/worktree-ports.mjs dev",
+    "e2e:worktree": "node scripts/worktree-ports.mjs e2e",
     "prebuild": "npm run build -w @akari/tokens",
     "build": "npm run build -w @akari/web",
     "test": "vitest run",

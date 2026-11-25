@@ -1,5 +1,8 @@
 import { defineConfig, devices } from '@playwright/test';
 
+const parsedPort = Number(process.env.E2E_PORT ?? 3100);
+const port = Number.isInteger(parsedPort) && parsedPort > 0 ? parsedPort : 3100;
+
 export default defineConfig({
   testDir: './e2e',
   timeout: 60_000,
@@ -8,7 +11,7 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   reporter: [['list']],
   use: {
-    baseURL: 'http://127.0.0.1:3100',
+    baseURL: `http://127.0.0.1:${port}`,
     trace: 'retain-on-failure',
   },
   projects: [
@@ -26,8 +29,8 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: 'npm run build && npm run start -w @akari/web -- -p 3100',
-    url: 'http://127.0.0.1:3100',
+    command: `npm run build && npm run start -w @akari/web -- -p ${port}`,
+    url: `http://127.0.0.1:${port}`,
     reuseExistingServer: !process.env.CI,
     timeout: 180_000,
   },

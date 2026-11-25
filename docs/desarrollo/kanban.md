@@ -1,39 +1,137 @@
 # Kan.bn: tarjetas por change
 
-`scripts/kan-sync.mjs` mantiene el tablero autoalojado de Kan.bn sincronizado con el ciclo de vida de los changes de OpenSpec: al proponer un change su tarjeta pasa a **IN PROGRESS** y al archivarlo pasa a **DONE**. No hay sincronización en sentido contrario.
+`scripts/kan-sync.mjs` conecta la cola de Kan.bn con el ciclo de OpenSpec: reclama tarjetas, las agrupa en un change, las mueve entre listas y las cierra al archivar. El flujo paralelo completo está en [flujo-colaborativo.md](flujo-colaborativo.md).
 
 ## Requisitos
 
-- Node.js ≥ 20.9 (el mismo mínimo del repositorio).
+- Node.js ≥ 20.9 (el mínimo del repositorio).
 - Un token de Kan.bn creado en **Settings → API → Create new key**. Solo se muestra una vez.
-- Un `.env` en la raíz del checkout con la convención `kan_`:
+- Un `.env` en la raíz del checkout principal:
 
   ```bash
   kan_API_KEY=kan_...
   kan_CURRENT_USER=tu@email.com
   ```
 
-  `kan_CURRENT_USER` es el email de un miembro activo del workspace y determina a quién se asigna la tarjeta. Si se omite, se usa la persona dueña del token.
+  `kan_CURRENT_USER` es el email de un miembro activo y determina a quién se asignan las tarjetas. Si se omite, se usa la persona dueña del token. `.env` está ignorado por Git.
 
-  `.env` está ignorado por git. Un worktree no hereda ficheros sin seguimiento: copia el `.env` al worktree activo antes de ejecutar el script.
+- `kan.config.json` versionado, sin secretos:
 
-- Un `.env.example` versionado documenta las dos variables; el token y el email reales nunca se commitean.
+  ```json
+  {
+    "baseUrl": "https://kan.example.com/api/v1",
+    "boardPublicId": "pzfz4njgyrkf",
+    "lists": {
+      "todo": "TO DO",
+      "inProgress": "IN PROGRESS",
+      "done": "DONE",
+      "review": "REVIEW"
+    }
+  }
+  ```
 
-## Configuración
+  `review` es opcional. Si no existe, `claim`, `done` y `release` funcionan y solo `review` falla con un mensaje claro. `baseUrl` termina en `/api/v1`.
 
-`kan.config.json` se versiona y no contiene secretos:
+## Comandos
+
+| Comando | Para qué |
+| --- | --- |
+| `queue` | Consulta de solo lectura: tarjetas libres de `TO DO` y reclamadas. `--json` para agentes. |
+| `claim <card...>` | Reclama una o varias tarjetas, crea rama y worktree y las mueve a `IN PROGRESS`. |
+| `link <change-id> --cards <card,...>` | Añade tarjetas libres a un claim existente. |
+| `review <change-id>` | Mueve las tarjetas del manifiesto a `REVIEW`. |
+| `done <change-id> [--pr <url>]` | Mueve las tarjetas a `DONE` y registra la PR. |
+| `release <change-id> [--force]` | Abandona el claim: devuelve tarjetas y limpia rama, worktree y etiquetas. |
+| `pr-body <change-id>` | Imprime un borrador de cuerpo de PR. |
+| `check <change-id>` | Avisa si la rama toca ficheros compartidos. |
+| `start <change-id>` | Vía heredada para un change sin claim previo. |
+| `discover` | Enumera workspaces, tableros, listas y miembros. |
+
+### Cola
+
+```bash
+node scripts/kan-sync.mjs queue
+node scripts/kan-sync.mjs queue --json
+```
+
+El JSON agrupa `todo` y `claimed`. Cada tarjeta incluye `publicId`, `title`, `list`, `members`, `changeId`, `branch` y `claimable`. `claimable` se calcula contra la identidad actual, así que un agente puede elegir una tarjeta sin comparar correos.
+
+No escribe en el tablero. Los disparadores de agente («revisa la cola», «qué tareas hay», `/kan-queue`…) están en `AGENTS.md`.
+
+### Reclamar y agrupar
+
+```bash
+# Una tarjeta; el id se deriva del título.
+node scripts/kan-sync.mjs claim h4isbq13sxo7
+
+# Varias tarjetas en un solo change.
+node scripts/kan-sync.mjs claim card-a card-b --change mejorar-facturas
+
+# Añadir una tarjeta después.
+node scripts/kan-sync.mjs link mejorar-facturas --cards card-c
+```
+
+`claim` crea:
+
+- rama `feat/<change-id>` desde `origin/main`;
+- worktree fuera del checkout principal;
+- `openspec/changes/<change-id>/workflow.json`;
+- `.opsx/ports.json` con los puertos de la máquina;
+- etiquetas `claims/<card-id>/<change-id>` y un push atómico.
+
+La primera persona que publica gana. Reintentar el mismo claim es idempotente; una tarjeta de otro claim falla con el change que la posee.
+
+### Revisión, archivo y liberación
+
+```bash
+node scripts/kan-sync.mjs review mejorar-facturas
+node scripts/kan-sync.mjs done mejorar-facturas --pr https://github.com/.../pull/123
+node scripts/kan-sync.mjs release mejorar-facturas --dry-run
+node scripts/kan-sync.mjs release mejorar-facturas
+```
+
+`done` se ejecuta después de abrir la PR. Mueve todas las tarjetas del manifiesto, añade la URL a sus descripciones y actualiza `workflow.json`. No mergea la PR: `DONE` significa «archivado y PR abierta».
+
+`release` retira tu asignación, devuelve las tarjetas a `TO DO`, borra el marcador y las etiquetas y limpia el worktree si no hay trabajo pendiente. Sin `--force` se niega si hay una PR abierta o cambios sin commitear.
+
+## Manifiesto
+
+`openspec/changes/<change-id>/workflow.json`:
 
 ```json
 {
-  "baseUrl": "https://kan.example.com/api/v1",
-  "boardPublicId": "pzfz4njgyrkf",
-  "lists": { "todo": "TO DO", "inProgress": "IN PROGRESS", "done": "DONE" }
+  "changeId": "mejorar-facturas",
+  "branch": "feat/mejorar-facturas",
+  "cards": [
+    { "publicId": "card-a", "title": "Mejorar facturas" }
+  ],
+  "prUrl": null,
+  "claimedAt": "2026-11-25T10:00:00.000Z"
 }
 ```
 
-- `baseUrl` termina en `/api/v1`.
-- `boardPublicId` y los nombres de lista se obtienen con `discover`.
-- Las listas se resuelven por nombre, así que recrear una lista con el mismo nombre no rompe la configuración.
+Es la fuente de verdad para `review`, `done`, `release`, `check` y `pr-body`. No contiene tokens, correos ni credenciales; los puertos viven en `.opsx/ports.json`, que está ignorado.
+
+## Entorno y worktrees
+
+`kan-sync` resuelve `.env` así:
+
+1. Si pasas `--env <ruta>`, usa esa ruta.
+2. Si no, obtiene el checkout principal con `git rev-parse --path-format=absolute --git-common-dir`.
+3. Lee `.env` de ese directorio y da prioridad a las variables ya exportadas.
+
+En un worktree no copies `.env`: se lee del checkout principal. `kan.config.json` sí se versiona y viaja con la rama.
+
+## Puertos
+
+Cada worktree recibe un puerto de desarrollo y otro de E2E en `.opsx/ports.json` (ignorado por Git). Usa:
+
+```bash
+npm run dev:worktree
+npm run e2e:worktree
+```
+
+No ejecutes ambos a la vez en el mismo worktree. Detalles en [flujo-colaborativo.md](flujo-colaborativo.md).
 
 ## Descubrir identificadores
 
@@ -43,52 +141,23 @@ node scripts/kan-sync.mjs discover --board <boardPublicId>
 node scripts/kan-sync.mjs discover --board <boardPublicId> --json
 ```
 
-La primera ejecución solo necesita `--base-url` (o `kan_BASE_URL`); el resto ya lee la URL de `kan.config.json`. La salida enumera workspaces, tableros, listas y miembros activos con sus `publicId` para rellenar la configuración.
-
-## Uso diario
-
-```bash
-# Al crear el change: crea la tarjeta en TO DO si falta, la asigna y la mueve a IN PROGRESS.
-node scripts/kan-sync.mjs start integrar-kanban-openspec
-
-# Al archivar: mueve la tarjeta a DONE sin crear duplicados.
-node scripts/kan-sync.mjs done integrar-kanban-openspec
-
-# Revisar el movimiento sin escribir en el tablero.
-node scripts/kan-sync.mjs start integrar-kanban-openspec --dry-run
-node scripts/kan-sync.mjs done integrar-kanban-openspec --dry-run
-```
-
-Opciones útiles:
-
-| Opción | Para qué |
-| --- | --- |
-| `--title "texto"` | Título legible al crear la tarjeta: `[<change-id>] texto`. |
-| `--card <publicId>` | Fija la tarjeta y evita la búsqueda por título. |
-| `--dry-run` | Resuelve listas, tarjeta y persona, y muestra la acción sin escribir. |
-| `--config <ruta>` / `--env <ruta>` | Usa otra configuración o otro `.env`. |
-| `--timeout <ms>` | Timeout por petición (10 000 ms por defecto). |
-
-## Comportamiento
-
-- La tarjeta se identifica porque el título contiene el id del change como token completo, sin distinguir mayúsculas: `[integrar-kanban-openspec]` coincide, `[integrar-kanban]` no.
-- Si hay varias tarjetas candidatas, el script no toca ninguna, las enumera y falla; usa `--card` para desambiguar.
-- `start` crea la tarjeta en la lista `todo` y la mueve a `inProgress`. Es idempotente: repetirlo no duplica tarjetas ni peticiones de asignación.
-- `done` solo mueve tarjetas existentes; si no encuentra ninguna, avisa y falla sin crear nada.
-- La asignación usa el endpoint de miembros, que alterna: el script solo llama si la persona no está ya en la tarjeta, y no retira a nadie más.
-- Salida: una línea por acción y código 0; los errores van a stderr con código 1. El token nunca se imprime.
+La primera ejecución solo necesita `--base-url` (o `kan_BASE_URL`). La salida enumera workspaces, tableros, listas y miembros activos.
 
 ## Problemas frecuentes
 
 | Síntoma | Causa y arreglo |
 | --- | --- |
-| `Falta kan_API_KEY` | No hay `.env` en la raíz del checkout o falta la variable. En un worktree, copia el `.env`. |
-| `kan_API_KEY no es válida o ha sido revocada` | Genera otra clave en Settings → API y actualiza `.env`. |
-| `No se pudo conectar con …` | La instancia no es accesible (VPN/Tailscale caída) o la URL no termina en `/api/v1`. |
-| `No hay un miembro activo con el email …` | `kan_CURRENT_USER` no coincide con ningún miembro activo; revisa `discover --board <id>`. |
-| `No existe la lista "…"` | El nombre configurado no está en el tablero; la salida enumera las listas disponibles. |
-| `Hay N tarjetas que coinciden …` | Varias tarjetas contienen el id; usa `--card <publicId>` o deja una sola. |
+| `Falta kan_API_KEY` | No hay `.env` en el checkout principal o falta la variable. |
+| `kan_API_KEY no es válida o ha sido revocada` | Genera otra clave y actualiza `.env`. |
+| `No se pudo conectar con …` | La instancia no es accesible (VPN/Tailscale) o la URL no termina en `/api/v1`. |
+| `No hay un miembro activo con el email …` | `kan_CURRENT_USER` no coincide con un miembro activo; revisa `discover --board <id>`. |
+| `No existe la lista "…"` | El nombre configurado no está en el tablero; la salida enumera las disponibles. |
+| `La tarjeta … ya está reclamada por el change …` | Otra persona ganó el claim; elige otra tarjeta o libera la anterior. |
+| `La rama feat/… ya existe` | Hay una rama de otro claim; usa otro `--change` o libera. |
+| `No existe workflow.json` | Ejecuta el comando dentro del worktree del claim. |
+| `El puerto … está ocupado` | Otro servidor lo usa; el helper reasigna o pide `--dev-port`/`--e2e-port`. |
+| `release` se niega por PR abierta | Cierra la PR o usa `--force` si vas a descartar el trabajo. |
 
 ## Seguridad
 
-El token actúa con los permisos de tu usuario y no admite ámbitos reducidos. Mantenlo solo en `.env` (ignorado por git) y revócalo desde Settings → API si se filtra. `kan.config.json` no debe contener claves ni datos personales.
+El token actúa con los permisos de tu usuario y no admite ámbitos reducidos. Mantenlo solo en `.env` (ignorado por Git) y revócalo desde Settings → API si se filtra. `kan.config.json`, `workflow.json` y `.opsx/ports.json` no contienen secretos.

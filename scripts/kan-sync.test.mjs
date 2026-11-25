@@ -4,8 +4,13 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
   buildCreateCard,
+  claimCommand,
   buildMoveCard,
   doneChange,
+  queue,
+  appendChangeMarker,
+  removeChangeMarker,
+  extractChangeId,
   loadEnvText,
   matchCards,
   parseConfig,
@@ -13,7 +18,9 @@ import {
   readEnv,
   resolveAssignee,
   resolveList,
+  reviewChange,
   startChange,
+  validateClaimCards,
 } from './kan-sync.mjs';
 
 describe('loadEnvText', () => {
@@ -449,5 +456,192 @@ describe('doneChange', () => {
 
     expect(result).toMatchObject({ dryRun: true, moved: true });
     expect(calls).toHaveLength(1);
+  });
+});
+
+describe('cola y marcadores', () => {
+  it('devuelve la cola estructurada sin escribir', async () => {
+    const board = emptyBoard();
+    board.lists[0].cards.push(card({ publicId: 'card-libre', title: 'Tarea libre', members: [] }));
+    board.lists[1].cards.push(card({ publicId: 'card-claim', members: [{ publicId: 'm-aaron' }] }));
+    const { fetchImpl, calls } = makeFetch({ 'GET /boards/b12345678901': { body: board } });
+    let output = '';
+    const payload = await queue({
+      config: CONFIG,
+      env: ENV,
+      fetchImpl,
+      json: true,
+      log: (message) => {
+        output += message;
+      },
+    });
+
+    expect(payload.todo).toHaveLength(1);
+    expect(payload.todo[0]).toMatchObject({
+      publicId: 'card-libre',
+      title: 'Tarea libre',
+      list: 'To Do',
+      changeId: null,
+      branch: null,
+      claimable: true,
+    });
+    expect(payload.claimed[0]).toMatchObject({
+      publicId: 'card-claim',
+      changeId: 'integrar-kanban-openspec',
+      branch: 'feat/integrar-kanban-openspec',
+      claimable: false,
+    });
+    expect(JSON.parse(output).todo[0].publicId).toBe('card-libre');
+    expect(calls.map((call) => `${call.method} ${call.path}`)).toEqual(['GET /boards/b12345678901']);
+  });
+
+  it('añade y retira el marcador de forma idempotente', () => {
+    const marked = appendChangeMarker('Descripción original', 'flujo-prueba');
+    expect(marked).toContain('<!-- openspec-change: flujo-prueba -->');
+    expect(marked).toContain('OpenSpec: `flujo-prueba`');
+    expect(appendChangeMarker(marked, 'flujo-prueba')).toBe(marked);
+    expect(() => appendChangeMarker(marked, 'otro-change')).toThrow(/ya está vinculada/);
+    expect(removeChangeMarker(marked, 'flujo-prueba')).toBe('Descripción original');
+    expect(extractChangeId({ title: 'Sin id', description: marked })).toBe('flujo-prueba');
+    expect(extractChangeId({ title: '[flujo-prueba] Título', description: '' })).toBe('flujo-prueba');
+    expect(matchCards([card({ title: 'Sin id', description: marked })], 'flujo-prueba')).toHaveLength(1);
+  });
+});
+
+describe('preflight del claim', () => {
+  const client = { request: async () => { throw new Error('no debería llamar a la API'); } };
+
+  it('acepta una tarjeta libre de la cola', async () => {
+    const board = emptyBoard();
+    board.lists[0].cards.push(card({ publicId: 'card-libre', title: 'Tarea libre', members: [] }));
+    const result = await validateClaimCards({
+      board,
+      config: CONFIG,
+      env: ENV,
+      client,
+      cardIds: ['card-libre'],
+      changeId: 'flujo-prueba',
+    });
+    expect(result.cards.map((item) => item.publicId)).toEqual(['card-libre']);
+  });
+
+  it('rechaza una tarjeta asignada a otra persona', async () => {
+    const board = emptyBoard();
+    board.lists[0].cards.push(card({ title: 'Tarea asignada', members: [board.workspace.members[1]] }));
+    await expect(
+      validateClaimCards({ board, config: CONFIG, env: ENV, client, cardIds: ['card-1'], changeId: 'x' })
+    ).rejects.toThrow(/asignada a .*otro/i);
+  });
+
+  it('rechaza una tarjeta vinculada a otro change', async () => {
+    const board = emptyBoard();
+    board.lists[0].cards.push(card({ description: '<!-- openspec-change: otro-change -->' }));
+    await expect(
+      validateClaimCards({ board, config: CONFIG, env: ENV, client, cardIds: ['card-1'], changeId: 'x' })
+    ).rejects.toThrow(/otro-change/);
+  });
+
+  it('rechaza una tarjeta fuera de la cola y permite reanudar un claim', async () => {
+    const board = emptyBoard();
+    board.lists[1].cards.push(card({ title: 'Tarea en curso', members: [{ publicId: 'm-aaron' }] }));
+    await expect(
+      validateClaimCards({ board, config: CONFIG, env: ENV, client, cardIds: ['card-1'], changeId: 'x' })
+    ).rejects.toThrow(/In Progress/);
+    const resumed = await validateClaimCards({
+      board,
+      config: CONFIG,
+      env: ENV,
+      client,
+      cardIds: ['card-1'],
+      changeId: 'x',
+      allowNonTodo: true,
+    });
+    expect(resumed.cards).toHaveLength(1);
+  });
+});
+
+describe('done con grupo y PR', () => {
+  it('mueve todas las tarjetas y registra la URL en cada descripción', async () => {
+    const board = emptyBoard();
+    board.lists[1].cards.push(
+      card({ publicId: 'card-1', members: [{ publicId: 'm-aaron' }] }),
+      card({ publicId: 'card-2', members: [{ publicId: 'm-aaron' }] })
+    );
+    const { fetchImpl, calls } = makeFetch({
+      'GET /boards/b12345678901': { body: board },
+      'PUT /cards/card-1': { body: {} },
+      'PUT /cards/card-2': { body: {} },
+    });
+
+    const result = await doneChange({
+      changeId: 'flujo-prueba',
+      config: CONFIG,
+      env: ENV,
+      fetchImpl,
+      cards: [{ publicId: 'card-1' }, { publicId: 'card-2' }],
+      prUrl: 'https://github.com/AaronSR-54/akari/pull/9',
+    });
+
+    expect(result.moved).toBe(true);
+    expect(result.cards).toHaveLength(2);
+    const descriptionUpdates = calls.filter((call) => call.body?.description);
+    expect(descriptionUpdates).toHaveLength(2);
+    expect(descriptionUpdates[0].body.description).toContain('https://github.com/AaronSR-54/akari/pull/9');
+    const moves = calls.filter((call) => call.body?.listPublicId === 'lista-done');
+    expect(moves).toHaveLength(2);
+  });
+});
+
+describe('review', () => {
+  it('mueve todas las tarjetas del manifiesto a REVIEW', async () => {
+    const board = emptyBoard();
+    board.lists.push({ publicId: 'lista-review', name: 'Review', cards: [] });
+    board.lists[1].cards.push(card({ publicId: 'card-1', members: [{ publicId: 'm-aaron' }] }));
+    const config = { ...CONFIG, lists: { ...CONFIG.lists, review: 'Review' } };
+    const { fetchImpl, calls } = makeFetch({
+      'GET /boards/b12345678901': { body: board },
+      'PUT /cards/card-1': { body: {} },
+    });
+
+    const result = await reviewChange({
+      changeId: 'flujo-prueba',
+      config,
+      env: ENV,
+      fetchImpl,
+      cards: [{ publicId: 'card-1' }],
+    });
+
+    expect(result.moved).toBe(true);
+    expect(calls.at(-1).body).toEqual({ listPublicId: 'lista-review', index: 0 });
+  });
+
+  it('falla si no hay lista de revisión configurada', async () => {
+    await expect(
+      reviewChange({ changeId: 'x', config: CONFIG, env: ENV, fetchImpl: async () => ({}) })
+    ).rejects.toThrow(/lista de revisión/);
+  });
+});
+
+describe('claim sin cola', () => {
+  it('aborta antes de tocar Git si Kan no responde', async () => {
+    const fetchImpl = async () => {
+      throw new Error('offline');
+    };
+    const runGit = () => {
+      throw new Error('git no debería ejecutarse');
+    };
+    await expect(
+      claimCommand({
+        cardIds: ['card-1'],
+        changeId: 'x',
+        config: CONFIG,
+        env: ENV,
+        fetchImpl,
+        dryRun: false,
+        log: () => {},
+        cwd: process.cwd(),
+        runGit,
+      })
+    ).rejects.toThrow(/No se pudo conectar/);
   });
 });
