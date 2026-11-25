@@ -138,3 +138,11 @@ Quedan fuera, además de las superficies nativas: la creación de planes de plaz
 - **Motivo:** evitar salir del listado y unificar alta y edición en una sola superficie; el diálogo anterior no permitía cambiar cuenta, tipo ni nota.
 - **Consecuencia:** la composición no coincide con `M09`/`W03` aprobados. El diseño está congelado: no se han modificado FigCraft, `design/` ni `docs/diseno/`.
 - **Cierre:** solo si la persona usuaria reabre la fase de diseño; hasta entonces la implementación se mantiene y la trazabilidad vive en `producto/finanzas-personales`.
+
+## 20. Gráfica del resumen con padding y línea mostaza (change `fix-grafico-con-padding-inline`)
+
+- **Diseño:** la evolución del saldo del `W01` usa tinta para la línea y un área ámbar que llega hasta los bordes de la columna y se recorta en las esquinas de la tarjeta de balance; el detalle diario aparece sobre un panel de fondo invertido.
+- **Implementación:** el trazado y el área dejan 8 px a cada lado del bloque, el área redondea sus cuatro esquinas tanto con el mes abierto como con el completo, y la línea es una curva suave en el acento mostaza (`--color-accent-default`) en ambos temas que arranca y termina en las tangentes de las esquinas redondeadas. El panel de detalle usa el mismo fondo `surface-sunken` que los bloques de cuenta del dashboard, con borde sutil, tipografía reforzada y el borde del punto activo del mismo color.
+- **Motivo:** la tarjeta `z69iv2q63eie` pide padding inline, extremos redondeados y una línea más suave; la persona responsable confirmó que la línea SHALL ser siempre mostaza y descartó el rojo/verde por signo que la tarjeta también sugería, además de pedir que el panel de detalle comparte el fondo de las tarjetas de cuenta.
+- **Consecuencia:** el área ya no se prolonga bajo las esquinas de la tarjeta de balance, la línea cambia de color respecto al frame aprobado y el detalle deja de ser un panel oscuro. El diseño está congelado: no se han modificado FigCraft, `design/` ni `docs/diseno/`.
+- **Cierre:** solo si la persona usuaria reabre la fase de diseño; hasta entonces la implementación se mantiene y la trazabilidad vive en `producto/dashboard-hero`.

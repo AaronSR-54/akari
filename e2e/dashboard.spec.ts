@@ -191,6 +191,52 @@ test.describe('dashboard hero', () => {
     await expect(page).toHaveURL(/\/cuentas\/demo-acc-day/);
   });
 
+  test('el gráfico deja espacio lateral y el detalle iguala el fondo de las cuentas', async ({ page }) => {
+    await seedDemo(page);
+    const month = page.locator('[data-hero="month"]');
+    const monthBox = await month.boundingBox();
+    const svgBox = await month.locator('svg').first().boundingBox();
+    expect(monthBox).not.toBeNull();
+    expect(svgBox).not.toBeNull();
+    if (monthBox && svgBox) {
+      expect(svgBox.x - monthBox.x).toBeCloseTo(8, 0);
+      expect(monthBox.x + monthBox.width - (svgBox.x + svgBox.width)).toBeCloseTo(8, 0);
+    }
+
+    const bar = month.getByRole('group', { name: /Saldo del mes por día/ });
+    await bar.focus();
+    const detail = month.getByTestId('month-balance-detail');
+    await expect(detail).toBeVisible();
+    const detailBackground = await detail.evaluate(
+      (element) => getComputedStyle(element).backgroundColor,
+    );
+    const accountBackground = await page
+      .locator('a[data-account]')
+      .first()
+      .evaluate((element) => getComputedStyle(element).backgroundColor);
+    expect(detailBackground).toBe(accountBackground);
+  });
+
+  test('la línea de la gráfica usa el acento mostaza en ambos temas', async ({ page }) => {
+    await seedDemo(page);
+    const line = page.locator('[data-hero="month"] svg path[fill="none"]');
+    const expectAcento = async () => {
+      const expected = await page.evaluate(() => {
+        const hex = getComputedStyle(document.documentElement)
+          .getPropertyValue('--color-accent-default')
+          .trim()
+          .replace('#', '');
+        return `rgb(${parseInt(hex.slice(0, 2), 16)}, ${parseInt(hex.slice(2, 4), 16)}, ${parseInt(hex.slice(4, 6), 16)})`;
+      });
+      const actual = await line.evaluate((element) => getComputedStyle(element).stroke);
+      expect(actual).toBe(expected);
+    };
+
+    await expectAcento();
+    await page.evaluate(() => document.documentElement.setAttribute('data-theme', 'dark'));
+    await expectAcento();
+  });
+
   test('recorre los días con el teclado y muestra movimientos y saldo', async ({ page }) => {
     await seedDemo(page);
 

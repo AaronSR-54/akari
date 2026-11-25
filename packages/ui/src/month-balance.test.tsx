@@ -62,6 +62,14 @@ describe('month balance', () => {
     expect(screen.queryByText(/31 oct/)).not.toBeInTheDocument();
   });
 
+  it('deja 8 px de espacio a cada lado del trazado sin reducir el área interactiva', () => {
+    const { container } = renderMonth();
+    const layer = container.querySelector('svg')?.parentElement;
+    expect(layer).toHaveClass('inset-y-0', 'left-2', 'right-2');
+    expect(layer).not.toHaveClass('inset-0');
+    expect(screen.getByRole('group', { name: /Saldo del mes por día/ })).toHaveClass('w-full');
+  });
+
   it('recorre los días transcurridos con el teclado y muestra el saldo', async () => {
     const user = userEvent.setup();
     renderMonth();
@@ -94,19 +102,72 @@ describe('month balance', () => {
     expect(screen.queryByText('Saldo tras el día')).not.toBeInTheDocument();
   });
 
-  it('el punto más alto toca el borde superior', () => {
+  it('el detalle usa el fondo de los bloques de cuenta y texto legible', async () => {
+    const user = userEvent.setup();
     const { container } = renderMonth();
-    const line = container.querySelector('path[fill="none"]');
-    expect(line?.getAttribute('d')).toContain('L 25 0');
+    await user.tab();
+    const detail = screen.getByTestId('month-balance-detail');
+    expect(detail).toHaveClass('bg-surface-sunken', 'border-border-subtle', 'rounded-xl');
+    expect(detail.className).not.toContain('bg-surface-inverse');
+    expect(detail.querySelector('.text-text-inverse')).toBeNull();
+    expect(detail.querySelector('.text-ui-11-strong')).not.toBeNull();
+    expect(container.querySelector('[data-chart-point="core"]')).toHaveClass(
+      'ring-surface-sunken',
+    );
   });
 
-  it('redondea el final del área cuando el mes sigue abierto', () => {
+  it('el punto más alto toca el borde superior', () => {
+    const { container } = renderMonth();
+    const d = container.querySelector('path[fill="none"]')?.getAttribute('d') ?? '';
+    const endpoints = [...d.matchAll(/C [\d.-]+ [\d.-]+ [\d.-]+ [\d.-]+ ([\d.-]+) ([\d.-]+)/g)].map(
+      (match) => [Number(match[1] ?? 0), Number(match[2] ?? 0)] as const,
+    );
+    expect(
+      endpoints.some(([x, y]) => Math.abs(x - 26.6) < 0.01 && Math.abs(y) < 0.01),
+    ).toBe(true);
+  });
+
+  it('suaviza la línea continua sin salirse del viewBox', () => {
+    const { container } = renderMonth();
+    const line = container.querySelector('path[fill="none"]')?.getAttribute('d') ?? '';
+    expect(line).toMatch(/^M 3\.2 /);
+    expect(line.match(/C /g)).toHaveLength(3);
+    expect(line).not.toMatch(/-\d/);
+  });
+
+  it('el trazo arranca y termina en las tangentes de las esquinas', () => {
+    const { container } = render(
+      <MonthBalance
+        days={days}
+        openingBalanceMinor={1200000}
+        openingLabel="sáb 31 oct"
+        openingTotal="12.000,00 €"
+        openingAriaLabel="sábado 31 de octubre: saldo de cierre 12.000,00 €"
+        elapsedDays={4}
+        ariaLabel="Saldo del mes por día"
+      />,
+    );
+    const line = container.querySelector('path[fill="none"]')?.getAttribute('d') ?? '';
+    expect(line).toMatch(/^M 3\.2 /);
+    expect(line).toMatch(/96\.8 [\d.]+$/);
+  });
+
+  it('la línea usa el acento mostaza', () => {
+    const { container } = renderMonth();
+    expect(container.querySelector('path[fill="none"]')).toHaveAttribute(
+      'stroke',
+      'var(--color-accent-default)',
+    );
+  });
+
+  it('redondea el área en ambos extremos cuando el mes sigue abierto', () => {
     const { container } = renderMonth();
     const area = container.querySelector('path[fill^="url"]');
     expect(area?.getAttribute('d')).toContain('Q 100');
+    expect(area?.getAttribute('d')).toContain('Q 0');
   });
 
-  it('no redondea el final del área cuando el mes está completo', () => {
+  it('redondea el área en ambos extremos también con el mes completo', () => {
     const { container } = render(
       <MonthBalance
         days={days}
@@ -119,8 +180,8 @@ describe('month balance', () => {
       />,
     );
     const area = container.querySelector('path[fill^="url"]');
-    expect(area?.getAttribute('d')).not.toContain('Q 100');
-    expect(area?.getAttribute('d')).toContain('L 100');
+    expect(area?.getAttribute('d')).toContain('Q 100');
+    expect(area?.getAttribute('d')).toContain('Q 0');
   });
 
   it('empieza en el cierre del mes anterior y sigue con el día 1', () => {
@@ -136,7 +197,7 @@ describe('month balance', () => {
       />,
     );
     const line = container.querySelector('path[fill="none"]');
-    expect(line?.getAttribute('d')).toMatch(/^M 0 /);
+    expect(line?.getAttribute('d')).toMatch(/^M 3\.2 /);
     expect(line?.getAttribute('d')).toContain('L');
     expect(screen.queryByText(/31 oct/)).not.toBeInTheDocument();
   });
