@@ -11,6 +11,9 @@ import {
 import type { Account, Group, GroupExpense, InstallmentPlan, Movement, Recurrence, Transfer } from '@akari/domain';
 import type { AkariRepositories } from './repositories.js';
 
+/** Subir esta versión refresca automáticamente las demos antiguas. */
+export const DEMO_SEED_VERSION = 3;
+
 const iso = (date: Date) => format(date, 'yyyy-MM-dd');
 const isoAt = (date: Date) => date.toISOString();
 
@@ -62,6 +65,8 @@ export function demoAccounts(today = new Date()): Account[] {
 export function demoMovements(today = new Date()): Movement[] {
   const current = (day: number) => iso(dayInMonth(today, day));
   const previous = (day: number) => iso(dayInMonth(subMonths(today, 1), day));
+  const monthsAgo = (months: number, day: number) =>
+    iso(dayInMonth(subMonths(today, months), day));
   const base = isoAt(today);
 
   return [
@@ -184,6 +189,127 @@ export function demoMovements(today = new Date()): Movement[] {
       date: current(1),
       concept: 'Aportación mensual',
       category: 'Ingresos',
+      createdAt: base,
+    },
+    {
+      id: 'demo-mov-week-refund',
+      accountId: 'demo-acc-day',
+      type: 'income',
+      amountMinor: 30000,
+      currency: 'EUR',
+      date: iso(subDays(today, 5)),
+      concept: 'Devolución Hacienda',
+      category: 'Ingresos',
+      createdAt: base,
+    },
+    {
+      id: 'demo-mov-week-brunch',
+      accountId: 'demo-acc-day',
+      type: 'expense',
+      amountMinor: 5000,
+      currency: 'EUR',
+      date: iso(today),
+      concept: 'Brunch de domingo',
+      category: 'Alimentación',
+      createdAt: base,
+    },
+    {
+      id: 'demo-mov-week-sale',
+      accountId: 'demo-acc-day',
+      type: 'income',
+      amountMinor: 15000,
+      currency: 'EUR',
+      date: iso(today),
+      concept: 'Venta de bici',
+      category: 'Ingresos',
+      createdAt: base,
+    },
+    {
+      id: 'demo-mov-two-months-salary',
+      accountId: 'demo-acc-day',
+      type: 'income',
+      amountMinor: 240000,
+      currency: 'EUR',
+      date: monthsAgo(2, 1),
+      concept: 'Nómina',
+      category: 'Ingresos',
+      createdAt: base,
+    },
+    {
+      id: 'demo-mov-two-months-rent',
+      accountId: 'demo-acc-day',
+      type: 'expense',
+      amountMinor: 85000,
+      currency: 'EUR',
+      date: monthsAgo(2, 2),
+      concept: 'Alquiler',
+      category: 'Vivienda',
+      createdAt: base,
+    },
+    {
+      id: 'demo-mov-two-months-groceries',
+      accountId: 'demo-acc-day',
+      type: 'expense',
+      amountMinor: 13500,
+      currency: 'EUR',
+      date: monthsAgo(2, 9),
+      concept: 'Compra semanal',
+      category: 'Alimentación',
+      createdAt: base,
+    },
+    {
+      id: 'demo-mov-two-months-dinner',
+      accountId: 'demo-acc-day',
+      type: 'expense',
+      amountMinor: 4200,
+      currency: 'EUR',
+      date: monthsAgo(2, 14),
+      concept: 'Cena',
+      category: 'Ocio',
+      createdAt: base,
+    },
+    {
+      id: 'demo-mov-three-months-salary',
+      accountId: 'demo-acc-day',
+      type: 'income',
+      amountMinor: 240000,
+      currency: 'EUR',
+      date: monthsAgo(3, 1),
+      concept: 'Nómina',
+      category: 'Ingresos',
+      createdAt: base,
+    },
+    {
+      id: 'demo-mov-three-months-rent',
+      accountId: 'demo-acc-day',
+      type: 'expense',
+      amountMinor: 85000,
+      currency: 'EUR',
+      date: monthsAgo(3, 2),
+      concept: 'Alquiler',
+      category: 'Vivienda',
+      createdAt: base,
+    },
+    {
+      id: 'demo-mov-three-months-groceries',
+      accountId: 'demo-acc-day',
+      type: 'expense',
+      amountMinor: 12800,
+      currency: 'EUR',
+      date: monthsAgo(3, 9),
+      concept: 'Compra semanal',
+      category: 'Alimentación',
+      createdAt: base,
+    },
+    {
+      id: 'demo-mov-three-months-dinner',
+      accountId: 'demo-acc-day',
+      type: 'expense',
+      amountMinor: 3900,
+      currency: 'EUR',
+      date: monthsAgo(3, 14),
+      concept: 'Cena',
+      category: 'Ocio',
       createdAt: base,
     },
   ];

@@ -3,9 +3,17 @@ import { axe } from 'jest-axe';
 import { describe, expect, it } from 'vitest';
 import { Button } from './buttons.js';
 import { TextField } from './fields.js';
-import { Badge, BalanceSummary, ChartBars, MovementRow, ProgressInstallments } from './data-display.js';
+import {
+  Badge,
+  BalanceSummary,
+  ChartArea,
+  ChartBars,
+  MovementRow,
+  ProgressInstallments,
+} from './data-display.js';
 import { StatePage } from './states.js';
 import { Logo } from './logo.js';
+import { MonthBalance } from './month-balance.js';
 
 describe('accessibility', () => {
   it('la composición base no tiene violaciones graves', async () => {
@@ -31,6 +39,27 @@ describe('accessibility', () => {
           type="expense"
         />
         <ChartBars values={[10, 20]} labels={['L', 'M']} ariaLabel="Gasto semanal" />
+        <ChartArea
+          values={[0, 10, 20]}
+          labels={['L', 'M', 'X']}
+          ariaLabel="Gasto de la semana: 20,00 €"
+          description="Del lunes al miércoles, total 20,00 €."
+        />
+        <MonthBalance
+          days={Array.from({ length: 30 }, (_, index) => ({
+            id: `2026-11-${index + 1}`,
+            label: `día ${index + 1}`,
+            balanceMinor: 1200000,
+            total: '12.000,00 €',
+            ariaLabel: `día ${index + 1}: saldo 12.000,00 €`,
+          }))}
+          openingBalanceMinor={1200000}
+          openingLabel="sáb 31 oct"
+          openingTotal="12.000,00 €"
+          openingAriaLabel="sábado 31 de octubre: saldo de cierre 12.000,00 €"
+          elapsedDays={29}
+          ariaLabel="Saldo del mes por día"
+        />
         <TextField label="Concepto" help="Ej. Cena" />
         <Button>Guardar</Button>
         <StatePage type="empty" title="Sin movimientos" description="Añade el primero para empezar." />
@@ -39,6 +68,40 @@ describe('accessibility', () => {
 
     const results = await axe(container, { rules: { 'color-contrast': { enabled: false } } });
     expect(results).toHaveNoViolations();
+  });
+
+  it('month balance expone un grupo con nombre accesible', () => {
+    render(
+      <MonthBalance
+        days={[
+          {
+            id: 'd1',
+            label: 'dom 1 nov',
+            balanceMinor: 1200000,
+            total: '12.000,00 €',
+            ariaLabel: 'domingo 1 de noviembre: saldo 12.000,00 €',
+          },
+        ]}
+        openingBalanceMinor={1200000}
+        openingLabel="sáb 31 oct"
+        openingTotal="12.000,00 €"
+        openingAriaLabel="sábado 31 de octubre: saldo de cierre 12.000,00 €"
+        elapsedDays={1}
+        ariaLabel="Saldo del mes por día"
+      />,
+    );
+    expect(screen.getByRole('group', { name: /Saldo del mes por día/ })).toBeInTheDocument();
+  });
+
+  it('chart area expone su nombre accesible', () => {
+    render(
+      <ChartArea
+        values={[0, 10]}
+        labels={['L', 'M']}
+        ariaLabel="Movimientos de la semana: 10,00 €"
+      />,
+    );
+    expect(screen.getByRole('img', { name: 'Movimientos de la semana: 10,00 €' })).toBeInTheDocument();
   });
 
   it('el estado vacío ofrece una acción principal', () => {

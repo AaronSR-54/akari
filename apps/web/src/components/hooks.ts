@@ -15,10 +15,8 @@ import {
   type Transfer,
 } from '@akari/domain';
 import { useData } from './providers';
-import { format } from 'date-fns';
 import { parseDateOnly } from '../lib/format';
-
-const todayKey = () => format(new Date(), 'yyyy-MM-dd');
+import { appTodayKey } from '../lib/clock';
 
 export function useSettings(): Settings | undefined {
   const { repositories, ready } = useData();
@@ -117,7 +115,7 @@ export function useGroupExpenses(groupId: string) {
 
 export function useOverview() {
   const { repositories, ready } = useData();
-  const key = todayKey();
+  const key = appTodayKey();
   return useLiveQuery(async () => {
     if (!ready) return undefined;
     return getOverview(repositories, parseDateOnly(key));
@@ -126,7 +124,7 @@ export function useOverview() {
 
 export function useQuickAnswers() {
   const { repositories, ready } = useData();
-  const key = todayKey();
+  const key = appTodayKey();
   return useLiveQuery(async () => {
     if (!ready) return undefined;
     return getQuickAnswers(repositories, parseDateOnly(key));
@@ -135,7 +133,7 @@ export function useQuickAnswers() {
 
 export function useAccountSummary(accountId: string) {
   const { repositories, ready } = useData();
-  const key = todayKey();
+  const key = appTodayKey();
   return useLiveQuery(async () => {
     if (!ready) return undefined;
     const [account, movements, recurrences, plans] = await Promise.all([

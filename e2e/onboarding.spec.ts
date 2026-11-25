@@ -26,6 +26,48 @@ test.describe('onboarding', () => {
     await expect(page.getByText('Piso compartido')).toBeVisible();
   });
 
+  test('refresca un demo antiguo sin rebotar al onboarding', async ({ page }) => {
+    await seedDemo(page);
+
+    // Simula una demo guardada por una versión anterior: sin versión de seed
+    // y con un único movimiento, que producía una línea plana.
+    await page.evaluate(async () => {
+      const openDatabase = () =>
+        new Promise<IDBDatabase>((resolve, reject) => {
+          const request = indexedDB.open('akari');
+          request.onsuccess = () => resolve(request.result);
+          request.onerror = () => reject(request.error);
+        });
+      const database = await openDatabase();
+      const transaction = database.transaction(['settings', 'movements'], 'readwrite');
+      const settingsStore = transaction.objectStore('settings');
+      const movementsStore = transaction.objectStore('movements');
+      const settings = await new Promise<Record<string, unknown>>((resolve) => {
+        const request = settingsStore.get('app');
+        request.onsuccess = () => resolve(request.result);
+      });
+      delete settings.demoSeedVersion;
+      settingsStore.put(settings);
+      const movements = await new Promise<Array<{ id: string }>>((resolve) => {
+        const request = movementsStore.getAll();
+        request.onsuccess = () => resolve(request.result);
+      });
+      for (const movement of movements.slice(1)) movementsStore.delete(movement.id);
+      await new Promise<void>((resolve, reject) => {
+        transaction.oncomplete = () => resolve();
+        transaction.onerror = () => reject(transaction.error);
+      });
+      database.close();
+    });
+
+    await page.reload();
+    await expect(page).toHaveURL(/\/$/);
+    await expect(page.getByRole('heading', { name: /Buen[oa]s/ })).toBeVisible();
+    await expect(page.locator('[data-hero="month-summary"]')).toContainText(
+      'Saldo total estimado a fin de mes',
+    );
+  });
+
   test('el aviso de almacenamiento sin cifrado es visible', async ({ page }) => {
     await startEmpty(page);
     await page.getByRole('link', { name: 'Ajustes', exact: true }).first().click();

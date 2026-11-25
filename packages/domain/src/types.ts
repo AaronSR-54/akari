@@ -128,6 +128,8 @@ export type Settings = {
   shellMode: ShellMode;
   onboardingCompleted: boolean;
   demoLoaded: boolean;
+  /** Versión del seed de ejemplo; permite refrescar demos antiguas. */
+  demoSeedVersion?: number;
 };
 
 export const defaultSettings: Settings = {

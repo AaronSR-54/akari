@@ -1,7 +1,7 @@
 'use client';
 
 import { formatMinor, type AccountType, type MovementType } from '@akari/domain';
-import type { ReactNode } from 'react';
+import { useId, type CSSProperties, type ReactNode } from 'react';
 import { cn } from './cn.js';
 import { IconArrows } from './icons.js';
 
@@ -68,6 +68,7 @@ export function StatCard({
   tone = 'default',
   size = 'lg',
   className,
+  style,
 }: {
   label: string;
   value: ReactNode;
@@ -75,6 +76,7 @@ export function StatCard({
   tone?: 'default' | 'positive' | 'negative';
   size?: 'sm' | 'md' | 'lg';
   className?: string;
+  style?: CSSProperties;
 }) {
   const valueSize = {
     sm: 'text-ui-24-bold',
@@ -88,6 +90,7 @@ export function StatCard({
   }[tone];
   return (
     <div
+      style={style}
       className={cn(
         'flex h-full flex-col gap-1 rounded-xl border border-border-subtle bg-surface-default p-5',
         className,
@@ -371,6 +374,137 @@ export function ChartBars({
           </span>
         ))}
       </div>
+    </div>
+  );
+}
+
+/** Microserie de gasto con línea y área, en estilo cotización bursátil. */
+export function ChartArea({
+  values,
+  labels,
+  ariaLabel,
+  description,
+  height = 'lg',
+  showLabels = true,
+  tooltip,
+}: {
+  values: number[];
+  labels: string[];
+  ariaLabel: string;
+  description?: string;
+  height?: 'md' | 'lg';
+  showLabels?: boolean;
+  tooltip?: { label: string; value: string; detail?: string };
+}) {
+  const id = useId().replace(/:/g, '');
+  const gradientId = `chart-area-${id}`;
+  const descriptionId = `chart-area-desc-${id}`;
+  const rawMax = values.length ? Math.max(...values) : 0;
+  const rawMin = values.length ? Math.min(...values) : 0;
+  const flat = rawMax === rawMin;
+  const span = rawMax - rawMin || 1;
+  const points = values.map((value, index) => ({
+    x: values.length === 1 ? 100 : (index / (values.length - 1)) * 100,
+    y: flat ? 18 : 34 - ((value - rawMin) / span) * 28,
+  }));
+  const line = points.map(({ x, y }, index) => `${index === 0 ? 'M' : 'L'} ${x} ${y}`).join(' ');
+  const first = points[0];
+  const last = points[points.length - 1];
+  const area = first && last
+    ? `${line} L ${last.x} 38 L ${first.x} 38 Z`
+    : '';
+  const lastTop = last ? (last.y / 40) * 100 : 0;
+  const tooltipAbove = lastTop > 55;
+  return (
+    <div
+      className="flex flex-col gap-2"
+      role="img"
+      aria-label={ariaLabel}
+      aria-describedby={description ? descriptionId : undefined}
+    >
+      <div className={cn('relative w-full', height === 'lg' ? 'h-40' : 'h-32')}>
+        <div className="absolute inset-y-0 left-2 right-2">
+          <svg
+            viewBox="0 0 100 40"
+            preserveAspectRatio="none"
+            className="h-full w-full"
+            aria-hidden="true"
+            focusable="false"
+          >
+            <defs>
+              <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="var(--color-accent-default)" stopOpacity="0.24" />
+                <stop offset="100%" stopColor="var(--color-accent-default)" stopOpacity="0.01" />
+              </linearGradient>
+            </defs>
+            {area ? <path d={area} fill={`url(#${gradientId})`} stroke="none" /> : null}
+            {line ? (
+              <path
+                d={line}
+                fill="none"
+                stroke="var(--color-text-primary)"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                vectorEffect="non-scaling-stroke"
+              />
+            ) : null}
+          </svg>
+          {last ? (
+            <>
+              <span
+                aria-hidden="true"
+                data-chart-point="halo"
+                className="pointer-events-none absolute block h-3.5 w-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-accent-default/20"
+                style={{ left: `${last.x}%`, top: `${lastTop}%` }}
+              />
+              <span
+                aria-hidden="true"
+                data-chart-point="core"
+                className="pointer-events-none absolute block h-2 w-2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-accent-strong ring-2 ring-surface-default"
+                style={{ left: `${last.x}%`, top: `${lastTop}%` }}
+              />
+            </>
+          ) : null}
+        </div>
+        {tooltip && last ? (
+          <div
+            className="pointer-events-none absolute right-2 z-10 max-w-[calc(100%_-_1rem)] rounded-lg bg-surface-inverse px-2.5 py-1.5 shadow-elevation-2"
+            style={
+              tooltipAbove
+                ? { bottom: `calc(${100 - lastTop}% + 12px)` }
+                : { top: `calc(${lastTop}% + 12px)` }
+            }
+          >
+            <span
+              aria-hidden="true"
+              className={cn(
+                'absolute -right-1 h-2 w-2 rotate-45 rounded-[1px] bg-surface-inverse',
+                tooltipAbove ? '-bottom-1' : '-top-1',
+              )}
+            />
+            <p className="text-ui-9 uppercase tracking-wide text-text-inverse">{tooltip.label}</p>
+            <p className="whitespace-nowrap text-ui-12-strong text-text-inverse">{tooltip.value}</p>
+            {tooltip.detail ? (
+              <p className="whitespace-nowrap text-ui-9 text-text-inverse">{tooltip.detail}</p>
+            ) : null}
+          </div>
+        ) : null}
+      </div>
+      {showLabels ? (
+        <div className={cn('flex text-ui-9 text-text-secondary', values.length === 1 && 'justify-end')}>
+          {labels.map((label, index) => (
+            <span key={`${label}-${index}`} className="flex-1 text-center first:text-left last:text-right">
+              {label}
+            </span>
+          ))}
+        </div>
+      ) : null}
+      {description ? (
+        <p id={descriptionId} className="sr-only">
+          {description}
+        </p>
+      ) : null}
     </div>
   );
 }

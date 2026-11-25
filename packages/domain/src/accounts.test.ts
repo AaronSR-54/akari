@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import {
   aggregateBalances,
   calculateAccountBalance,
+  currentMonthMovements,
+  monthExpenseEstimate,
   monthOverMonthExpenses,
   projectMonthEnd,
   upcomingPayments,
@@ -102,6 +104,164 @@ describe('accounts', () => {
     };
     const projected = projectMonthEnd(account(), [], [], [plan], new Date('2026-11-15T12:00:00.000Z'));
     expect(projected.minor).toBe(100000);
+  });
+
+  it('desglosa los movimientos del mes, su saldo y los días transcurridos', () => {
+    const movements = [
+      movement({
+        id: 'd1',
+        date: '2026-11-02',
+        amountMinor: 1000,
+        createdAt: '2026-11-02T08:00:00.000Z',
+      }),
+      movement({
+        id: 'income',
+        type: 'income',
+        date: '2026-11-02',
+        amountMinor: 5000,
+        createdAt: '2026-11-02T09:00:00.000Z',
+      }),
+      movement({
+        id: 'd2',
+        date: '2026-11-02',
+        amountMinor: 500,
+        createdAt: '2026-11-02T10:00:00.000Z',
+      }),
+      movement({ id: 'other-currency', currency: 'USD', date: '2026-11-03', amountMinor: 3000 }),
+      movement({ id: 'next-month', date: '2026-12-01', amountMinor: 9999 }),
+      movement({ id: 'future', date: '2026-11-30', amountMinor: 700 }),
+    ];
+    const month = currentMonthMovements(
+      movements,
+      'EUR',
+      new Date('2026-11-29T12:00:00.000Z'),
+      10000,
+    );
+    expect(month.daysInMonth).toBe(30);
+    expect(month.elapsedDays).toBe(29);
+    expect(month.openingDate).toBe('2026-10-31');
+    expect(month.openingBalanceMinor).toBe(10000);
+    expect(month.days).toHaveLength(30);
+    expect(month.days[0]).toMatchObject({
+      date: '2026-11-01',
+      day: 1,
+      expenseMinor: 0,
+      incomeMinor: 0,
+      netMinor: 0,
+      balanceMinor: 10000,
+      count: 0,
+      elapsed: true,
+    });
+    expect(month.days[1]).toMatchObject({
+      date: '2026-11-02',
+      expenseMinor: 1500,
+      incomeMinor: 5000,
+      netMinor: 3500,
+      balanceMinor: 13500,
+      count: 3,
+      elapsed: true,
+    });
+    expect(month.days[1]?.movements.map((entry) => entry.id)).toEqual(['d1', 'income', 'd2']);
+    expect(month.days[29]).toMatchObject({
+      date: '2026-11-30',
+      expenseMinor: 700,
+      balanceMinor: 12800,
+      elapsed: false,
+    });
+    expect(month.days[28]).toMatchObject({
+      date: '2026-11-29',
+      balanceMinor: 13500,
+      elapsed: true,
+    });
+    expect(month.expenseMinor).toBe(1500);
+    expect(month.incomeMinor).toBe(5000);
+    expect(month.netMinor).toBe(3500);
+    expect(month.count).toBe(3);
+  });
+
+  it('no adelanta al saldo real una nómina fechada a fin de mes', () => {
+    const rent = movement({ id: 'rent', date: '2026-11-02', amountMinor: 85000 });
+    const salary = movement({
+      id: 'salary',
+      type: 'income',
+      date: '2026-11-30',
+      amountMinor: 240000,
+    });
+    const today = new Date('2026-11-29T12:00:00.000Z');
+
+    const month = currentMonthMovements([rent, salary], 'EUR', today, 100000);
+    expect(month.elapsedDays).toBe(29);
+    expect(month.incomeMinor).toBe(0);
+    expect(month.netMinor).toBe(-85000);
+    expect(month.days[28]).toMatchObject({
+      date: '2026-11-29',
+      balanceMinor: 15000,
+      elapsed: true,
+    });
+    expect(month.days[29]).toMatchObject({
+      date: '2026-11-30',
+      incomeMinor: 240000,
+      balanceMinor: 255000,
+      elapsed: false,
+    });
+
+    expect(aggregateBalances([account()], [rent, salary], '2026-11-29')).toEqual([
+      { minor: 15000, currency: 'EUR' },
+    ]);
+    expect(projectMonthEnd(account(), [rent, salary], [], [], today).minor).toBe(255000);
+  });
+
+  it('proyecta la nómina recurrente de fin de mes sin sumarla antes de tiempo', () => {
+    const rent = movement({ id: 'rent', date: '2026-11-02', amountMinor: 85000 });
+    const salary: Recurrence = {
+      id: 'salary-rec',
+      accountId: 'a1',
+      type: 'income',
+      amountMinor: 240000,
+      currency: 'EUR',
+      concept: 'Nómina',
+      category: 'Ingresos',
+      frequency: 'monthly',
+      nextDate: '2026-11-30',
+      createdAt: '2026-01-01T00:00:00.000Z',
+    };
+    const today = new Date('2026-11-29T12:00:00.000Z');
+
+    const month = currentMonthMovements([rent], 'EUR', today, 100000);
+    expect(month.incomeMinor).toBe(0);
+    expect(month.netMinor).toBe(-85000);
+    expect(aggregateBalances([account()], [rent], '2026-11-29')).toEqual([
+      { minor: 15000, currency: 'EUR' },
+    ]);
+    expect(projectMonthEnd(account(), [rent], [salary], [], today).minor).toBe(255000);
+  });
+
+  it('estima el cierre del mes con la media diaria de meses anteriores', () => {
+    const movements = [
+      movement({ id: 'current', date: '2026-11-10', amountMinor: 30000 }),
+      movement({ id: 'prev-1', date: '2026-10-01', amountMinor: 31000 }),
+      movement({ id: 'prev-2', date: '2026-09-01', amountMinor: 30000 }),
+    ];
+    const estimate = monthExpenseEstimate(
+      movements,
+      'EUR',
+      new Date('2026-11-29T12:00:00.000Z'),
+      3,
+    );
+    expect(estimate.monthsWithData).toBe(2);
+    expect(estimate.dailyAverageMinor).toBe(1000);
+    expect(estimate.remainingDays).toBe(1);
+    expect(estimate.estimateMinor).toBe(31000);
+  });
+
+  it('no estima sin meses anteriores con gasto', () => {
+    const estimate = monthExpenseEstimate(
+      [movement({ date: '2026-11-10', amountMinor: 3000 })],
+      'EUR',
+      new Date('2026-11-29T12:00:00.000Z'),
+    );
+    expect(estimate.estimateMinor).toBeNull();
+    expect(estimate.monthsWithData).toBe(0);
   });
 
   it('compara el gasto con el mes anterior', () => {

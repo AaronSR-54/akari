@@ -6,6 +6,7 @@ import { loadDemoDatabase, storageErrorMessage } from '@akari/data';
 import { Banner, Button, Card, Logo, PageContainer, Stack, useToast } from '@akari/ui';
 import { useData } from '../providers';
 import { useSettings } from '../hooks';
+import { appNow } from '../../lib/clock';
 
 export function OnboardingScreen() {
   const router = useRouter();
@@ -28,7 +29,7 @@ export function OnboardingScreen() {
   const startDemo = async () => {
     setBusy('demo');
     try {
-      await loadDemoDatabase(db);
+      await loadDemoDatabase(db, appNow());
       toast({ title: 'Datos de ejemplo cargados', tone: 'success' });
       router.replace('/');
     } catch (startError) {

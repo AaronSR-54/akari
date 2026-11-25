@@ -4,6 +4,7 @@ import {
   createGroup,
   addGroupExpense,
   getGroupSummary,
+  getOverview,
   getQuickAnswers,
   recordMovement,
   settleTransfer,
@@ -147,6 +148,113 @@ describe('services', () => {
     const recurrences = await repositories.recurrences.list();
     expect(recurrences).toHaveLength(1);
     expect(recurrences[0]?.nextDate).toBe('2026-12-07');
+  });
+
+  it('expone la evolución del saldo del mes en el resumen con la divisa de referencia', async () => {
+    const repositories = memoryRepositories();
+    const eur = await createAccount(repositories, {
+      name: 'Cuenta',
+      type: 'personal',
+      currency: 'EUR',
+      initialBalanceMinor: 100000,
+    });
+    const usd = await createAccount(repositories, {
+      name: 'Cuenta USD',
+      type: 'personal',
+      currency: 'USD',
+      initialBalanceMinor: 100000,
+    });
+    await repositories.movements.put({
+      id: 'eur-week',
+      accountId: eur.id,
+      type: 'expense',
+      amountMinor: 1250,
+      currency: 'EUR',
+      date: '2026-11-24',
+      concept: 'Café',
+      category: 'Ocio',
+      createdAt: '2026-11-24T08:00:00.000Z',
+    });
+    await repositories.movements.put({
+      id: 'eur-income',
+      accountId: eur.id,
+      type: 'income',
+      amountMinor: 5000,
+      currency: 'EUR',
+      date: '2026-11-24',
+      concept: 'Nómina',
+      category: 'Ingresos',
+      createdAt: '2026-11-24T09:00:00.000Z',
+    });
+    await repositories.movements.put({
+      id: 'usd-week',
+      accountId: usd.id,
+      type: 'expense',
+      amountMinor: 9999,
+      currency: 'USD',
+      date: '2026-11-24',
+      concept: 'Café USD',
+      category: 'Ocio',
+      createdAt: '2026-11-24T08:00:00.000Z',
+    });
+
+    const overview = await getOverview(repositories, new Date('2026-11-24T12:00:00.000Z'));
+    expect(overview.month.currency).toBe('EUR');
+    expect(overview.month.expenseMinor).toBe(1250);
+    expect(overview.month.incomeMinor).toBe(5000);
+    expect(overview.month.netMinor).toBe(3750);
+    expect(overview.month.count).toBe(2);
+    expect(overview.month.daysInMonth).toBe(30);
+    expect(overview.month.elapsedDays).toBe(24);
+    expect(overview.month.openingDate).toBe('2026-10-31');
+    expect(overview.month.openingBalanceMinor).toBe(100000);
+    expect(overview.month.days[23]).toMatchObject({
+      expenseMinor: 1250,
+      incomeMinor: 5000,
+      balanceMinor: 103750,
+    });
+    expect(overview.month.days[23]?.movements[0]?.concept).toBe('Café');
+    expect(overview.month.estimate.estimateMinor).toBeNull();
+  });
+
+  it('lleva una nómina de fin de mes a la previsión sin adelantarla al saldo real', async () => {
+    const repositories = memoryRepositories();
+    const eur = await createAccount(repositories, {
+      name: 'Cuenta',
+      type: 'personal',
+      currency: 'EUR',
+      initialBalanceMinor: 100000,
+    });
+    await repositories.movements.put({
+      id: 'rent',
+      accountId: eur.id,
+      type: 'expense',
+      amountMinor: 85000,
+      currency: 'EUR',
+      date: '2026-11-02',
+      concept: 'Alquiler',
+      category: 'Vivienda',
+      createdAt: '2026-11-02T08:00:00.000Z',
+    });
+    await repositories.movements.put({
+      id: 'salary',
+      accountId: eur.id,
+      type: 'income',
+      amountMinor: 240000,
+      currency: 'EUR',
+      date: '2026-11-30',
+      concept: 'Nómina',
+      category: 'Ingresos',
+      createdAt: '2026-11-01T08:00:00.000Z',
+    });
+
+    const overview = await getOverview(repositories, new Date('2026-11-29T12:00:00.000Z'));
+    expect(overview.totalBalances).toEqual([{ minor: 15000, currency: 'EUR' }]);
+    expect(overview.balancesByAccount[eur.id]?.minor).toBe(15000);
+    expect(overview.month.incomeMinor).toBe(0);
+    expect(overview.month.netMinor).toBe(-85000);
+    expect(overview.month.days[28]?.balanceMinor).toBe(15000);
+    expect(overview.projections).toEqual([{ minor: 255000, currency: 'EUR' }]);
   });
 
   it('calcula la liquidación y conserva el historial al saldar', async () => {

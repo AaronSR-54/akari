@@ -7,6 +7,7 @@ export * from './segmented.js';
 export * from './fields.js';
 export * from './layout.js';
 export * from './data-display.js';
+export * from './month-balance.js';
 export * from './feedback.js';
 export * from './states.js';
 export * from './theme.js';

@@ -45,6 +45,7 @@ import {
   formatUpdated,
   formatWeekdayLabels,
 } from '../../lib/format';
+import { appNow, appTodayKey } from '../../lib/clock';
 import { accountTypeOptions } from '../../lib/options';
 
 const typeLabel = Object.fromEntries(accountTypeOptions.map((option) => [option.value, option.label]));
@@ -74,8 +75,8 @@ export function AccountDetailScreen({ accountId }: { accountId: string }) {
   }
 
   const { account, movements, plans, projected } = summary;
-  const balance = calculateAccountBalance(account, movements);
-  const month = new Date();
+  const balance = calculateAccountBalance(account, movements, appTodayKey());
+  const month = appNow();
   const monthKey = `${month.getFullYear()}-${String(month.getMonth() + 1).padStart(2, '0')}`;
   const monthMovements = movements.filter((movement) => movement.date.startsWith(monthKey));
   const monthExpense = monthExpenses(movements, month).find((entry) => entry.currency === account.currency);

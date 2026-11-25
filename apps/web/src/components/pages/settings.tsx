@@ -12,6 +12,7 @@ import {
   storageErrorMessage,
   type StorageStatus,
 } from '@akari/data';
+import { appNow } from '../../lib/clock';
 import {
   Badge,
   Banner,
@@ -109,7 +110,7 @@ export function SettingsScreen() {
   const loadDemo = async () => {
     setBusy(true);
     try {
-      await loadDemoDatabase(db);
+      await loadDemoDatabase(db, appNow());
       setConfirm(null);
       toast({ title: 'Datos de ejemplo cargados', tone: 'success' });
       router.replace('/');

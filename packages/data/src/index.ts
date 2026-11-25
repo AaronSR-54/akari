@@ -16,6 +16,7 @@ export {
   type BackupWarning,
 } from './backup.js';
 export {
+  DEMO_SEED_VERSION,
   demoAccounts,
   demoGroupExpenses,
   demoGroups,
