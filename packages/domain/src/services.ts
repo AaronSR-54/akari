@@ -157,6 +157,9 @@ export async function recordMovement(
     }
     if (!input.concept.trim()) throw new ValidationError('El concepto es obligatorio', 'concept');
     validateDate(input.date);
+    if (input.memberId && !account.members?.some((member) => member.id === input.memberId)) {
+      throw new ValidationError('El miembro no pertenece a la cuenta', 'memberId');
+    }
 
     let recurrenceId: string | undefined;
     if (input.repeat) {
@@ -187,6 +190,7 @@ export async function recordMovement(
       concept: input.concept.trim(),
       category: input.category,
       note: input.note,
+      memberId: input.memberId ?? null,
       recurrenceId,
       createdAt: nowIso(),
     };
@@ -215,6 +219,10 @@ export async function updateMovement(
   validateDate(date);
   const concept = (input.concept ?? existing.concept).trim();
   if (!concept) throw new ValidationError('El concepto es obligatorio', 'concept');
+  const memberId = input.memberId !== undefined ? input.memberId : existing.memberId;
+  if (memberId && !account.members?.some((member) => member.id === memberId)) {
+    throw new ValidationError('El miembro no pertenece a la cuenta', 'memberId');
+  }
 
   const movement: Movement = {
     ...existing,
@@ -226,6 +234,7 @@ export async function updateMovement(
     concept,
     category: input.category ?? existing.category,
     note: input.note ?? existing.note,
+    memberId: memberId ?? null,
   };
   await repositories.movements.put(movement);
   return movement;
@@ -264,6 +273,49 @@ export async function registerInstallment(
       ...plan,
       paidInstallments: plan.paidInstallments + 1,
     });
+    return movement;
+  };
+  return repositories.transaction ? repositories.transaction(work) : work();
+}
+
+export async function payRecurrence(
+  repositories: Repositories,
+  recurrenceId: string,
+  input: { date: string; memberId?: string | null; currentMemberName?: string },
+): Promise<Movement> {
+  const work = async (): Promise<Movement> => {
+    const recurrence = await repositories.recurrences.get(recurrenceId);
+    if (!recurrence) throw new NotFoundError('La recurrencia no existe');
+    const account = await repositories.accounts.get(recurrence.accountId);
+    if (!account) throw new ValidationError('La cuenta de la recurrencia no existe', 'accountId');
+    validateDate(input.date);
+    const memberId =
+      input.memberId ??
+      account.members?.find((member) => member.name === input.currentMemberName)?.id ??
+      null;
+    if (memberId && !account.members?.some((member) => member.id === memberId)) {
+      throw new ValidationError('El miembro no pertenece a la cuenta', 'memberId');
+    }
+    const movement: Movement = {
+      id: createId('mov'),
+      accountId: account.id,
+      type: recurrence.type,
+      amountMinor: recurrence.amountMinor,
+      currency: recurrence.currency,
+      date: input.date,
+      concept: recurrence.concept,
+      category: recurrence.category,
+      memberId,
+      recurrenceId: recurrence.id,
+      createdAt: nowIso(),
+    };
+    await repositories.movements.put(movement);
+    const nextDate = addFrequency(recurrence.nextDate, recurrence.frequency);
+    if (recurrence.endDate && nextDate > recurrence.endDate) {
+      await repositories.recurrences.delete(recurrence.id);
+    } else {
+      await repositories.recurrences.put({ ...recurrence, nextDate });
+    }
     return movement;
   };
   return repositories.transaction ? repositories.transaction(work) : work();

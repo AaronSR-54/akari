@@ -1,7 +1,9 @@
 'use client';
 
 import { useLiveQuery } from 'dexie-react-hooks';
+import { useCallback } from 'react';
 import {
+  buildNotifications,
   getGroupSummary,
   getOverview,
   getQuickAnswers,
@@ -14,10 +16,12 @@ import {
   type Recurrence,
   type Settings,
   type Transfer,
+  type AppNotification,
 } from '@akari/domain';
 import { useData } from './providers';
 import { parseDateOnly } from '../lib/format';
 import { appTodayKey } from '../lib/clock';
+import { CURRENT_USER } from '../lib/current-user';
 
 export function useSettings(): Settings | undefined {
   const { repositories, ready } = useData();
@@ -139,6 +143,50 @@ export function useOverview() {
     if (!ready) return undefined;
     return getOverview(repositories, parseDateOnly(key));
   }, [repositories, ready, key]);
+}
+
+export function useNotifications(): AppNotification[] | undefined {
+  const { repositories, ready } = useData();
+  const key = appTodayKey();
+  return useLiveQuery(async () => {
+    if (!ready) return undefined;
+    const [accounts, movements, recurrences, installments, groups, groupExpenses, transfers, settings] =
+      await Promise.all([
+        repositories.accounts.list(),
+        repositories.movements.list(),
+        repositories.recurrences.list(),
+        repositories.installments.list(),
+        repositories.groups.list(),
+        repositories.groupExpenses.list(),
+        repositories.transfers.list(),
+        repositories.settings.get(),
+      ]);
+    return buildNotifications({
+      accounts,
+      movements,
+      recurrences,
+      installments,
+      groups,
+      groupExpenses,
+      transfers,
+      today: parseDateOnly(key),
+      currentMemberName: CURRENT_USER.name,
+      seenIds: settings.seenNotificationIds,
+    });
+  }, [repositories, ready, key]);
+}
+
+export function useMarkNotificationsSeen() {
+  const { repositories } = useData();
+  return useCallback(
+    async (ids: string[]) => {
+      if (ids.length === 0) return;
+      const settings = await repositories.settings.get();
+      const merged = [...new Set([...(settings.seenNotificationIds ?? []), ...ids])].slice(-100);
+      await repositories.settings.update({ seenNotificationIds: merged });
+    },
+    [repositories],
+  );
 }
 
 export function useQuickAnswers() {

@@ -12,7 +12,7 @@ import type { Account, Group, GroupExpense, InstallmentPlan, Movement, Recurrenc
 import type { AkariRepositories } from './repositories.js';
 
 /** Subir esta versión refresca automáticamente las demos antiguas. */
-export const DEMO_SEED_VERSION = 3;
+export const DEMO_SEED_VERSION = 4;
 
 const iso = (date: Date) => format(date, 'yyyy-MM-dd');
 const isoAt = (date: Date) => date.toISOString();
@@ -178,6 +178,7 @@ export function demoMovements(today = new Date()): Movement[] {
       date: iso(subDays(today, 4)),
       concept: 'Compra del piso',
       category: 'Alimentación',
+      memberId: 'demo-mem-ana',
       createdAt: base,
     },
     {
@@ -189,6 +190,7 @@ export function demoMovements(today = new Date()): Movement[] {
       date: current(1),
       concept: 'Aportación mensual',
       category: 'Ingresos',
+      memberId: 'demo-mem-luis',
       createdAt: base,
     },
     {

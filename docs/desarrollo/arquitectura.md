@@ -62,13 +62,13 @@ La app importa `@akari/tokens/css` y usa el preset en `apps/web/tailwind.config.
 Los importes se guardan como enteros en la unidad menor de su divisa (`minor`). Nunca se usa coma flotante para dinero. Las entidades están en `packages/domain/src/types.ts`:
 
 - `Account`: cuenta personal, conjunta o de depósito; saldo inicial, TAE e inclusión en el total.
-- `Movement`: gasto o ingreso; puede enlazar una recurrencia, un plan de plazos o un gasto grupal.
+- `Movement`: gasto o ingreso; puede enlazar una recurrencia, un plan de plazos o un gasto grupal, y guarda el miembro autor cuando la cuenta es conjunta.
 - `Recurrence`: suscripción o ingreso periódico; próxima fecha y fin opcional.
 - `InstallmentPlan`: plan de cuotas con progreso y estado.
 - `Group`, `GroupExpense`, `Transfer`: grupos, repartos y liquidaciones.
 - `Settings`: tema, shell, onboarding y datos de ejemplo.
 
-El esquema Dexie está versionado en `packages/data/src/db.ts`; la versión 2 añade índices compuestos y normaliza ajustes. Las migraciones conservan los datos.
+El esquema Dexie está versionado en `packages/data/src/db.ts`; la versión 2 añade índices compuestos y normaliza ajustes, y la versión 3 incorpora el autor del movimiento sin borrar datos. Las migraciones conservan los datos.
 
 ## Rutas
 
@@ -99,6 +99,7 @@ El esquema Dexie está versionado en `packages/data/src/db.ts`; la versión 2 a�
 - Las barras fijas usan superficies opacas de los tokens (`surface/canvas` en escritorio y `surface/default` en la navegación inferior móvil). No se usan modificadores de opacidad sobre los tokens de color.
 - La cabecera de la variante sidebar muestra el título de la sección como único H1 visible en escritorio y, debajo, su subtítulo (`meta`/`description`); el encabezado del contenido no repite ninguno en `lg`. `actions` y `breadcrumbs` siguen en el contenido. La identidad de la persona se muestra una sola vez, en el pie de la sidebar o en `HeaderNav`; la cabecera no repite el avatar y conserva el buscador y el botón de avisos.
 - El `main` añade 24 px de padding superior (`pt-6`) en todos los breakpoints para separar el primer bloque del contenido del borde inferior de la cabecera.
+- La campana del shell despliega un panel de avisos alimentado por `useNotifications`, que llama al selector puro `buildNotifications` y se refresca con `useLiveQuery`. Al abrirse, el panel difumina el fondo de la página con el mismo desenfoque ligero que las modales y usa una superficie translúcida; muestra en una única lista ordenada por fecha los pagos próximos (con saldo de la cuenta y cobertura), la actividad de cuentas conjuntas (con el autor del movimiento) y las liquidaciones pendientes o recibidas del perfil «Marta». Los movimientos de cuentas conjuntas guardan `memberId`; al abrir el panel se marcan los avisos como vistos en `Settings.seenNotificationIds` y la campana solo cuenta los no vistos. Pulsar un pago registra el movimiento o la cuota; pulsar una cuenta o liquidación navega a su detalle.
 
 ## Pruebas
 

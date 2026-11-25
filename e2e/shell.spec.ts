@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { chooseOption, seedDemo } from './helpers';
+import { chooseOption, seedDemo, startEmpty } from './helpers';
 
 test.describe('shell web', () => {
   test('sidebar, tablet y móvil sin desbordamiento', async ({ page }) => {
@@ -140,6 +140,152 @@ test.describe('shell web', () => {
     await expect(dialog.getByRole('searchbox')).toBeFocused();
     await page.keyboard.press('Escape');
     await expect(dialog).toBeHidden();
+  });
+
+  test('el desplegable muestra una lista única por fecha y limpia el indicador al abrir', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await seedDemo(page);
+
+    const bell = page.getByRole('button', { name: 'Avisos, 6 pendientes' });
+    await expect(bell).toBeVisible();
+    await bell.click();
+
+    const dialog = page.getByRole('dialog', { name: 'Avisos' });
+    await expect(dialog).toBeVisible();
+    const box = await dialog.boundingBox();
+    expect(box?.width ?? 0).toBeGreaterThan(360);
+    expect(box?.width ?? 0).toBeLessThan(520);
+    const bellBox = await page.getByRole('button', { name: /^Avisos/ }).boundingBox();
+    expect(Math.abs((box?.x ?? 0) + (box?.width ?? 0) - ((bellBox?.x ?? 0) + (bellBox?.width ?? 0)))).toBeLessThan(8);
+    await expect(
+      dialog.getByRole('heading', { name: /Pagos próximos|Cuentas compartidas|Liquidaciones/ }),
+    ).toHaveCount(0);
+    const items = dialog.getByRole('listitem');
+    await expect(items).toHaveCount(6);
+    await expect(items.nth(0)).toContainText('Portátil · cuota');
+    await expect(items.nth(1)).toContainText('Ana gastó dinero');
+    await expect(items.nth(2)).toContainText('Debes 20,00');
+    await expect(items.nth(3)).toContainText('Debes 30,00');
+    await expect(items.nth(4)).toContainText('Alquiler');
+    await expect(items.nth(5)).toContainText('Suscripción vídeo');
+    await expect(items.last()).toBeInViewport();
+    const payment = dialog.getByRole('button', { name: /Portátil · cuota/ });
+    await expect(payment).toHaveAttribute('data-tone', 'danger');
+    await expect(payment).toHaveClass(/bg-status-danger-soft/);
+    await expect(payment).toContainText('Vencida');
+    await expect(items.nth(4).getByRole('button')).toHaveClass(/bg-status-info-soft/);
+    await expect(items.nth(5).getByRole('button')).toHaveClass(/bg-status-info-soft/);
+    await expect(payment).toContainText('Saldo');
+    await expect(payment).toContainText('Cuenta diaria');
+    await expect(dialog.getByText('Pagar')).toHaveCount(0);
+
+    const clearedBell = page.getByRole('button', { name: 'Avisos' });
+    await expect(clearedBell).toBeVisible();
+    await expect(clearedBell.locator('[data-notification-count]')).toHaveCount(0);
+
+    await page.keyboard.press('Escape');
+    await expect(dialog).toBeHidden();
+    await expect(clearedBell).toBeFocused();
+  });
+
+  test('paga una suscripción al pulsar su aviso', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await seedDemo(page);
+    await page.getByRole('button', { name: 'Avisos, 6 pendientes' }).click();
+
+    const dialog = page.getByRole('dialog', { name: 'Avisos' });
+    const row = dialog.getByRole('button', { name: /Suscripción vídeo/ });
+    await expect(row).toBeVisible();
+    await row.click();
+    await expect(page.getByText('Pago registrado')).toBeVisible();
+    await expect(dialog.getByRole('button', { name: /Suscripción vídeo/ })).toHaveCount(0);
+
+    await page.keyboard.press('Escape');
+    await page.goto('/movimientos');
+    await expect(page.getByText('Suscripción vídeo').first()).toBeVisible();
+  });
+
+  test('la actividad conjunta muestra al autor y abre la cuenta', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await seedDemo(page);
+    await page.getByRole('button', { name: 'Avisos, 6 pendientes' }).click();
+
+    const dialog = page.getByRole('dialog', { name: 'Avisos' });
+    const activity = dialog.getByRole('link', { name: /Ana gastó dinero/ });
+    await expect(activity).toContainText('Compra del piso');
+    await expect(activity).toContainText('Cuenta conjunta');
+    await activity.click();
+
+    await expect(page).toHaveURL(/\/cuentas\/demo-acc-joint/);
+    await expect(page.getByRole('heading', { name: 'Cuenta conjunta' })).toBeVisible();
+    await expect(page.getByText('Compra del piso').first()).toBeVisible();
+  });
+
+  test('las liquidaciones pendientes abren el grupo', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await seedDemo(page);
+    await page.getByRole('button', { name: 'Avisos, 6 pendientes' }).click();
+
+    const dialog = page.getByRole('dialog', { name: 'Avisos' });
+    await expect(page.getByRole('button', { name: 'Avisos' })).toBeVisible();
+    const settlement = dialog.getByRole('link', { name: /Debes 30,00.* a Ana/ });
+    await expect(settlement).toBeVisible();
+    await expect(dialog.getByRole('link', { name: /Debes 20,00.* a Luis/ })).toBeVisible();
+    await settlement.click();
+
+    await expect(page).toHaveURL(/\/grupos\/demo-grp-flat/);
+    await expect(page.getByRole('heading', { name: 'Piso compartido' })).toBeVisible();
+  });
+
+  test('vuelve a avisar cuando aparece actividad nueva', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await seedDemo(page);
+    await page.getByRole('button', { name: 'Avisos, 6 pendientes' }).click();
+    await expect(page.getByRole('button', { name: 'Avisos' })).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(page.getByRole('dialog', { name: 'Avisos' })).toBeHidden();
+
+    await page.goto('/movimientos/nuevo?cuenta=demo-acc-joint');
+    await page.getByText('Registrado por').waitFor();
+    await page.getByLabel('Importe').fill('10');
+    await page.getByLabel('Concepto').fill('Cena nueva');
+    await page.getByRole('button', { name: 'Guardar movimiento' }).click();
+    await page.waitForURL(/\/movimientos$/);
+
+    await expect(page.getByRole('button', { name: 'Avisos, 1 pendiente' })).toBeVisible();
+  });
+
+  test('el panel de avisos se abre desde la cabecera superior', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await seedDemo(page);
+    await page.goto('/ajustes');
+    await chooseOption(page, 'Navegación de escritorio', 'Header');
+
+    const bells = page.getByRole('button', { name: /^Avisos/ });
+    await expect(bells).toHaveCount(1);
+    await bells.click();
+    const dialog = page.getByRole('dialog', { name: 'Avisos' });
+    await expect(dialog).toBeVisible();
+    await expect(dialog.getByRole('listitem')).toHaveCount(6);
+
+    await page.keyboard.press('Escape');
+    await expect(dialog).toBeHidden();
+    await expect(page.getByRole('button', { name: 'Avisos' })).toBeFocused();
+  });
+
+  test('el panel de avisos muestra su estado vacío sin indicador', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await startEmpty(page);
+
+    const bell = page.getByRole('button', { name: 'Avisos' });
+    await expect(bell).toBeVisible();
+    await expect(bell.locator('[data-notification-count]')).toHaveCount(0);
+    await bell.click();
+
+    const dialog = page.getByRole('dialog', { name: 'Avisos' });
+    await expect(dialog).toBeVisible();
+    await expect(dialog.getByText('No hay avisos')).toBeVisible();
+    await expect(dialog.getByRole('listitem')).toHaveCount(0);
   });
 
   test('la sidebar se expande con hover y foco', async ({ page }) => {

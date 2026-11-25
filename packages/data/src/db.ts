@@ -10,7 +10,7 @@ import type {
   Transfer,
 } from '@akari/domain';
 
-export const SCHEMA_VERSION = 2;
+export const SCHEMA_VERSION = 3;
 
 export class AkariDB extends Dexie {
   accounts!: Table<Account, string>;
@@ -57,6 +57,27 @@ export class AkariDB extends Dexie {
           shellMode: settings.shellMode === 'header' ? 'header' : 'sidebar',
         };
         await transaction.table<Settings>('settings').put(normalized);
+      });
+
+    this.version(3)
+      .stores({
+        accounts: 'id, type, includeInTotal, archivedAt',
+        movements: 'id, accountId, date, type, category, recurrenceId, installmentPlanId, [accountId+date]',
+        recurrences: 'id, accountId, nextDate',
+        installments: 'id, accountId',
+        groups: 'id',
+        groupExpenses: 'id, groupId, date, [groupId+date]',
+        transfers: 'id, groupId, status',
+        settings: 'id',
+      })
+      .upgrade(async (transaction) => {
+        // v3 añade el autor del movimiento; los registros previos quedan sin atribuir.
+        await transaction
+          .table<Movement>('movements')
+          .toCollection()
+          .modify((movement) => {
+            if (movement.memberId === undefined) movement.memberId = null;
+          });
       });
   }
 }

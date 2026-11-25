@@ -49,6 +49,17 @@ describe('migrations', () => {
       onboardingCompleted: true,
       demoLoaded: false,
     });
+    await legacy.table('movements').put({
+      id: 'mov-1',
+      accountId: 'acc-1',
+      type: 'expense',
+      amountMinor: 500,
+      currency: 'EUR',
+      date: '2026-01-02',
+      concept: 'Cena',
+      category: 'Ocio',
+      createdAt: '2026-01-02T00:00:00.000Z',
+    });
     legacy.close();
 
     const migrated = new AkariDB(name);
@@ -59,6 +70,10 @@ describe('migrations', () => {
     const settings = await migrated.settings.get('app');
     expect(settings?.theme).toBe('system');
     expect(settings?.shellMode).toBe('sidebar');
-    expect(migrated.verno).toBe(2);
+    const movements = await migrated.movements.toArray();
+    expect(movements).toHaveLength(1);
+    expect(movements[0]?.concept).toBe('Cena');
+    expect(movements[0]?.memberId).toBeNull();
+    expect(migrated.verno).toBe(3);
   });
 });

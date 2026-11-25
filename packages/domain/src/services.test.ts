@@ -6,6 +6,7 @@ import {
   getGroupSummary,
   getOverview,
   getQuickAnswers,
+  payRecurrence,
   recordMovement,
   settleTransfer,
   updateGroupRole,
@@ -148,6 +149,107 @@ describe('services', () => {
     const recurrences = await repositories.recurrences.list();
     expect(recurrences).toHaveLength(1);
     expect(recurrences[0]?.nextDate).toBe('2026-12-07');
+  });
+
+  it('guarda el autor del movimiento en cuentas conjuntas', async () => {
+    const repositories = memoryRepositories();
+    const joint = await createAccount(repositories, {
+      name: 'Cuenta conjunta',
+      type: 'joint',
+      currency: 'EUR',
+      initialBalanceMinor: 1000,
+      members: [{ id: 'm-ana', name: 'Ana', role: 'admin' }],
+    });
+    const movement = await recordMovement(repositories, {
+      accountId: joint.id,
+      type: 'expense',
+      amountMinor: 1000,
+      date: '2026-11-07',
+      concept: 'Compra',
+      category: 'Alimentación',
+      memberId: 'm-ana',
+    });
+    expect(movement.memberId).toBe('m-ana');
+
+    await expect(
+      recordMovement(repositories, {
+        accountId: joint.id,
+        type: 'expense',
+        amountMinor: 1000,
+        date: '2026-11-07',
+        concept: 'Compra',
+        category: 'Alimentación',
+        memberId: 'm-otra',
+      }),
+    ).rejects.toBeInstanceOf(ValidationError);
+
+    const personal = await createAccount(repositories, {
+      name: 'Personal',
+      type: 'personal',
+      currency: 'EUR',
+      initialBalanceMinor: 1000,
+    });
+    const plain = await recordMovement(repositories, {
+      accountId: personal.id,
+      type: 'income',
+      amountMinor: 1000,
+      date: '2026-11-07',
+      concept: 'Ingreso',
+      category: 'Ingresos',
+    });
+    expect(plain.memberId).toBeNull();
+  });
+
+  it('paga una recurrencia y avanza su próxima fecha', async () => {
+    const repositories = memoryRepositories();
+    const account = await createAccount(repositories, {
+      name: 'Cuenta',
+      type: 'personal',
+      currency: 'EUR',
+      initialBalanceMinor: 1000,
+    });
+    await repositories.recurrences.put({
+      id: 'rec-1',
+      accountId: account.id,
+      type: 'expense',
+      amountMinor: 1299,
+      currency: 'EUR',
+      concept: 'Vídeo',
+      category: 'Suscripciones',
+      frequency: 'monthly',
+      nextDate: '2026-11-20',
+      createdAt: '2026-10-01T00:00:00.000Z',
+    });
+    const movement = await payRecurrence(repositories, 'rec-1', { date: '2026-11-29' });
+    expect(movement.concept).toBe('Vídeo');
+    expect(movement.recurrenceId).toBe('rec-1');
+    const recurrence = await repositories.recurrences.get('rec-1');
+    expect(recurrence?.nextDate).toBe('2026-12-20');
+  });
+
+  it('elimina la recurrencia cuando el pago supera su fecha de fin', async () => {
+    const repositories = memoryRepositories();
+    const account = await createAccount(repositories, {
+      name: 'Cuenta',
+      type: 'personal',
+      currency: 'EUR',
+      initialBalanceMinor: 1000,
+    });
+    await repositories.recurrences.put({
+      id: 'rec-end',
+      accountId: account.id,
+      type: 'expense',
+      amountMinor: 1000,
+      currency: 'EUR',
+      concept: 'Temporal',
+      category: 'Ocio',
+      frequency: 'monthly',
+      nextDate: '2026-11-29',
+      endDate: '2026-11-30',
+      createdAt: '2026-10-01T00:00:00.000Z',
+    });
+    await payRecurrence(repositories, 'rec-end', { date: '2026-11-29' });
+    expect(await repositories.recurrences.get('rec-end')).toBeUndefined();
   });
 
   it('expone la evolución del saldo del mes en el resumen con la divisa de referencia', async () => {

@@ -104,6 +104,25 @@ export function IconBell(props: IconProps) {
   );
 }
 
+export function IconWarning(props: IconProps) {
+  return (
+    <svg {...baseProps(props)}>
+      <path d="M12 4 2.5 20h19L12 4Z" />
+      <path d="M12 10v4" />
+      <path d="M12 17.5v.01" />
+    </svg>
+  );
+}
+
+export function IconClock(props: IconProps) {
+  return (
+    <svg {...baseProps(props)}>
+      <circle cx="12" cy="12" r="8" />
+      <path d="M12 8v4.5l3 1.5" />
+    </svg>
+  );
+}
+
 export function IconChevronLeft(props: IconProps) {
   return (
     <svg {...baseProps(props)}>
@@ -142,6 +161,8 @@ export const icons = {
   insights: IconInsights,
   search: IconSearch,
   bell: IconBell,
+  warning: IconWarning,
+  clock: IconClock,
   sliders: IconSliders,
 };
 

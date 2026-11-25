@@ -48,8 +48,10 @@ Este documento registra las diferencias entre el diseño aprobado (`docs/diseno/
 ## 7. Notificaciones y avisos
 
 - **Diseño:** bandeja de avisos (M15) y notificaciones push.
-- **Implementación:** banner de próximo pago/cuota vencida en el resumen y recurrencias visibles en el detalle de cuenta. Sin bandeja ni push.
-- **Cierre:** app móvil + backend de notificaciones.
+- **Implementación:** panel desplegable en la web, anclado a la campana del shell, con pagos próximos y cuotas vencidas (saldo de la cuenta y cobertura), actividad reciente de cuentas conjuntas con autor, y liquidaciones pendientes o recibidas del perfil «Marta». Pulsar un pago registra el gasto o la cuota; pulsar una cuenta o liquidación abre su detalle. Los movimientos de cuentas conjuntas guardan su autor (`memberId`, esquema v3) y la campana cuenta solo avisos no vistos, que se marcan al abrir el panel. Sin push.
+- **Motivo:** el diseño congelado no define el panel web; se implementa con el contenido que ya promete la spec de finanzas personales y la atribución local disponible.
+- **Consecuencia:** no hay identidad real (el perfil es «Marta»), no se avisa de cuentas personales o depósitos, no hay estado de leído por aviso individual y las liquidaciones solo cubren grupos donde Marta es miembro. El pago se ejecuta con un clic y sin confirmación; se compensa con toast y actualización en vivo.
+- **Cierre:** app móvil + backend de notificaciones para push, identidad y bandeja nativa.
 
 ## 8. Fechas
 
@@ -73,7 +75,7 @@ Este documento registra las diferencias entre el diseño aprobado (`docs/diseno/
 
 ## 11. Pantallas no incluidas en esta entrega
 
-Quedan fuera, además de las superficies nativas: la creación de planes de plazos desde la UI (se muestran y registran cuotas sobre planes existentes), la bandeja de avisos, la gestión de invitaciones y la red de amistades. La app móvil las abordará junto con su cambio de implementación.
+Quedan fuera, además de las superficies nativas: la creación de planes de plazos desde la UI (se muestran y registran cuotas sobre planes existentes), el panel de avisos, la gestión de invitaciones y la red de amistades. La app móvil las abordará junto con su cambio de implementación.
 
 ## 12. Hero del resumen (change `rediseno-dashboard-hero`)
 

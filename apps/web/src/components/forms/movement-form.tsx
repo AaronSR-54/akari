@@ -29,6 +29,14 @@ import { useData } from '../providers';
 import { frequencyOptions, movementCategoryOptions } from '../../lib/options';
 import { errorMessage } from '../../lib/format';
 import { appTodayKey } from '../../lib/clock';
+import { CURRENT_USER } from '../../lib/current-user';
+
+function defaultMemberFor(account: Account | undefined): string | null {
+  const members = account?.members ?? [];
+  return (
+    members.find((member) => member.name === CURRENT_USER.name)?.id ?? members[0]?.id ?? null
+  );
+}
 
 export function MovementForm({
   accounts,
@@ -45,8 +53,10 @@ export function MovementForm({
   const { repositories } = useData();
   const { toast } = useToast();
   const [type, setType] = useState<MovementType>(movement?.type ?? defaultType);
-  const [accountId, setAccountId] = useState(
-    movement?.accountId ?? defaultAccountId ?? accounts[0]?.id ?? '',
+  const initialAccountId = movement?.accountId ?? defaultAccountId ?? accounts[0]?.id ?? '';
+  const [accountId, setAccountId] = useState(initialAccountId);
+  const [memberId, setMemberId] = useState<string | null>(
+    movement?.memberId ?? defaultMemberFor(accounts.find((item) => item.id === initialAccountId)),
   );
   const [amount, setAmount] = useState(
     movement ? decimalString(money(movement.amountMinor, movement.currency)).replace('.', ',') : '',
@@ -60,15 +70,26 @@ export function MovementForm({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   const account = accounts.find((candidate) => candidate.id === accountId);
+  const members = account?.members ?? [];
 
   if (accounts.length === 0) {
     return null;
   }
 
+  const changeAccount = (value: string) => {
+    setAccountId(value);
+    setMemberId(
+      movement?.accountId === value
+        ? (movement.memberId ?? null)
+        : defaultMemberFor(accounts.find((candidate) => candidate.id === value)),
+    );
+  };
+
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
     const nextErrors: Record<string, string> = {};
     if (!accountId) nextErrors.accountId = 'Selecciona una cuenta';
+    if (members.length > 0 && !memberId) nextErrors.memberId = 'Selecciona un miembro';
     if (!concept.trim()) nextErrors.concept = 'El concepto es obligatorio';
     const minor = parseAmountToMinor(amount, account?.currency ?? 'EUR');
     if (minor === null) nextErrors.amount = 'Introduce un importe válido';
@@ -87,6 +108,7 @@ export function MovementForm({
           concept,
           category,
           note,
+          memberId: members.length > 0 ? memberId : null,
         });
       } else {
         await recordMovement(repositories, {
@@ -97,6 +119,7 @@ export function MovementForm({
           concept,
           category,
           note,
+          memberId: members.length > 0 ? memberId : null,
           repeat: repeat ? { frequency } : null,
         });
       }
@@ -137,11 +160,21 @@ export function MovementForm({
           <SelectField
             label="Cuenta"
             value={accountId}
-            onValueChange={setAccountId}
+            onValueChange={changeAccount}
             options={accounts.map((item) => ({ value: item.id, label: item.name }))}
             error={errors.accountId}
             required
           />
+          {members.length > 0 ? (
+            <SelectField
+              label="Registrado por"
+              value={memberId ?? ''}
+              onValueChange={setMemberId}
+              options={members.map((member) => ({ value: member.id, label: member.name }))}
+              error={errors.memberId}
+              required
+            />
+          ) : null}
           <TextField
             label="Concepto"
             value={concept}
