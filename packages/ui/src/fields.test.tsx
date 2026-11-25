@@ -65,6 +65,22 @@ describe('fields', () => {
     expect(screen.getByRole('checkbox', { name: 'Acepto' })).toBeInTheDocument();
   });
 
+  it('muestra el icono de cada opción y del valor seleccionado', async () => {
+    const user = userEvent.setup();
+    const options = [
+      { value: 'a', label: 'Opción A', icon: <span data-testid="icono-a" /> },
+      { value: 'b', label: 'Opción B', icon: <span data-testid="icono-b" /> },
+    ];
+    render(<SelectField label="Banco" value="a" onValueChange={() => undefined} options={options} />);
+    const trigger = screen.getByRole('combobox', { name: 'Banco' });
+    expect(trigger.querySelector('[data-testid="icono-a"]')).toBeInTheDocument();
+
+    await user.click(trigger);
+    const option = screen.getByRole('option', { name: 'Opción B' });
+    expect(option.querySelector('[data-testid="icono-b"]')).toBeInTheDocument();
+    expect(option).toHaveTextContent('Opción B');
+  });
+
   it('abre un panel propio, elige una opción y lo cierra sin select nativo', async () => {
     const user = userEvent.setup();
     const { container } = render(<SelectHarness />);

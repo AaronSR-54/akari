@@ -32,6 +32,11 @@ describe('lifecycle', () => {
     const accounts = await repositories.accounts.list();
     const movements = await repositories.movements.list();
     const totals = aggregateBalances(accounts, movements);
+    expect(accounts.map((account) => account.bankId).sort()).toEqual([
+      'bbva',
+      'caixabank',
+      'santander',
+    ]);
     expect(totals.find((entry) => entry.currency === 'EUR')?.minor).toBe(1587801);
     expect(movements.every((movement) => /^\d{4}-\d{2}-\d{2}$/.test(movement.date))).toBe(true);
     const demoWeek = new Set(

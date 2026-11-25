@@ -1,3 +1,5 @@
+import type { BankId } from './banks.js';
+
 export type AccountType = 'personal' | 'joint' | 'deposit';
 export type MovementType = 'expense' | 'income';
 export type Frequency = 'weekly' | 'monthly' | 'yearly';
@@ -20,6 +22,8 @@ export type Account = {
   currency: string;
   initialBalanceMinor: number;
   taeBps?: number | null;
+  /** Banco del catálogo local; ausente en cuentas creadas antes de este campo. */
+  bankId?: BankId | null;
   includeInTotal: boolean;
   members?: Member[];
   archivedAt?: string | null;
@@ -149,6 +153,7 @@ export type AccountInput = {
   currency: string;
   initialBalanceMinor: number;
   taeBps?: number | null;
+  bankId?: BankId | null;
   includeInTotal?: boolean;
   members?: Member[];
 };

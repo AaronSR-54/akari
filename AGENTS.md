@@ -27,7 +27,7 @@ Instrucciones para agentes que trabajen en este repositorio.
 
 **Capacidades actuales.** Onboarding, cuentas (alta/edición/archivo), movimientos y recurrencias, planes de cuotas, resumen, preguntas rápidas, grupos con reparto (`equal`/`percentage`/`fixed`) y liquidación mínima, ajustes (tema y shell), seed, copia/restauración JSON sin cifrar y reset.
 
-**Fuentes de verdad.** El diseño visual vive en `docs/diseno/` + `design/` y está **congelado**: ningún change de OpenSpec lo modifica (ver «Diseño congelado»). Comportamiento: `openspec/specs/producto/`. Arquitectura, convenciones, mapa diseño→código y desviaciones: `docs/desarrollo/`. Rutas y shell: `docs/desarrollo/arquitectura.md`.
+**Fuentes de verdad.** El **código es la fuente de verdad** tanto para el comportamiento como para lo visual; se puede mejorar la interfaz directamente en código. `docs/diseno/` y `design/` son referencia histórica, ya no son bloqueantes (ver «Código como fuente de verdad visual»). Comportamiento: `openspec/specs/producto/`. Arquitectura, convenciones, mapa diseño→código y desviaciones: `docs/desarrollo/`. Rutas y shell: `docs/desarrollo/arquitectura.md`.
 
 **Verificación.** Antes de dar algo por terminado: `npm run typecheck`, `npm run lint`, `npm test` y `npm run build`. Si cambia una pantalla o un flujo, añade o actualiza E2E (`npm run e2e`).
 
@@ -39,16 +39,16 @@ Instrucciones para agentes que trabajen en este repositorio.
 - El código es de un solo uso por sesión: si la sesión cae o cambia el host, vuelve a pedir uno nuevo en lugar de reintentar con el anterior.
 - Los detalles de la sesión vigente (host, archivo, enlace de invitación) se anotan en `docs/diseno/estado.md`, pero el agente no los usa como sustituto del código que le entregue el usuario.
 
-## Diseño congelado: OpenSpec va directo a código
+## Código como fuente de verdad visual
 
-La fase de diseño está **parada**. Los changes de OpenSpec se dedican solo a comportamiento, código, pruebas y documentación técnica; no producen ni actualizan diseño.
+El archivo de diseño (Figma/FigCraft) se ha quedado obsoleto y **no bloquea** la implementación. La apariencia de la app se decide y se mejora en el código; `docs/diseno/`, `design/` y `openspec/specs/diseno/*` son referencia histórica, no una puerta de aprobación.
 
-- **No se tocan** `docs/diseno/`, `design/`, FigCraft ni `openspec/specs/diseno/*`. No son entregables de ningún change y no se reescriben «para alinear» con lo implementado.
-- Un change se redacta e implementa con código, pruebas, specs de comportamiento (`openspec/specs/producto/*`) y documentación en `docs/desarrollo/`.
-- Si el código se separa del diseño aprobado, no se corrige el diseño: se registra la desviación en `docs/desarrollo/desviaciones.md` y se continúa con el código.
+- Un change se redacta e implementa con código, pruebas, specs de comportamiento (`openspec/specs/producto/*`) y documentación en `docs/desarrollo/`. Las mejoras visuales se hacen en el código sin esperar a actualizar Figma.
+- **No se editan en el flujo de changes** `docs/diseno/`, `design/` ni `openspec/specs/diseno/*`: no son entregables y no se reescriben «para alinear» con lo implementado.
+- Si conviene dejar constancia de que el código se separó de la referencia histórica, se anota en `docs/desarrollo/desviaciones.md`; ya no es un requisito para seguir adelante.
 - No abras ni consultes FigCraft para un change. Solo se usa si el usuario lo pide explícitamente y entrega un código de sesión live (ver «FigCraft (MCP)»).
-- La rama y la PR de un change no incluyen cambios en `docs/diseno/`, `design/` ni `openspec/specs/diseno/*`. Si aparecen en el working tree, déjalos fuera.
-- Solo el usuario puede reabrir la fase de diseño; hasta entonces, cualquier propuesta visual se limita a una nota en `docs/desarrollo/desviaciones.md`.
+- La rama y la PR de un change no incluyen cambios en esos directorios. Si aparecen en el working tree, déjalos fuera.
+- El usuario puede pedir en cualquier momento que se vuelva a usar la fase de diseño; mientras no lo pida, manda el código.
 
 ## Flujo colaborativo: cola, claim y worktrees
 
@@ -144,6 +144,6 @@ Antes de escribir en Kan, ejecuta `node scripts/kan-sync.mjs whoami`: imprime el
 - Revisa `git status` antes de añadir: nunca subas `.env`, credenciales ni artefactos ignorados.
 - Un change = una rama = una PR. No reutilices la rama de otro change.
 - Ningún change se abre, implementa ni archiva en `main`: usa el worktree del claim.
-- No incluyas `docs/diseno/`, `design/` ni `openspec/specs/diseno/*`: el diseño está congelado.
+- No incluyas `docs/diseno/`, `design/` ni `openspec/specs/diseno/*`: son referencia histórica y no se tocan en el flujo de changes.
 - Si `gh` falla, deja la rama subida y reporta el error junto con el comando exacto para crear la PR a mano.
 - Nunca commitees `.env`, el token, correos ni datos personales. `workflow.json` y `kan.config.json` no contienen secretos.

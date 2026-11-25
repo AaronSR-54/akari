@@ -39,6 +39,7 @@ import { useData } from '../../components/providers';
 import { ActionLink } from '../../components/action-link';
 import { PageSkeleton } from '../../components/page-skeleton';
 import { MovementDetailDialog } from '../../components/movement-detail-dialog';
+import { BankIcon } from '../../components/bank-icon';
 import {
   errorMessage,
   formatLongDate,
@@ -234,6 +235,8 @@ export function AccountDetailScreen({ accountId }: { accountId: string }) {
                       amountMinor={movement.amountMinor}
                       currency={movement.currency}
                       type={movement.type}
+                      icon={<BankIcon bankId={account.bankId} />}
+                      iconTone="plain"
                       onClick={() => setDetailId(movement.id)}
                     />
                   ))}

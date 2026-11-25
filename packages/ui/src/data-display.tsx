@@ -158,6 +158,8 @@ export function MovementRow({
   type,
   accountName,
   compact = false,
+  icon,
+  iconTone = 'type',
   onClick,
   action,
 }: {
@@ -169,6 +171,10 @@ export function MovementRow({
   type: MovementType;
   accountName?: string;
   compact?: boolean;
+  /** Distintivo opcional (por ejemplo, el banco de la cuenta origen). `null` lo oculta. */
+  icon?: ReactNode | null;
+  /** `plain` deja solo el distintivo, sin el color que indica gasto o ingreso. */
+  iconTone?: 'type' | 'plain';
   onClick?: () => void;
   action?: ReactNode;
 }) {
@@ -179,12 +185,13 @@ export function MovementRow({
         className={cn(
           'inline-flex shrink-0 items-center justify-center rounded-full',
           compact ? 'h-7 w-7' : 'h-9 w-9',
-          type === 'income'
-            ? 'bg-status-positive-soft text-status-positive-text'
-            : 'bg-surface-sunken text-text-secondary',
+          iconTone === 'type' &&
+            (type === 'income'
+              ? 'bg-status-positive-soft text-status-positive-text'
+              : 'bg-surface-sunken text-text-secondary'),
         )}
       >
-        <IconArrows size={compact ? 16 : 20} />
+        {icon === undefined ? <IconArrows size={compact ? 16 : 20} /> : icon}
       </span>
       <span className="min-w-0 flex-1">
         <span className="block truncate text-ui-13-strong text-text-primary">{concept}</span>

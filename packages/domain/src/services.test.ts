@@ -8,9 +8,11 @@ import {
   getQuickAnswers,
   recordMovement,
   settleTransfer,
+  updateAccount,
   updateGroupRole,
   updateProfileName,
   ValidationError,
+  type BankId,
   type Group,
   type InstallmentPlan,
   type Movement,
@@ -126,6 +128,50 @@ describe('services', () => {
       initialBalanceMinor: 1000,
     });
     expect(account.currency).toBe('EUR');
+  });
+
+  it('guarda el banco del catálogo, rechaza uno desconocido y permite omitirlo', async () => {
+    const repositories = memoryRepositories();
+    const withBank = await createAccount(repositories, {
+      name: 'Nómina',
+      type: 'personal',
+      currency: 'EUR',
+      initialBalanceMinor: 1000,
+      bankId: 'bbva',
+    });
+    expect(withBank.bankId).toBe('bbva');
+
+    const withoutBank = await createAccount(repositories, {
+      name: 'Ahorros',
+      type: 'personal',
+      currency: 'EUR',
+      initialBalanceMinor: 1000,
+    });
+    expect(withoutBank.bankId).toBeNull();
+
+    await expect(
+      createAccount(repositories, {
+        name: 'Inventada',
+        type: 'personal',
+        currency: 'EUR',
+        initialBalanceMinor: 1000,
+        bankId: 'inexistente' as BankId,
+      }),
+    ).rejects.toBeInstanceOf(ValidationError);
+  });
+
+  it('cambia y limpia el banco al editar una cuenta', async () => {
+    const repositories = memoryRepositories();
+    const account = await createAccount(repositories, {
+      name: 'Nómina',
+      type: 'personal',
+      currency: 'EUR',
+      initialBalanceMinor: 1000,
+      bankId: 'santander',
+    });
+    expect((await updateAccount(repositories, account.id, { bankId: 'cash' })).bankId).toBe('cash');
+    expect((await updateAccount(repositories, account.id, { bankId: null })).bankId).toBeNull();
+    expect((await updateAccount(repositories, account.id, { name: 'Renombrada' })).bankId).toBeNull();
   });
 
   it('registra movimientos y crea la recurrencia cuando se repite', async () => {

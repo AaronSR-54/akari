@@ -1,6 +1,6 @@
 # Arquitectura
 
-Akari es un monorepo con una aplicación web local-first y paquetes reutilizables. El diseño visual vive en `design/` y `docs/diseno/`; el contrato de comportamiento vive en `openspec/specs/`; el código implementa ambos.
+Akari es un monorepo con una aplicación web local-first y paquetes reutilizables. El código es la fuente de verdad para el comportamiento y para lo visual: la interfaz se mejora directamente en código. `design/` y `docs/diseno/` son referencia histórica y no bloquean los cambios; el contrato de comportamiento viviente está en `openspec/specs/producto/`.
 
 ## Estructura
 
@@ -61,7 +61,7 @@ La app importa `@akari/tokens/css` y usa el preset en `apps/web/tailwind.config.
 
 Los importes se guardan como enteros en la unidad menor de su divisa (`minor`). Nunca se usa coma flotante para dinero. Las entidades están en `packages/domain/src/types.ts`:
 
-- `Account`: cuenta personal, conjunta o de depósito; saldo inicial, TAE e inclusión en el total.
+- `Account`: cuenta personal, conjunta o de depósito; saldo inicial, TAE e inclusión en el total. Su `bankId` es opcional y apunta al catálogo `bankCatalog` de `packages/domain/src/banks.ts`; los iconos se sirven desde `apps/web/public/banks/`.
 - `Movement`: gasto o ingreso; puede enlazar una recurrencia, un plan de plazos o un gasto grupal.
 - `Recurrence`: suscripción o ingreso periódico; próxima fecha y fin opcional.
 - `InstallmentPlan`: plan de cuotas con progreso y estado.
@@ -112,6 +112,7 @@ El alta desde `/movimientos` y la edición de un movimiento comparten un modal q
 
 ## Documentos relacionados
 
+- [Iconos de bancos](./iconos-bancos.md)
 - [Puesta en marcha](./puesta-en-marcha.md)
 - [Convenciones](./convenciones.md)
 - [Mapa diseño → código](./mapa-diseno-codigo.md)
