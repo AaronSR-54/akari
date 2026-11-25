@@ -66,11 +66,18 @@ test.describe('cuentas y movimientos', () => {
     await expect(page.getByText('Alquiler')).toHaveCount(0);
 
     await page.getByRole('group', { name: 'Tipo de movimiento' }).getByRole('button', { name: 'Todos' }).click();
-    await page.getByRole('button', { name: 'Editar' }).first().click();
+    await expect(page.getByRole('button', { name: 'Editar' })).toHaveCount(0);
+    await visible(page, 'Cena con amigos').click();
+    const detail = page.getByRole('dialog', { name: 'Cena con amigos' });
+    await expect(detail).toBeVisible();
+    await detail.getByRole('button', { name: 'Editar' }).click();
     const dialog = page.getByRole('dialog', { name: 'Editar movimiento' });
     await expect(dialog).toBeVisible();
     await dialog.getByLabel('Concepto').fill('Suscripción música');
     await dialog.getByRole('button', { name: 'Guardar' }).click();
+    const updated = page.getByRole('dialog', { name: 'Suscripción música' });
+    await expect(updated).toBeVisible();
+    await updated.getByRole('button', { name: 'Cerrar' }).click();
     await expect(visible(page, 'Suscripción música')).toBeVisible();
 
     if (page.viewportSize()!.width >= 768) {
