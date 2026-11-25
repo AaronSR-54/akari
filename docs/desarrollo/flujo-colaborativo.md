@@ -4,7 +4,7 @@ Este documento describe cómo varias personas —o varias sesiones de OpenCode�
 
 ## Requisitos
 
-- Node.js ≥ 20.9 y `npm`.
+- Node.js ≥ 20.9 y `npm` para el runtime; la CI usa Node 24 LTS porque `jsdom 31`/`undici 8` requieren ≥22.19.
 - Un `.env` en el checkout principal con `kan_API_KEY` y, si quieres una identidad concreta, `kan_CURRENT_USER`. Nunca se commitea.
 - `kan.config.json` versionado con la URL de Kan, el tablero y las listas `todo`, `inProgress` y `done`. `review` es opcional.
 - `gh` autenticado para abrir PRs y comprobar el estado de una PR al liberar un claim.

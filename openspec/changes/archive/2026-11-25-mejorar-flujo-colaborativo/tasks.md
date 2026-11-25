@@ -34,7 +34,7 @@
 
 ## 5. CI, plantilla de PR y puertos paralelos
 
-- [x] 5.1 Crear `.github/workflows/ci.yml` con los jobs `verify` y `e2e`, Node 20, `npm ci`, permisos de solo lectura, concurrencia cancelable y artefactos de E2E en fallo; verificar la sintaxis y, tras publicar una rama, que ambos checks aparecen en la PR.
+- [x] 5.1 Crear `.github/workflows/ci.yml` con los jobs `verify` y `e2e`, Node 24, `npm ci`, permisos de solo lectura, concurrencia cancelable y artefactos de E2E en fallo; verificar la sintaxis y, tras publicar una rama, que ambos checks aparecen en la PR.
 - [x] 5.2 Crear `.github/pull_request_template.md` con change id, tarjetas, resumen, deltas de specs, verificaciones, diseño congelado, alcance del commit y agrupación; verificar que `pr-body` genera un borrador compatible con la plantilla.
 - [x] 5.3 Hacer configurable el puerto de E2E con `E2E_PORT` en `playwright.config.ts`, manteniendo 3100 por defecto; verificar una ejecución con el valor por defecto y otra con un puerto alternativo sin colisión.
 - [x] 5.4 Implementar `scripts/worktree-ports.mjs` y los scripts `dev:worktree` y `e2e:worktree`: leer o crear `.opsx/ports.json`, comprobar el puerto, regenerar tokens en desarrollo, lanzar Next o Playwright con el puerto correcto y negarse a lanzar E2E si el servidor de desarrollo sigue activo en el mismo worktree; verificar que `dev:worktree` imprime la URL y que `e2e:worktree` usa el `E2E_PORT` asignado.

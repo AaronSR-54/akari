@@ -151,8 +151,8 @@ En un worktree, `.env` no se copia ni se enlaza; se lee del checkout principal. 
 
 `.github/workflows/ci.yml` se ejecuta en `pull_request` hacia `main` y en `push` a `main`, con permisos de solo lectura y concurrencia cancelable:
 
-- `verify`: Node 20, `npm ci`, `typecheck`, `lint`, `test`, `build`.
-- `e2e`: Node 20, `npm ci`, Chromium de Playwright, `npm run e2e`, artefactos de traza e informe si falla.
+- `verify`: Node 24 LTS (jsdom 31/undici 8 requieren ≥22.19), `npm ci`, `typecheck`, `lint`, `test`, `build`.
+- `e2e`: Node 24 LTS, `npm ci`, Chromium de Playwright, `npm run e2e`, artefactos de traza e informe si falla.
 
 La protección de `main` (checks obligatorios, revisión, rama actualizada, sin force push, sin push directo) no se puede versionar como código; se documenta con los comandos de `gh api` y se configura una vez por el administrador. La plantilla de PR recuerda el alcance, las tarjetas, los deltas de specs, las verificaciones, el diseño congelado y la regla «un change = una rama = una PR».
 
