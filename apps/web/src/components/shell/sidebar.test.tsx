@@ -1,8 +1,11 @@
 'use client';
 
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import { DesktopHeader } from './sidebar';
+
+vi.mock('next/navigation', () => ({ usePathname: () => '/' }));
+
+import { DesktopHeader, HeaderNav, MobileTopBar, Sidebar, TabletHeader } from './sidebar';
 
 describe('DesktopHeader', () => {
   it('muestra título y subtítulo con buscador y avisos', () => {
@@ -24,5 +27,43 @@ describe('DesktopHeader', () => {
     render(<DesktopHeader title="Grupos" meta="" onOpenSearch={vi.fn()} />);
     expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);
     expect(screen.queryByText(/domingo/i)).toBeNull();
+  });
+});
+
+describe('tamaños unificados de la navegación', () => {
+  it('la sidebar usa logotipo M, ítems h-11 y avatar md', () => {
+    render(<Sidebar pinned={false} onPinnedChange={vi.fn()} />);
+    const aside = screen.getByRole('navigation', { name: 'Navegación principal' });
+    fireEvent.mouseEnter(aside);
+
+    expect(aside.className).toContain('fixed');
+    expect(screen.getByRole('img', { name: 'akari' }).parentElement?.className).toContain('scale-[0.8]');
+    expect(aside.querySelector('ul li a')?.className).toContain('h-11');
+    expect(screen.getByRole('img', { name: 'Marta' }).className).toContain('h-10 w-10');
+  });
+
+  it('HeaderNav usa logotipo M, ítems h-11 y avatar md', () => {
+    render(<HeaderNav onOpenSearch={vi.fn()} />);
+    const nav = screen.getByRole('navigation', { name: 'Navegación principal' });
+
+    expect(screen.getByRole('img', { name: 'akari' }).parentElement?.className).toContain('scale-[0.8]');
+    expect(nav.querySelector('a')?.className).toContain('h-11');
+    expect(screen.getByRole('img', { name: 'Marta' }).className).toContain('h-10 w-10');
+  });
+
+  it('TabletHeader usa logotipo M, ítems h-11 y avatar md', () => {
+    render(<TabletHeader />);
+    const nav = screen.getByRole('navigation', { name: 'Navegación principal' });
+
+    expect(screen.getByRole('img', { name: 'akari' }).parentElement?.className).toContain('scale-[0.8]');
+    expect(nav.querySelector('a')?.className).toContain('h-11');
+    expect(screen.getByRole('img', { name: 'Marta' }).className).toContain('h-10 w-10');
+  });
+
+  it('MobileTopBar usa logotipo M y avatar md', () => {
+    render(<MobileTopBar onOpenSearch={vi.fn()} />);
+
+    expect(screen.getByRole('img', { name: 'akari' }).parentElement?.className).toContain('scale-[0.8]');
+    expect(screen.getByRole('img', { name: 'Marta' }).className).toContain('h-10 w-10');
   });
 });

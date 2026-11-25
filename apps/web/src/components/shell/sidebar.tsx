@@ -9,6 +9,14 @@ import { isActivePath, navItems, type NavItem } from '../nav';
 const initials = 'MR';
 const displayName = 'Marta';
 
+function NavLogo({ format }: { format: 'expanded' | 'initial' }) {
+  return (
+    <span className="inline-block origin-bottom-left scale-[0.8]">
+      <Logo format={format} size="M" />
+    </span>
+  );
+}
+
 function NavList({
   expanded = true,
   onNavigate,
@@ -30,7 +38,8 @@ function NavList({
               className={cn(
                 'flex items-center rounded-full text-ui-12-strong transition-colors duration-fast',
                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2',
-                expanded ? 'h-10 w-full gap-3 px-3' : active ? 'h-10 w-full justify-center' : 'h-9 w-full justify-center',
+                'h-11 w-full',
+                expanded ? 'gap-3 px-3' : 'justify-center',
                 active
                   ? 'bg-text-primary text-text-inverse'
                   : 'text-text-secondary hover:bg-surface-sunken hover:text-text-primary',
@@ -46,12 +55,18 @@ function NavList({
   );
 }
 
-export function Sidebar() {
+export function Sidebar({
+  pinned,
+  onPinnedChange,
+}: {
+  pinned: boolean;
+  onPinnedChange: (value: boolean) => void;
+}) {
   const [hovered, setHovered] = useState(false);
-  const [pinned, setPinned] = useState(false);
   const [focusWithin, setFocusWithin] = useState(false);
   const asideRef = useRef<HTMLElement>(null);
   const expanded = hovered || pinned || focusWithin;
+  const floating = expanded && !pinned;
 
   useEffect(() => {
     const aside = asideRef.current;
@@ -69,59 +84,69 @@ export function Sidebar() {
   }, []);
 
   return (
-    <aside
-      ref={asideRef}
-      role="navigation"
-      aria-label="Navegación principal"
-      data-expanded={expanded}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      className={cn(
-        'sticky top-4 hidden h-[calc(100vh-2rem)] shrink-0 flex-col overflow-hidden rounded-xl border border-border-subtle bg-surface-default px-3 py-5 elevation-1 transition-[width] duration-base lg:flex',
-        expanded ? 'w-60' : 'w-[76px]',
-      )}
-    >
-      <div className="flex min-h-0 flex-1 flex-col gap-4">
-        <div className={cn('flex h-8 items-center gap-2', expanded ? 'justify-between px-1' : 'justify-center')}>
-          {expanded ? (
-            <Link
-              href="/"
-              aria-label="akari, ir al resumen"
-              className="rounded-lg focus-visible:ring-2 focus-visible:ring-focus-ring"
-            >
-              <Logo format="expanded" size="M" />
-            </Link>
-          ) : (
-            <Link
-              href="/"
-              aria-label="akari, ir al resumen"
-              className="rounded-lg focus-visible:ring-2 focus-visible:ring-focus-ring"
-            >
-              <Logo format="initial" />
-            </Link>
-          )}
-          {expanded ? (
-            <button
-              type="button"
-              aria-label={pinned ? 'Colapsar navegación' : 'Expandir navegación'}
-              aria-expanded={expanded}
-              onClick={() => setPinned((value) => !value)}
-              className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-surface-sunken text-ui-13-strong text-text-secondary hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
-            >
-              «
-            </button>
-          ) : null}
+    <>
+      {floating ? (
+        <div
+          data-sidebar-scrim
+          aria-hidden="true"
+          className="pointer-events-none fixed inset-0 z-30 bg-overlay-scrim/20"
+        />
+      ) : null}
+      <aside
+        ref={asideRef}
+        role="navigation"
+        aria-label="Navegación principal"
+        data-expanded={expanded}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+        className={cn(
+          'fixed left-4 top-4 z-40 hidden h-[calc(100vh-2rem)] flex-col overflow-hidden rounded-xl border border-border-subtle bg-surface-default px-3 py-5 transition-[width] duration-base lg:flex',
+          floating ? 'elevation-3' : 'elevation-1',
+          expanded ? 'w-60' : 'w-[76px]',
+        )}
+      >
+        <div className="flex min-h-0 flex-1 flex-col gap-4">
+          <div className={cn('flex h-10 items-center gap-2', expanded ? 'justify-between px-1' : 'justify-center')}>
+            {expanded ? (
+              <Link
+                href="/"
+                aria-label="akari, ir al resumen"
+                className="rounded-lg focus-visible:ring-2 focus-visible:ring-focus-ring"
+              >
+                <NavLogo format="expanded" />
+              </Link>
+            ) : (
+              <Link
+                href="/"
+                aria-label="akari, ir al resumen"
+                className="rounded-lg focus-visible:ring-2 focus-visible:ring-focus-ring"
+              >
+                <NavLogo format="initial" />
+              </Link>
+            )}
+            {expanded ? (
+              <button
+                type="button"
+                aria-label={pinned ? 'Colapsar navegación' : 'Expandir navegación'}
+                aria-expanded={expanded}
+                onClick={() => onPinnedChange(!pinned)}
+                className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-surface-sunken text-ui-13-strong text-text-secondary hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+              >
+                «
+              </button>
+            ) : null}
+          </div>
+          <NavList expanded={expanded} onNavigate={() => setHovered(false)} />
         </div>
-        <NavList expanded={expanded} onNavigate={() => setHovered(false)} />
-      </div>
-      <div className={cn('mt-4 flex items-center gap-3', !expanded && 'justify-center')}>
-        <Avatar initials={initials} label={displayName} />
-        <span className={cn('min-w-0', !expanded && 'sr-only')}>
-          <span className="block truncate text-ui-12-strong text-text-primary">{displayName}</span>
-          <span className="block truncate text-ui-10 text-text-secondary">Cuenta local</span>
-        </span>
-      </div>
-    </aside>
+        <div className={cn('mt-4 flex items-center gap-3', !expanded && 'justify-center')}>
+          <Avatar size="md" initials={initials} label={displayName} />
+          <span className={cn('min-w-0', !expanded && 'sr-only')}>
+            <span className="block truncate text-ui-12-strong text-text-primary">{displayName}</span>
+            <span className="block truncate text-ui-10 text-text-secondary">Cuenta local</span>
+          </span>
+        </div>
+      </aside>
+    </>
   );
 }
 
@@ -171,7 +196,7 @@ export function HeaderNav({ onOpenSearch }: { onOpenSearch: () => void }) {
           aria-label="akari, ir al resumen"
           className="rounded-lg focus-visible:ring-2 focus-visible:ring-focus-ring"
         >
-          <Logo format="expanded" size="S" />
+          <NavLogo format="expanded" />
         </Link>
         <nav aria-label="Navegación principal" className="flex items-center gap-1">
           {navItems.map((item) => {
@@ -196,7 +221,7 @@ export function HeaderNav({ onOpenSearch }: { onOpenSearch: () => void }) {
         <div className="flex items-center gap-3">
           <IconButton aria-label="Buscar" icon={<IconSearch size={20} />} onClick={onOpenSearch} />
           <IconButton aria-label="Avisos" icon={<IconBell size={20} />} />
-          <Avatar initials={initials} label={displayName} />
+          <Avatar size="md" initials={initials} label={displayName} />
         </div>
       </div>
     </header>
@@ -214,7 +239,7 @@ export function TabletHeader() {
             aria-label="akari, ir al resumen"
             className="rounded-lg focus-visible:ring-2 focus-visible:ring-focus-ring"
           >
-            <Logo format="expanded" size="S" />
+            <NavLogo format="expanded" />
           </Link>
           <nav aria-label="Navegación principal" className="flex items-center gap-1">
             {navItems.map((item) => {
@@ -225,7 +250,7 @@ export function TabletHeader() {
                   href={item.href}
                   aria-current={active ? 'page' : undefined}
                   className={cn(
-                    'flex h-9 items-center rounded-full px-3.5 text-ui-11-strong transition-colors duration-fast focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring',
+                    'flex h-11 items-center rounded-full px-3.5 text-ui-11-strong transition-colors duration-fast focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring',
                     active ? 'bg-text-primary text-text-inverse' : 'text-text-tertiary hover:text-text-primary',
                   )}
                 >
@@ -235,7 +260,7 @@ export function TabletHeader() {
             })}
           </nav>
         </div>
-        <Avatar initials={initials} size="sm" tone="strong" label={displayName} />
+        <Avatar size="md" initials={initials} tone="strong" label={displayName} />
       </div>
     </header>
   );
@@ -249,11 +274,11 @@ export function MobileTopBar({ onOpenSearch }: { onOpenSearch: () => void }) {
         aria-label="akari, ir al resumen"
         className="rounded-lg focus-visible:ring-2 focus-visible:ring-focus-ring"
       >
-        <Logo format="expanded" size="S" />
+        <NavLogo format="expanded" />
       </Link>
       <div className="flex items-center gap-2">
         <IconButton aria-label="Buscar" icon={<IconSearch size={20} />} onClick={onOpenSearch} />
-        <Avatar initials={initials} size="xs" tone="strong" label={displayName} />
+        <Avatar size="md" initials={initials} tone="strong" label={displayName} />
       </div>
     </header>
   );

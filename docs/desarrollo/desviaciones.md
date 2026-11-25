@@ -122,3 +122,11 @@ Quedan fuera, además de las superficies nativas: la creación de planes de plaz
 - **Motivo:** la tarjeta `xrngfyh3kjnb` pide unificar el dashboard en un mismo bento; el usuario pidió que todas las cuentas compartan un solo panel responsive y, después, que la fila conserve un título y un botón de gestión como «Últimos movimientos».
 - **Consecuencia:** el hero —saldo, gráfica del mes, últimos movimientos, balance del mes, accesos rápidos y el ajuste de altura de la gráfica— queda intacto; solo cambia la fila de cuentas.
 - **Cierre:** solo si la persona usuaria reabre la fase de diseño; hasta entonces la implementación se mantiene y la trazabilidad vive en `producto/dashboard-hero`.
+
+## 18. Sidebar superpuesta y tamaños unificados (change `fix-sidebar`)
+
+- **Diseño:** la `Sidebar` compacta de 76 px se expande a 240 px con hover o chevron y el panel expandido flota sobre el contenido; el `Header/Desktop` usa el logotipo S en cabeceras mientras la sidebar expandida usa el M, y no se fija una altura común de ítems ni un tamaño de avatar compartido entre variantes.
+- **Implementación:** la sidebar es un panel `fixed` con inset de 16 px y el shell reserva 76 px en el flujo, de modo que la expansión no redimensiona ni desplaza el contenido. El logotipo expandido mide 32 px (M), los ítems de navegación 44 px (h-11) y el avatar 40 px (md) en sidebar, header, tablet y móvil; la barra inferior móvil conserva objetivos táctiles de `min-h-11`.
+- **Motivo:** las tarjetas `c085qqmjex7u` y `s2du40zg6zju` piden que el hover se solape sobre el contenido y que se unifiquen los tamaños entre sidebar y header; el usuario eligió un término medio: conservar el logotipo de la sidebar y adoptar la altura de ítems del header.
+- **Consecuencia:** el logotipo de las cabeceras es mayor que en el frame aprobado y los ítems de la sidebar y la navegación tablet son más altos; al expandirse, el panel tapa la esquina superior izquierda de la cabecera. El diseño está congelado: no se han modificado FigCraft, `design/` ni `docs/diseno/`, y la desviación queda registrada aquí.
+- **Cierre:** solo si la persona usuaria reabre la fase de diseño; hasta entonces la implementación se mantiene y la trazabilidad vive en `producto/shell-web`.

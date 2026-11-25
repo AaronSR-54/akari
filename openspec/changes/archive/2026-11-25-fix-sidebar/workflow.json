@@ -1,0 +1,16 @@
+{
+  "changeId": "fix-sidebar",
+  "branch": "feat/fix-sidebar",
+  "cards": [
+    {
+      "publicId": "c085qqmjex7u",
+      "title": "fix: corregir comportamiento sidebar hover"
+    },
+    {
+      "publicId": "s2du40zg6zju",
+      "title": "fix: unificar tamaños entre sidebar y header"
+    }
+  ],
+  "prUrl": "https://github.com/AaronSR-54/akari/pull/12",
+  "claimedAt": "2026-11-25T15:47:11.473Z"
+}
