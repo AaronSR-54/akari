@@ -94,6 +94,12 @@ describe('month balance', () => {
     expect(screen.queryByText('Saldo tras el día')).not.toBeInTheDocument();
   });
 
+  it('el punto más alto toca el borde superior', () => {
+    const { container } = renderMonth();
+    const line = container.querySelector('path[fill="none"]');
+    expect(line?.getAttribute('d')).toContain('L 25 0');
+  });
+
   it('empieza en el cierre del mes anterior y sigue con el día 1', () => {
     const { container } = render(
       <MonthBalance

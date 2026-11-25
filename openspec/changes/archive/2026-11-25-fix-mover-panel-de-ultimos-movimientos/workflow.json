@@ -1,0 +1,16 @@
+{
+  "changeId": "fix-mover-panel-de-ultimos-movimientos",
+  "branch": "feat/fix-mover-panel-de-ultimos-movimientos",
+  "cards": [
+    {
+      "publicId": "owprtgrgqp9d",
+      "title": "fix: mover panel de ultimos movimientos"
+    },
+    {
+      "publicId": "4t93i78p9p8l",
+      "title": "fix: unificar paneles de cuota vencida"
+    }
+  ],
+  "prUrl": "https://github.com/AaronSR-54/akari/pull/6",
+  "claimedAt": "2026-11-25T09:41:25.867Z"
+}

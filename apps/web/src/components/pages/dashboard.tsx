@@ -43,8 +43,6 @@ function OverviewBody({ overview }: { overview: Overview }) {
   const month = overview.month;
   const projected = overview.projections.find((entry) => entry.currency === currency);
   const upcoming = overview.upcoming[0];
-  const total = overview.totalBalances.find((entry) => entry.currency === currency);
-  const projectedDelta = projected && total ? projected.minor - total.minor : 0;
   const plural = (count: number, one: string, many: string) =>
     `${count} ${count === 1 ? one : many}`;
   const monthDays = month.days.map((day) => ({
@@ -81,9 +79,10 @@ function OverviewBody({ overview }: { overview: Overview }) {
     <Stack gap={5.5}>
       <section
         aria-label="Resumen de saldo y gastos del mes"
-        className="grid gap-x-6 gap-y-0 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]"
+        className="flex flex-col lg:flex-row lg:gap-x-6"
       >
-        <div className="flex flex-col gap-1.5 lg:col-start-1 lg:row-start-1" data-hero="balance">
+        <div className="contents lg:flex lg:flex-1 lg:flex-col lg:gap-6">
+        <div className="order-1 flex flex-col items-center gap-1.5 text-center lg:order-none lg:items-start lg:text-left" data-hero="balance">
           <p className="text-ui-11 text-text-secondary">Saldo total</p>
           {overview.totalBalances.length === 0 ? (
             <p className="text-ui-44-bold text-text-tertiary">—</p>
@@ -94,25 +93,67 @@ function OverviewBody({ overview }: { overview: Overview }) {
                   key={entry.currency}
                   minor={entry.minor}
                   currency={entry.currency}
-                  className={multipleTotals ? 'text-ui-28-bold' : 'text-ui-44-bold sm:text-ui-52-bold'}
+                  className={multipleTotals ? 'text-ui-28-bold' : 'text-ui-52-bold'}
                 />
               ))}
             </div>
           )}
-          {projected ? (
-            <p
-              className={`text-ui-11 ${projectedDelta < 0 ? 'text-status-danger-text' : 'text-status-positive-text'}`}
-            >
-              {projectedDelta >= 0 ? '+' : '−'}
-              {formatMinor(Math.abs(projectedDelta), projected.currency)} estimado a fin de mes
-              {projectedDelta < 0 ? ' · revisa tus gastos' : ''}
-            </p>
-          ) : (
-            <p className="text-ui-11 text-text-secondary">Sin proyección</p>
-          )}
         </div>
+        <section
+          aria-labelledby="ultimos"
+          data-hero="recent"
+          className="order-3 relative z-10 lg:order-none lg:mt-0"
+        >
+          <Card padding="md" className="flex h-full flex-col gap-2.5 hero-recent-union">
+            <SectionHeader
+              id="ultimos"
+              title="Últimos movimientos"
+              action={
+                <Link
+                  href="/movimientos"
+                  className="text-ui-11-strong text-accent-strong underline-offset-4 hover:underline"
+                >
+                  Ver todos
+                </Link>
+              }
+            />
+            {overview.recentMovements.length === 0 ? (
+              <StatePage
+                type="empty"
+                title="Todavía no hay movimientos"
+                description="Registra el primero para ver tu resumen cobrar vida."
+                primaryAction={<ActionLink href="/movimientos/nuevo">Añadir movimiento</ActionLink>}
+                className="border-0 bg-transparent py-6"
+              />
+            ) : (
+              <div className="flex flex-col">
+                {overview.recentMovements.map((movement) => (
+                  <MovementRow
+                    key={movement.id}
+                    concept={movement.concept}
+                    category={movement.category}
+                    dateLabel={formatShortDate(movement.date)}
+                    amountMinor={movement.amountMinor}
+                    currency={movement.currency}
+                    type={movement.type}
+                  />
+                ))}
+              </div>
+            )}
+            <div className="mt-1 flex justify-end">
+              <Link
+                href="/preguntas"
+                className="text-ui-11-strong text-accent-strong underline-offset-4 hover:underline"
+              >
+                Preguntas rápidas →
+              </Link>
+            </div>
+          </Card>
+        </section>
+        </div>
+        <div className="contents lg:flex lg:flex-1 lg:flex-col">
         <div
-          className="hero-chart-emerge relative mt-6 h-full min-h-40 lg:col-start-2 lg:row-start-1 lg:mt-0"
+          className="order-2 hero-chart-emerge relative mt-6 flex min-h-40 flex-col lg:order-none lg:mt-0 lg:min-h-80 lg:flex-1"
           data-hero="month"
         >
           <MonthBalance
@@ -123,9 +164,10 @@ function OverviewBody({ overview }: { overview: Overview }) {
             openingAriaLabel={openingAriaLabel}
             elapsedDays={month.elapsedDays}
             ariaLabel="Saldo del mes por día"
+            className="flex-1"
           />
         </div>
-        <div data-hero="month-summary" className="relative z-10 lg:col-start-2 lg:row-start-2">
+        <div data-hero="month-summary" className="order-4 relative z-10 mt-5 lg:order-none lg:mt-0">
           <StatCard
             className="hero-card-shadow border-t-0"
             label="Balance del mes"
@@ -144,20 +186,6 @@ function OverviewBody({ overview }: { overview: Overview }) {
             }
           />
         </div>
-        <div
-          data-hero="upcoming"
-          className="mt-5 h-full lg:col-start-1 lg:row-start-2 lg:mt-0"
-        >
-          <StatCard
-            label={upcoming?.overdue ? 'Cuota vencida' : 'Próximo pago'}
-            value={upcoming ? formatMinor(upcoming.amountMinor, upcoming.currency) : 'Sin pagos'}
-            foot={
-              upcoming
-                ? `${upcoming.label} · ${formatShortDate(upcoming.date)}`
-                : 'Nada en los próximos 14 días'
-            }
-            tone={upcoming?.overdue ? 'negative' : 'default'}
-          />
         </div>
       </section>
 
@@ -215,54 +243,6 @@ function OverviewBody({ overview }: { overview: Overview }) {
           {formatDayMonth(upcoming.date)}.
         </Banner>
       ) : null}
-
-      <section aria-labelledby="ultimos">
-        <Card padding="md" className="flex h-full flex-col gap-2.5">
-          <SectionHeader
-            id="ultimos"
-            title="Últimos movimientos"
-            action={
-              <Link
-                href="/movimientos"
-                className="text-ui-11-strong text-accent-strong underline-offset-4 hover:underline"
-              >
-                Ver todos
-              </Link>
-            }
-          />
-          {overview.recentMovements.length === 0 ? (
-            <StatePage
-              type="empty"
-              title="Todavía no hay movimientos"
-              description="Registra el primero para ver tu resumen cobrar vida."
-              primaryAction={<ActionLink href="/movimientos/nuevo">Añadir movimiento</ActionLink>}
-              className="border-0 bg-transparent py-6"
-            />
-          ) : (
-            <div className="flex flex-col">
-              {overview.recentMovements.map((movement) => (
-                <MovementRow
-                  key={movement.id}
-                  concept={movement.concept}
-                  category={movement.category}
-                  dateLabel={formatShortDate(movement.date)}
-                  amountMinor={movement.amountMinor}
-                  currency={movement.currency}
-                  type={movement.type}
-                />
-              ))}
-            </div>
-          )}
-          <div className="mt-1 flex justify-end">
-            <Link
-              href="/preguntas"
-              className="text-ui-11-strong text-accent-strong underline-offset-4 hover:underline"
-            >
-              Preguntas rápidas →
-            </Link>
-          </div>
-        </Card>
-      </section>
     </Stack>
   );
 }

@@ -58,8 +58,8 @@ export function MonthBalance({
   const rawRange = rawMax - rawMin;
   const padding = rawRange === 0 ? Math.max(Math.abs(rawMax) * 0.02, 1) : rawRange * 0.15;
   const min = rawMin - padding;
-  const max = rawMax + padding;
-  const scale = (value: number) => 34 - ((value - min) / (max - min)) * 28;
+  const max = rawMax;
+  const scale = (value: number) => 34 - ((value - min) / (max - min)) * 34;
   const openingPoint = { x: 0, y: scale(openingBalanceMinor) };
   const points = [
     openingPoint,
