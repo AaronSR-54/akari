@@ -132,7 +132,8 @@ describe('fields', () => {
     await user.click(trigger);
     expect(trigger).toHaveAttribute('aria-expanded', 'true');
     const panel = screen.getByRole('dialog', { name: /Fecha/ });
-    expect(panel.className).not.toContain('rounded-t-3xl');
+    expect(panel.className).not.toContain('rounded-t-xl');
+    expect(panel.style.maxHeight).toBe('460px');
     expect(screen.getByRole('button', { name: '25 nov 2026' })).toHaveFocus();
   });
 
@@ -176,7 +177,7 @@ describe('fields', () => {
       await user.click(trigger);
       const sheet = screen.getByRole('dialog', { name: /Fecha/ });
       expect(sheet).toHaveAttribute('aria-modal', 'true');
-      expect(sheet.className).toContain('rounded-t-3xl');
+      expect(sheet.className).toContain('rounded-t-xl');
       expect(screen.getByRole('button', { name: '25 nov 2026' })).toHaveFocus();
 
       await user.click(screen.getByRole('button', { name: '28 nov 2026' }));

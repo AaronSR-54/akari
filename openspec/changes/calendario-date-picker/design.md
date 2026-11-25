@@ -27,7 +27,6 @@ Ver `proposal.md` para el motivo. El estado actual que condiciona el diseño:
 
 - Edición de la fecha como texto libre o con máscara.
 - Límites `min`/`max`, selección de rangos, horas o zonas horarias.
-- Selector rápido de mes y año, o vista anual.
 - Arrastrar para cerrar, alturas intermedias (`detents`) o arrastre con gesto.
 - Animar la entrada de la hoja: se comporta como el resto de modales, que no animan.
 - Tocar `docs/diseno/`, `design/` o `openspec/specs/diseno/*`; la única desviación se anota en `docs/desarrollo/desviaciones.md`.
@@ -76,12 +75,21 @@ La rejilla se calcula con 6 filas × 7 columnas empezando en lunes, coherente co
 - **Por qué:** cumple la spec de navegación y objetivos táctiles sin añadir controles que el alcance excluye.
 - **Alternativas descartadas:** selector de mes y año en la cabecera (fuera de alcance por decisión del usuario) y «Hoy» que solo navega sin elegir (menos útil y con dos semánticas para el mismo botón).
 
+### Vistas de mes y año en la cabecera
+
+La etiqueta `mes año` de la cabecera es un botón que cambia la vista: días → meses del año → años → días. En la vista de meses se elige un mes del año visible y se vuelve a los días; en la de años se elige un año y se vuelve a los meses. Las flechas cambian de mes en la vista de días, de año en la de meses y de página de diez años en la de años.
+
+- El cuerpo del calendario reserva siempre la altura de la rejilla de días (`min-h-80`, 320 px) y reparte las rejillas de meses y años con `justify-evenly` y `gap-3`, así que el panel no cambia de tamaño al alternar vistas y el espacio queda equilibrado. Los nombres de mes se escriben capitalizados (`Noviembre`), también en la cabecera.
+- **Por qué:** evita navegar mes a mes para saltos largos sin convertir el calendario en un formulario aparte; la vista de meses y años usa la misma rejilla de botones accesibles y conserva el día activo al volver; y la altura fija evita el salto visual del panel.
+- **Alternativas descartadas:** dos selects nativos en la cabecera (rompe el patrón de panel propio), un tercer panel emergente sobre el calendario (más capas y foco) y mantener solo la navegación mes a mes (lenta para años).
+
 ### Teclado y foco en el calendario
 
 - El disparador es un `button` con `aria-haspopup="dialog"`, `aria-expanded` y el texto de la fecha o «Elegir fecha» cuando está vacío.
 - Al abrir, el foco entra en la celda activa del calendario y se aplica foco móvil (roving tabindex).
 - Flechas mueven ±1 día y ±7 días, Inicio/Fin van al lunes/domingo de la semana, PageUp/PageDown cambian de mes, Enter o Espacio eligen, Escape cierra y devuelve el foco al disparador.
 - Al cambiar de mes con las flechas de cabecera o PageUp/PageDown, el foco se mantiene en la misma posición relativa de la rejilla.
+- Al cambiar de vista, el foco entra en el mes o año elegido (o en el visible si no hay selección) para no perderlo en el cambio.
 
 - **Por qué:** replica el patrón de diálogo del selector y evita el salto de foco al re-renderizar la rejilla.
 - **Alternativas descartadas:** `role="dialog"` modal también en escritorio (bloquearía el formulario de fondo sin necesidad) y dejar el foco en el disparador mientras se navega la rejilla (dos focos activos).
@@ -90,7 +98,7 @@ La rejilla se calcula con 6 filas × 7 columnas empezando en lunes, coherente co
 
 `Modal` gana `placement?: 'center' | 'bottom'` (por defecto `center`, sin cambios para las modales actuales). `BottomSheet` pasa a usar `placement="bottom"`:
 
-- El contenedor se alinea abajo (`items-end`), sin padding inferior, y el panel ocupa el ancho disponible hasta `max-w-sheet` (560 px) con `rounded-t-3xl`, borde solo arriba y `p-6` más `env(safe-area-inset-bottom)`.
+- El contenedor se alinea abajo (`items-end`), sin padding inferior, y el panel ocupa el ancho disponible hasta `max-w-sheet` (560 px) con `rounded-t-xl`, borde solo arriba y `p-6` más `env(safe-area-inset-bottom)`.
 - Mantiene el scrim con difuminado, `elevation-3`, `max-h-[90dvh]`, scroll interno, foco atrapado y retorno del foco que ya ofrece `Modal`.
 - La hoja recibe `title={label}` del campo, así que anuncia «Fecha» y conserva la ✕ de cierre.
 
@@ -142,6 +150,7 @@ Los tres formularios pasan de `onChange={(event) => setDate(event.target.value)}
 - [Scroll de fondo desbloqueado al cerrar en orden distinto del de apertura] → el bloqueo se cuenta en la pila y solo se libera cuando no queda ninguna capa.
 - [Hoja recortada por el `backdrop-filter` del overlay padre] → la hoja se renderiza dentro del mismo árbol que el diálogo, sin portal; se verifica en el diálogo de edición a 390×844 y con el teclado del formulario cerrado.
 - [Desajuste de `matchMedia` en servidor] → `useSyncExternalStore` con snapshot de servidor `false` y montaje del contenedor solo al abrir.
+- [El panel se recorta en pantallas bajas] → se mide la altura real del contenido: si no cabe entero debajo se muestra arriba; si tampoco cabe arriba se centra en el viewport con su altura completa y, solo si el viewport es menor que el contenido, se limita al alto disponible con scroll interno. Siempre con margen de 8 px; se prueba con viewports de 240 a 900 px.
 - [Regresión en los tres formularios al cambiar la API] → adaptación mecánica cubierta por `typecheck`, pruebas de componentes y E2E de alta, edición y gasto grupal en escritorio y móvil.
 
 ## Migration Plan

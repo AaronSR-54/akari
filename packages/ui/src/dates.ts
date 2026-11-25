@@ -71,7 +71,8 @@ export function startOfMonthGrid(month: Date): Date[] {
   return Array.from({ length: 42 }, (_, index) => new Date(year, monthIndex, 1 - offset + index));
 }
 
-/** Etiqueta del mes visible, por ejemplo `noviembre 2026`. */
+/** Etiqueta del mes visible, por ejemplo `Noviembre 2026`. */
 export function monthLabel(month: Date): string {
-  return `${MONTH_FORMATTER.format(month)} ${month.getFullYear()}`;
+  const label = `${MONTH_FORMATTER.format(month)} ${month.getFullYear()}`;
+  return label.charAt(0).toUpperCase() + label.slice(1);
 }

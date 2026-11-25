@@ -181,6 +181,9 @@ export function DateField({
     anchorRef: triggerRef,
     panelRef,
     minWidth: 320,
+    minHeight: 380,
+    maxHeight: 460,
+    preferredHeight: 460,
     onDismiss: () => close(false),
   });
 
@@ -234,9 +237,10 @@ export function DateField({
             width: position?.width,
             top: position?.top,
             bottom: position?.bottom,
+            maxHeight: position?.maxHeight,
             visibility: position ? 'visible' : 'hidden',
           }}
-          className="z-50 rounded-lg border border-border-subtle bg-surface-raised p-3 elevation-2"
+          className="z-50 overflow-y-auto overscroll-contain rounded-lg border border-border-subtle bg-surface-raised p-3 elevation-2"
         >
           <Calendar
             value={value}

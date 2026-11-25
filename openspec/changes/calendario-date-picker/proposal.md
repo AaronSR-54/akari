@@ -6,7 +6,7 @@ Los campos de fecha de la app usan el `<input type="date">` nativo, así que su 
 
 ## What Changes
 
-- Nuevo componente `Calendar` en `packages/ui`: rejilla mensual dibujada por la aplicación, con cabecera de mes y año, flechas de mes anterior y siguiente, y acción «Hoy».
+- Nuevo componente `Calendar` en `packages/ui`: rejilla mensual dibujada por la aplicación, con cabecera de mes y año, flechas de mes anterior y siguiente, acción «Hoy» y vistas de selección rápida (meses del año y, al volver a pulsar la cabecera, selector de años).
 - `DateField` pasa a ser un control propio: un disparador con la fecha formateada (`dd MMM yyyy`, en español) y un icono de calendario que abre el panel del `Calendar`, sin `input type="date"` nativo.
 - En vista móvil (<768 px) el mismo `Calendar` se presenta dentro de una hoja inferior modal anclada al borde inferior, con el scrim del sistema, bloqueo del scroll de fondo y foco retenido; se cierra al elegir o cancelar y devuelve el foco al disparador. En tablet y escritorio se mantiene el panel flotante junto al campo.
 - `BottomSheet`, hoy una `Modal` centrada y sin uso, pasa a ser una hoja inferior real. `Modal` gana `placement` (`center`/`bottom`) y una pila de overlays para que Escape y la trampa de foco actúen solo sobre la capa superior.

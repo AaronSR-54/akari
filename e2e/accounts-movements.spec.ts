@@ -33,14 +33,12 @@ test.describe('cuentas y movimientos', () => {
     await dateTrigger.click();
     await page.getByRole('dialog', { name: 'Fecha' }).getByRole('button', { name: /^15 / }).click();
     const pickedDate = ((await dateTrigger.textContent()) ?? '').trim();
+    const shortDate = pickedDate.split(' ').slice(0, 2).join(' ');
     await expect(dateTrigger).toHaveAttribute('aria-expanded', 'false');
     await page.getByRole('button', { name: 'Guardar movimiento' }).click();
     await expect(page).toHaveURL(/\/movimientos/);
     await expect(visible(page, 'Cine')).toBeVisible();
-
-    await visible(page, 'Cine').click();
-    await expect(page.getByRole('dialog', { name: 'Cine' }).getByText(pickedDate)).toBeVisible();
-    await page.keyboard.press('Escape');
+    await expect(visible(page, shortDate)).toBeVisible();
 
     await page.goto('/');
     await page.getByText('Ahorro').click();

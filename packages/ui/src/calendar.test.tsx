@@ -16,7 +16,7 @@ function renderCalendar(props: Partial<Parameters<typeof Calendar>[0]> = {}) {
 describe('calendar', () => {
   it('dibuja 42 días desde el lunes y deshabilita los meses contiguos', () => {
     renderCalendar();
-    expect(screen.getByRole('grid', { name: 'noviembre 2026' })).toBeInTheDocument();
+    expect(screen.getByRole('grid', { name: 'Noviembre 2026' })).toBeInTheDocument();
     expect(screen.getAllByRole('gridcell')).toHaveLength(42);
     expect(screen.getByRole('columnheader', { name: 'lunes' })).toBeInTheDocument();
 
@@ -42,10 +42,10 @@ describe('calendar', () => {
     const { onSelect } = renderCalendar();
 
     await user.click(screen.getByRole('button', { name: 'Mes siguiente' }));
-    expect(screen.getByRole('grid', { name: 'diciembre 2026' })).toBeInTheDocument();
+    expect(screen.getByRole('grid', { name: 'Diciembre 2026' })).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Mes anterior' }));
-    expect(screen.getByRole('grid', { name: 'noviembre 2026' })).toBeInTheDocument();
+    expect(screen.getByRole('grid', { name: 'Noviembre 2026' })).toBeInTheDocument();
     const selected = screen.getByRole('button', { name: '25 nov 2026' }).parentElement;
     expect(selected).toHaveAttribute('aria-selected', 'true');
     expect(onSelect).not.toHaveBeenCalled();
@@ -62,7 +62,7 @@ describe('calendar', () => {
 
     await user.keyboard('{ArrowDown}');
     expect(screen.getByRole('button', { name: '03 dic 2026' })).toHaveFocus();
-    expect(screen.getByRole('grid', { name: 'diciembre 2026' })).toBeInTheDocument();
+    expect(screen.getByRole('grid', { name: 'Diciembre 2026' })).toBeInTheDocument();
 
     await user.keyboard('{PageUp}');
     expect(screen.getByRole('button', { name: '03 nov 2026' })).toHaveFocus();
@@ -84,6 +84,78 @@ describe('calendar', () => {
 
     await user.keyboard('{Escape}');
     expect(onCancel).toHaveBeenCalledTimes(1);
+  });
+
+
+  it('desde la cabecera muestra los meses del año y después el selector de años', async () => {
+    const user = userEvent.setup();
+    renderCalendar();
+
+    await user.click(screen.getByRole('button', { name: /Elegir mes y año/ }));
+    expect(screen.getAllByRole('gridcell')).toHaveLength(12);
+    expect(screen.getByRole('button', { name: 'Noviembre de 2026' })).toHaveFocus();
+
+    await user.click(screen.getByRole('button', { name: /Elegir año de 2026/ }));
+    expect(screen.getAllByRole('gridcell')).toHaveLength(12);
+    expect(screen.getByRole('button', { name: '2026' })).toHaveFocus();
+    expect(screen.getByRole('button', { name: '2019' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '2030' })).toBeInTheDocument();
+  });
+
+  it('elige mes y año y vuelve a la rejilla de días', async () => {
+    const user = userEvent.setup();
+    renderCalendar();
+
+    await user.click(screen.getByRole('button', { name: /Elegir mes y año/ }));
+    await user.click(screen.getByRole('button', { name: 'Marzo de 2026' }));
+    expect(screen.getByRole('grid', { name: 'Marzo 2026' })).toBeInTheDocument();
+    expect(screen.getAllByRole('gridcell')).toHaveLength(42);
+    expect(screen.getByRole('button', { name: '25 mar 2026' })).toHaveFocus();
+
+    await user.click(screen.getByRole('button', { name: /Elegir mes y año/ }));
+    await user.click(screen.getByRole('button', { name: /Elegir año de 2026/ }));
+    await user.click(screen.getByRole('button', { name: '2028' }));
+    expect(screen.getByRole('button', { name: 'Marzo de 2028' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Julio de 2028' }));
+    expect(screen.getByRole('grid', { name: 'Julio 2028' })).toBeInTheDocument();
+  });
+
+  it('navega años y décadas con las flechas de la cabecera', async () => {
+    const user = userEvent.setup();
+    renderCalendar();
+
+    await user.click(screen.getByRole('button', { name: /Elegir mes y año/ }));
+    await user.click(screen.getByRole('button', { name: 'Año siguiente' }));
+    expect(screen.getByRole('button', { name: 'Noviembre de 2027' })).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /Elegir año de 2027/ }));
+    await user.click(screen.getByRole('button', { name: 'Década siguiente' }));
+    expect(screen.getByRole('button', { name: '2029' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '2040' })).toBeInTheDocument();
+  });
+
+  it('mantiene el mismo tamaño al cambiar entre días, meses y años', async () => {
+    const user = userEvent.setup();
+    renderCalendar();
+    const body = screen.getByTestId('calendar-body');
+    expect(body).toHaveClass('min-h-80');
+
+    await user.click(screen.getByRole('button', { name: /Elegir mes y año/ }));
+    expect(screen.getByTestId('calendar-body')).toHaveClass('min-h-80');
+
+    await user.click(screen.getByRole('button', { name: /Elegir año/ }));
+    expect(screen.getByTestId('calendar-body')).toHaveClass('min-h-80');
+  });
+
+  it('un tercer clic en la cabecera vuelve a la rejilla de días', async () => {
+    const user = userEvent.setup();
+    renderCalendar();
+
+    await user.click(screen.getByRole('button', { name: /Elegir mes y año/ }));
+    await user.click(screen.getByRole('button', { name: /Elegir año/ }));
+    await user.click(screen.getByRole('button', { name: 'Volver a la rejilla de días' }));
+    expect(screen.getByRole('grid', { name: 'Noviembre 2026' })).toBeInTheDocument();
+    expect(screen.getAllByRole('gridcell')).toHaveLength(42);
   });
 
   it('el botón Hoy selecciona la fecha actual', async () => {

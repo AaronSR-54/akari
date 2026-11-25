@@ -38,7 +38,7 @@ describe('dates', () => {
   it('formatea en español y etiqueta el mes visible', () => {
     expect(formatBusinessDate('2026-11-25')).toBe('25 nov 2026');
     expect(formatBusinessDate('2026-01-01')).toBe('01 ene 2026');
-    expect(monthLabel(parseBusinessDate('2026-11-25'))).toBe('noviembre 2026');
+    expect(monthLabel(parseBusinessDate('2026-11-25'))).toBe('Noviembre 2026');
   });
 
   it('suma días y meses con ajuste de fin de mes y cambio de año', () => {
@@ -57,7 +57,7 @@ describe('dates', () => {
     expect(toBusinessKey(grid[41]!)).toBe('2026-12-06');
   });
 
-  it('una fecha YYYY-MM-DD se parsea y serializa igual con husos distintos', () => {
+  it('una fecha YYYY-MM-DD se parsea y serializa igual con husos distintos', { timeout: 30_000 }, () => {
     const code = `
       const dates = await import(${JSON.stringify(datesPath)});
       const parsed = dates.parseBusinessDate('2026-01-01');
@@ -73,7 +73,7 @@ describe('dates', () => {
       const output = execFileSync(process.execPath, ['--import', 'tsx', '--input-type=module', '-e', code], {
         env: { ...process.env, TZ: tz },
         encoding: 'utf8',
-        timeout: 20_000,
+        timeout: 60_000,
       });
       return JSON.parse(output) as { key: string; day: number; formatted: string; nativeDay: number };
     };

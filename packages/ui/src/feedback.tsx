@@ -119,7 +119,7 @@ export function Modal({
         className={cn(
           'w-full overflow-y-auto border border-border-subtle bg-surface-raised elevation-3',
           bottom
-            ? 'max-h-[90dvh] max-w-sheet rounded-t-3xl border-x-0 border-b-0 px-6 pt-6'
+            ? 'max-h-[90dvh] max-w-sheet rounded-t-xl border-x-0 border-b-0 px-6 pt-6'
             : cn(
                 'max-h-[90vh] rounded-xl p-6',
                 width === 'wide' ? 'max-w-2xl' : 'max-w-modal',

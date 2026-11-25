@@ -176,7 +176,7 @@ describe('feedback', () => {
 
     await user.click(trigger);
     const sheet = screen.getByRole('dialog', { name: 'Fecha' });
-    expect(sheet.className).toContain('rounded-t-3xl');
+    expect(sheet.className).toContain('rounded-t-xl');
     expect(sheet.className).toContain('max-w-sheet');
     expect(sheet.parentElement?.className).toContain('items-end');
 
