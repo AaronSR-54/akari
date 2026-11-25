@@ -94,6 +94,11 @@ El esquema Dexie está versionado en `packages/data/src/db.ts`; la versión 2 a�
 - `768–1023 px`: barra superior de tablet.
 - `< 768 px`: barra superior móvil y navegación inferior; una columna.
 - El panel expandido de la sidebar flota sobre el contenido y no desplaza el layout.
+- La navegación principal permanece fija al hacer scroll. En la variante sidebar, la sidebar se pega a 16 px y la barra de acciones (buscador y avisos) usa `sticky top-0` con una compensación del inset del shell: permanece pegada al borde superior también en reposo. En la variante `header`, `HeaderNav` es la única barra superior y también ocupa el borde superior desde el reposo.
+- No hay animaciones de ocultación o aparición ligadas al scroll. El overscroll elástico del documento se contiene desde 768 px (`overscroll-behavior-y: none` en la raíz); en móvil se conserva el comportamiento nativo.
+- Las barras fijas usan superficies opacas de los tokens (`surface/canvas` en escritorio y `surface/default` en la navegación inferior móvil). No se usan modificadores de opacidad sobre los tokens de color.
+- La cabecera de la variante sidebar no muestra el título de la sección: el H1 del contenido es el único título. La identidad de la persona se muestra una sola vez, en el pie de la sidebar o en `HeaderNav`; la cabecera no repite el avatar y conserva el buscador y el botón de avisos.
+- El `main` añade 24 px de padding superior (`pt-6`) en todos los breakpoints para separar el primer título del contenido del borde inferior de la cabecera.
 
 ## Pruebas
 
