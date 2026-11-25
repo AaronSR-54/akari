@@ -8,12 +8,12 @@ import { formatMinor } from '@akari/domain';
 import {
   Card,
   Grid,
-  PageHeader,
   Stack,
   StatePage,
 } from '@akari/ui';
 import { GroupForm } from '../../components/forms/group-form';
 import { PageTitle } from '../../components/page-title';
+import { PageHeaderResponsive } from '../../components/page-header-responsive';
 import { GroupStatusBadge } from '../../components/group-status-badge';
 import { PageSkeleton } from '../../components/page-skeleton';
 import { Modal, Button } from '@akari/ui';
@@ -69,7 +69,7 @@ export function GroupsScreen() {
     <div>
       <PageTitle title="Grupos" />
       <Stack gap={5}>
-        <PageHeader
+        <PageHeaderResponsive
           title="Grupos"
           meta={`${groups.length} ${groups.length === 1 ? 'grupo' : 'grupos'} · gastos compartidos y liquidaciones`}
           actions={<Button onClick={() => setCreating(true)}>Crear grupo</Button>}

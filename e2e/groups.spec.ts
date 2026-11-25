@@ -35,7 +35,7 @@ test.describe('gastos grupales', () => {
     await dialog.getByRole('button', { name: 'Crear grupo' }).click();
     await expect(page).toHaveURL(/\/grupos\/grp_/);
     await expect(page.getByRole('heading', { name: 'Viaje' })).toBeVisible();
-    await expect(page.getByText(/2 miembros/)).toBeVisible();
+    await expect(page.getByText(/2 miembros/).filter({ visible: true }).first()).toBeVisible();
   });
 
   test('el reparto porcentual avisa si no suma 100', async ({ page }) => {

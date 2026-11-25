@@ -112,7 +112,7 @@ La navegación principal SHALL permanecer en una posición fija mientras se desp
 #### Scenario: Cabecera superior siempre visible
 
 - **WHEN** se recorre una página larga hasta el final y se vuelve al inicio
-- **THEN** la barra superior de acciones con el buscador y el botón de avisos sigue visible, pegada al borde superior y sin mostrar el título de la sección
+- **THEN** la barra superior de la variante sidebar con el título de la sección, el buscador y el botón de avisos sigue visible y pegada al borde superior
 
 #### Scenario: Rebote elástico contenido
 
@@ -124,14 +124,29 @@ La navegación principal SHALL permanecer en una posición fija mientras se desp
 - **WHEN** el shell usa sidebar o cabecera superior como navegación principal
 - **THEN** la navegación principal permanece fija en ambos casos, `HeaderNav` ocupa el borde superior desde el reposo y no aparece una segunda navegación duplicada
 
-### Requirement: Cabecera sin título de sección
+### Requirement: Cabecera con título y subtítulo en sidebar
 
-La barra superior de acciones de la variante sidebar MUST NOT mostrar el título de la sección: el título SHALL mostrarse solo en el contenido de la página. La variante header MUST NOT mostrar una barra secundaria de título; `HeaderNav` SHALL ser la única barra superior.
+La variante sidebar SHALL mostrar en la cabecera fija `DesktopHeader`, como único encabezado visible en escritorio, el título de la sección (`h1`) y su subtítulo (`meta`/`description`). El contenido MUST NOT repetir ninguno de los dos en escritorio; `actions` y `breadcrumbs` permanecen en el contenido. La variante header MUST NOT mostrar una barra secundaria de título; `HeaderNav` SHALL seguir siendo la única barra superior.
 
-#### Scenario: Sidebar sin título duplicado
+#### Scenario: Sidebar con título y subtítulo en la cabecera
 
-- **WHEN** se abre una página como Ajustes o Movimientos con la navegación lateral
-- **THEN** la cabecera superior muestra solo el buscador y el botón de avisos, y el único título de sección visible es el encabezado del contenido
+- **WHEN** se abre una página como Resumen o Movimientos con la navegación lateral en escritorio
+- **THEN** la cabecera muestra a la izquierda el título y debajo el subtítulo, a la derecha el buscador y el botón de avisos, y existe un único `h1` visible en la página
+
+#### Scenario: Sin encabezado duplicado en el contenido
+
+- **WHEN** el shell está en modo sidebar y la ventana está en breakpoint de escritorio
+- **THEN** el encabezado del contenido no repite el título ni el subtítulo y conserva `actions` y `breadcrumbs`
+
+#### Scenario: Título y subtítulo dinámicos en la cabecera
+
+- **WHEN** se abre una cuenta, un grupo o el resumen con título y subtítulo dinámicos en vista sidebar
+- **THEN** la cabecera muestra los mismos valores que antes mostraba el contenido y el `document.title` no cambia
+
+#### Scenario: Tablet y móvil sin cambios
+
+- **WHEN** la ventana está en tablet o móvil con la navegación lateral configurada
+- **THEN** el título sigue mostrándose solo en el contenido y ninguna cabecera secundaria duplica el `h1`
 
 #### Scenario: Variante header sin barra de subtítulo
 
@@ -141,16 +156,16 @@ La barra superior de acciones de la variante sidebar MUST NOT mostrar el título
 #### Scenario: Contenido sin asomar por encima
 
 - **WHEN** se hace scroll en una página larga con la navegación lateral
-- **THEN** ningún encabezado del contenido queda visible por encima de la barra de acciones pegada al borde superior
+- **THEN** ningún encabezado del contenido queda visible por encima de la barra de título pegada al borde superior
 
 ### Requirement: Separación entre la cabecera y el contenido
 
-La cabecera superior y el primer título del contenido SHALL mantener una separación vertical mínima de 24 px en todos los breakpoints donde existe una cabecera fija; el contenido MUST NOT empezar pegado al borde inferior de la cabecera.
+La cabecera superior y el primer bloque del contenido SHALL mantener una separación vertical mínima de 24 px en todos los breakpoints donde existe una cabecera fija; el contenido MUST NOT empezar pegado al borde inferior de la cabecera.
 
 #### Scenario: Título con aire bajo la cabecera
 
 - **WHEN** se abre una página con la cabecera visible, en escritorio, tablet o móvil
-- **THEN** el primer título del contenido empieza al menos 24 px por debajo del borde inferior de la cabecera
+- **THEN** el primer bloque del contenido empieza al menos 24 px por debajo del borde inferior de la cabecera
 
 #### Scenario: Al hacer scroll
 

@@ -26,6 +26,22 @@ describe('layout', () => {
     expect(container.querySelector('.grid')).toBeInTheDocument();
   });
 
+  it('oculta el h1 en lg cuando hideTitleAtLg es true y conserva meta y acciones', () => {
+    const { unmount } = render(
+      <PageHeader title="Movimientos" meta="3 movimientos" actions={<button>Añadir</button>} hideTitleAtLg />,
+    );
+    const heading = screen.getByRole('heading', { name: 'Movimientos' });
+    expect(heading.className).toContain('lg:hidden');
+    expect(screen.getByText('3 movimientos').className).toContain('lg:hidden');
+    expect(screen.getByRole('button', { name: 'Añadir' })).toBeInTheDocument();
+    unmount();
+  });
+
+  it('muestra el h1 sin ocultar cuando hideTitleAtLg es falso', () => {
+    render(<PageHeader title="Movimientos" />);
+    expect(screen.getByRole('heading', { name: 'Movimientos' }).className).not.toContain('lg:hidden');
+  });
+
   it('los componentes de UI no contienen colores hexadecimales', () => {
     const files = readdirSync(here).filter((file) => file.endsWith('.tsx'));
     for (const file of files) {

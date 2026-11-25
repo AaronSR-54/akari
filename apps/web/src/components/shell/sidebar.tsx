@@ -125,9 +125,21 @@ export function Sidebar() {
   );
 }
 
-export function DesktopHeader({ onOpenSearch }: { onOpenSearch: () => void }) {
+export function DesktopHeader({
+  title,
+  meta,
+  onOpenSearch,
+}: {
+  title: string;
+  meta: string;
+  onOpenSearch: () => void;
+}) {
   return (
-    <header className="sticky top-0 z-20 hidden h-[72px] shrink-0 items-center justify-end gap-6 bg-surface-canvas px-8 lg:-mt-4 lg:flex">
+    <header className="sticky top-0 z-20 hidden h-[72px] shrink-0 items-center justify-between gap-6 bg-surface-canvas px-8 lg:-mt-4 lg:flex">
+      <div className="flex min-w-0 flex-1 flex-col justify-center gap-0.5">
+        <h1 className="truncate text-ui-28-bold text-text-primary">{title}</h1>
+        {meta ? <p className="truncate text-ui-11 text-text-secondary">{meta}</p> : null}
+      </div>
       <div className="flex shrink-0 items-center gap-2.5">
         <button
           type="button"
