@@ -13,6 +13,9 @@ import {
 } from 'react';
 import { cn } from './cn.js';
 import { Button } from './buttons.js';
+import { acquireScrollLock, isTopOverlay, popOverlay, pushOverlay } from './overlay-stack.js';
+
+export type ModalPlacement = 'center' | 'bottom';
 
 export type ModalProps = {
   open: boolean;
@@ -22,14 +25,25 @@ export type ModalProps = {
   footer?: ReactNode;
   width?: 'default' | 'wide';
   className?: string;
+  placement?: ModalPlacement;
 };
 
 const FOCUSABLE =
   'a[href], button:not([disabled]), textarea, input, select, [tabindex]:not([tabindex="-1"])';
 
-export function Modal({ open, onClose, title, children, footer, width = 'default', className }: ModalProps) {
+export function Modal({
+  open,
+  onClose,
+  title,
+  children,
+  footer,
+  width = 'default',
+  className,
+  placement = 'center',
+}: ModalProps) {
   const panelRef = useRef<HTMLDivElement>(null);
   const titleId = useId();
+  const overlayId = useId();
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
 
@@ -39,12 +53,12 @@ export function Modal({ open, onClose, title, children, footer, width = 'default
     const panel = panelRef.current;
     const focusables = panel ? Array.from(panel.querySelectorAll<HTMLElement>(FOCUSABLE)) : [];
     (panel?.querySelector<HTMLElement>('[data-autofocus]') ?? focusables[0] ?? panel)?.focus();
-    const previousOverflow = document.body.style.overflow;
-    const previousRootOverflow = document.documentElement.style.overflow;
-    document.body.style.overflow = 'hidden';
-    document.documentElement.style.overflow = 'hidden';
+    pushOverlay(overlayId);
+    const releaseScroll = acquireScrollLock();
 
     const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.defaultPrevented) return;
+      if (!isTopOverlay(overlayId)) return;
       if (event.key === 'Escape') {
         event.preventDefault();
         onCloseRef.current();
@@ -73,17 +87,22 @@ export function Modal({ open, onClose, title, children, footer, width = 'default
     document.addEventListener('keydown', handleKeyDown);
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
-      document.body.style.overflow = previousOverflow;
-      document.documentElement.style.overflow = previousRootOverflow;
+      popOverlay(overlayId);
+      releaseScroll();
       previous?.focus();
     };
-  }, [open]);
+  }, [open, overlayId]);
 
   if (!open) return null;
 
+  const bottom = placement === 'bottom';
+
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-overlay-scrim/50 p-4 backdrop-blur-sm"
+      className={cn(
+        'fixed inset-0 z-50 flex justify-center bg-overlay-scrim/50 backdrop-blur-sm',
+        bottom ? 'items-end p-0' : 'items-center p-4',
+      )}
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) onClose();
       }}
@@ -94,9 +113,17 @@ export function Modal({ open, onClose, title, children, footer, width = 'default
         aria-modal="true"
         aria-labelledby={titleId}
         tabIndex={-1}
+        style={
+          bottom ? { paddingBottom: 'calc(env(safe-area-inset-bottom) + 1.5rem)' } : undefined
+        }
         className={cn(
-          'max-h-[90vh] w-full overflow-y-auto rounded-xl border border-border-subtle bg-surface-raised p-6 elevation-3',
-          width === 'wide' ? 'max-w-2xl' : 'max-w-modal',
+          'w-full overflow-y-auto border border-border-subtle bg-surface-raised elevation-3',
+          bottom
+            ? 'max-h-[90dvh] max-w-sheet rounded-t-xl border-x-0 border-b-0 px-6 pt-6'
+            : cn(
+                'max-h-[90vh] rounded-xl p-6',
+                width === 'wide' ? 'max-w-2xl' : 'max-w-modal',
+              ),
           className,
         )}
       >
@@ -116,7 +143,7 @@ export function Modal({ open, onClose, title, children, footer, width = 'default
 }
 
 export function BottomSheet(props: ModalProps) {
-  return <Modal {...props} className={cn('max-w-sheet', props.className)} />;
+  return <Modal {...props} placement="bottom" />;
 }
 
 export type ToastTone = 'success' | 'error' | 'info' | 'neutral';

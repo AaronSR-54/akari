@@ -179,7 +179,7 @@ export function GroupExpenseForm({
             placeholder="Cena del piso"
             required
           />
-          <DateField label="Fecha" value={date} onChange={(event) => setDate(event.target.value)} required />
+          <DateField label="Fecha" value={date} onValueChange={setDate} required />
           <SelectField
             label="Pagó"
             value={payerMemberId}

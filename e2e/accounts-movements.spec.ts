@@ -29,9 +29,16 @@ test.describe('cuentas y movimientos', () => {
     await page.getByLabel('Importe').fill('50');
     await page.getByLabel('Concepto').fill('Cine');
     await chooseOption(page, 'Categoría', 'Ocio');
+    const dateTrigger = page.getByRole('button', { name: 'Fecha' });
+    await dateTrigger.click();
+    await page.getByRole('dialog', { name: 'Fecha' }).getByRole('button', { name: /^15 / }).click();
+    const pickedDate = ((await dateTrigger.textContent()) ?? '').trim();
+    const shortDate = pickedDate.split(' ').slice(0, 2).join(' ');
+    await expect(dateTrigger).toHaveAttribute('aria-expanded', 'false');
     await page.getByRole('button', { name: 'Guardar movimiento' }).click();
     await expect(page).toHaveURL(/\/movimientos/);
     await expect(visible(page, 'Cine')).toBeVisible();
+    await expect(visible(page, shortDate)).toBeVisible();
 
     await page.goto('/');
     await page.getByText('Ahorro').click();
@@ -128,9 +135,14 @@ test.describe('cuentas y movimientos', () => {
     const dialog = page.getByRole('dialog', { name: 'Editar movimiento' });
     await expect(dialog).toBeVisible();
     await dialog.getByLabel('Concepto').fill('Suscripción música');
+    const editDateTrigger = dialog.getByRole('button', { name: 'Fecha' });
+    await editDateTrigger.click();
+    await page.getByRole('dialog', { name: 'Fecha' }).getByRole('button', { name: /^20 / }).click();
+    const editedDate = ((await editDateTrigger.textContent()) ?? '').trim();
     await dialog.getByRole('button', { name: 'Guardar' }).click();
     const updated = page.getByRole('dialog', { name: 'Suscripción música' });
     await expect(updated).toBeVisible();
+    await expect(updated.getByText(editedDate)).toBeVisible();
     await updated.getByRole('button', { name: 'Cerrar' }).click();
     await expect(visible(page, 'Suscripción música')).toBeVisible();
 

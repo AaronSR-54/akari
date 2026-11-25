@@ -17,9 +17,14 @@ test.describe('gastos grupales', () => {
 
     await page.getByLabel('Concepto').fill('Taxi');
     await page.getByLabel('Importe').fill('30');
+    const dateTrigger = page.getByRole('button', { name: 'Fecha' });
+    await dateTrigger.click();
+    await page.getByRole('dialog', { name: 'Fecha' }).getByRole('button', { name: /^12 / }).click();
+    const pickedDate = ((await dateTrigger.textContent()) ?? '').trim();
     await page.getByRole('button', { name: 'Guardar y repartir' }).click();
     await expect(page.getByText('Taxi')).toBeVisible();
     await expect(page.getByText(/30,00/).first()).toBeVisible();
+    await expect(page.getByText(new RegExp(`${pickedDate} · \\d+ participantes`))).toBeVisible();
   });
 
   test('crea un grupo y valida que haya dos miembros', async ({ page }) => {

@@ -164,7 +164,7 @@ export function MovementForm({
           required
         />
         <div className="grid gap-4 md:grid-cols-2">
-          <DateField label="Fecha" value={date} onChange={(event) => setDate(event.target.value)} required />
+          <DateField label="Fecha" value={date} onValueChange={setDate} required />
           <SelectField
             label="Categoría"
             value={category}
