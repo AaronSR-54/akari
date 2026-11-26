@@ -391,3 +391,124 @@ export function Calendar({ value, onSelect, onCancel, labelledBy }: CalendarProp
     </div>
   );
 }
+
+export type MonthDayPickerProps = {
+  /** Día del mes seleccionado (1-31) o null/undefined si no hay ninguno. */
+  value?: number | null;
+  onSelect: (day: number) => void;
+  label?: string;
+};
+
+/**
+ * Rejilla tipo calendario para elegir solo el día del mes (1-31), sin mes ni año.
+ * Reutiliza los estilos y la navegación por teclado del calendario completo.
+ */
+export function MonthDayPicker({ value, onSelect, label = 'Día del mes' }: MonthDayPickerProps) {
+  const today = todayBusinessKey();
+  const todayDay = parseBusinessDate(today).getDate();
+  const [active, setActive] = useState(value ?? todayDay);
+  const refs = useRef(new Map<number, HTMLButtonElement>());
+
+  useEffect(() => {
+    if (value) setActive(value);
+  }, [value]);
+
+  const move = (event: ReactKeyboardEvent<HTMLDivElement>, day: number) => {
+    let next: number | null = null;
+    switch (event.key) {
+      case 'ArrowLeft':
+        next = day - 1;
+        break;
+      case 'ArrowRight':
+        next = day + 1;
+        break;
+      case 'ArrowUp':
+        next = day - 7;
+        break;
+      case 'ArrowDown':
+        next = day + 7;
+        break;
+      case 'Home':
+        next = 1;
+        break;
+      case 'End':
+        next = 31;
+        break;
+      default:
+        return;
+    }
+    event.preventDefault();
+    const target = Math.min(31, Math.max(1, next));
+    setActive(target);
+    refs.current.get(target)?.focus();
+  };
+
+  const rows = Array.from({ length: 5 }, (_, row) =>
+    Array.from({ length: 7 }, (_, column) => row * 7 + column + 1),
+  );
+
+  return (
+    <div
+      role="grid"
+      aria-label={label}
+      className="rounded-xl border border-border-subtle bg-surface-default p-3"
+      onKeyDown={(event) => {
+        const target = event.target as HTMLElement | null;
+        const day = Number(target?.dataset.monthDay ?? '');
+        if (Number.isInteger(day) && day >= 1 && day <= 31) move(event, day);
+      }}
+    >
+      <div role="row" className="grid grid-cols-7">
+        {WEEKDAYS.map((weekday) => (
+          <div
+            key={weekday.long}
+            role="columnheader"
+            aria-label={weekday.long}
+            className="flex h-8 items-center justify-center text-ui-10 text-text-tertiary"
+          >
+            {weekday.short}
+          </div>
+        ))}
+      </div>
+      {rows.map((row, rowIndex) => (
+        <div key={rowIndex} role="row" className="grid grid-cols-7">
+          {row.map((day) => {
+            if (day > 31) {
+              return <div key={`empty-${day}`} role="gridcell" aria-hidden="true" />;
+            }
+            const selected = value === day;
+            const isToday = day === todayDay;
+            return (
+              <div key={day} role="gridcell" aria-selected={selected} className="flex items-center justify-center">
+                <button
+                  type="button"
+                  ref={(element) => {
+                    if (element) refs.current.set(day, element);
+                    else refs.current.delete(day);
+                  }}
+                  data-month-day={day}
+                  tabIndex={active === day ? 0 : -1}
+                  aria-label={`Día ${day} de cada mes`}
+                  aria-current={isToday ? 'date' : undefined}
+                  onClick={() => {
+                    setActive(day);
+                    onSelect(day);
+                  }}
+                  className={cn(
+                    'flex h-11 w-full min-w-11 items-center justify-center rounded-lg text-ui-12 transition-colors duration-fast motion-reduce:transition-none',
+                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring',
+                    !selected && 'text-text-primary hover:bg-surface-sunken',
+                    selected && 'bg-accent-default text-accent-ink hover:brightness-95',
+                    isToday && !selected && 'ring-1 ring-border-strong',
+                  )}
+                >
+                  {day}
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      ))}
+    </div>
+  );
+}

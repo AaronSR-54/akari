@@ -16,11 +16,11 @@ import {
   cn,
   Icon,
   Inline,
+  MonthDayPicker,
   Logo,
   PageContainer,
   SectionHeader,
   Stack,
-  TextField,
   useToast,
   type IconName,
 } from '@akari/ui';
@@ -311,50 +311,61 @@ export function OnboardingScreen() {
               </Banner>
             ) : null}
 
-            {settings?.onboardingCompleted ? (
-              <Banner tone="info" title="Ya has completado los primeros pasos">
-                Puedes volver a la aplicación sin borrar tus datos.
-              </Banner>
-            ) : null}
-
             {step === 'name' ? (
-              <Card padding="lg">
-                <Stack gap={4}>
-                  <TextField
-                    label="Tu nombre"
-                    value={nameDraft}
-                    onChange={(event) => setNameDraft(event.target.value)}
-                    error={profileError}
-                    help="Se muestra en tu perfil y en el shell. Máximo 40 caracteres."
-                    maxLength={40}
-                    autoComplete="name"
-                    data-autofocus
-                  />
-                  <div className="flex flex-col gap-2 pt-1 sm:flex-row sm:items-center sm:justify-between">
-                    <Button
-                      variant="tertiary"
-                      size="sm"
-                      onClick={() => void startDemo()}
-                      loading={busy === 'demo'}
-                      disabled={!ready || Boolean(error)}
-                    >
-                      Ver con datos de ejemplo
-                    </Button>
-                    <Button
-                      onClick={() => void continueStep()}
-                      loading={busy === 'step'}
-                      disabled={!ready || Boolean(error)}
-                    >
-                      Continuar
-                    </Button>
-                  </div>
-                  <p className="text-ui-10 text-text-tertiary">
-                    Esta versión no cifra la base local ni los datos en la nube de extremo a extremo.
-                    No introduzcas datos sensibles reales. Consulta{' '}
-                    <code>docs/desarrollo/desviaciones.md</code>.
-                  </p>
-                </Stack>
-              </Card>
+              <div className="flex min-h-[360px] flex-col items-center justify-center gap-5 py-6">
+                <label htmlFor="onboarding-name" className="sr-only">
+                  Tu nombre
+                </label>
+                <input
+                  id="onboarding-name"
+                  value={nameDraft}
+                  onChange={(event) => setNameDraft(event.target.value)}
+                  maxLength={40}
+                  autoComplete="name"
+                  autoFocus
+                  spellCheck={false}
+                  aria-invalid={profileError ? true : undefined}
+                  aria-describedby="onboarding-name-help"
+                  placeholder="Tu nombre"
+                  className={cn(
+                    'w-full max-w-xl cursor-text border-0 bg-transparent p-0 text-center text-ui-32-bold caret-accent-default outline-none ring-0 placeholder:text-text-placeholder focus:outline-none focus:ring-0 md:text-heading-xxl',
+                    profileError ? 'text-status-danger-text' : 'text-text-primary',
+                  )}
+                />
+                <p
+                  id="onboarding-name-help"
+                  className={cn(
+                    'max-w-sm text-center text-ui-11',
+                    profileError ? 'text-status-danger-text' : 'text-text-secondary',
+                  )}
+                  aria-live="polite"
+                >
+                  {profileError ?? 'Toca el texto y escribe tu nombre. No hay nada que seleccionar.'}
+                </p>
+                <div className="flex flex-col items-center gap-2">
+                  <Button
+                    onClick={() => void continueStep()}
+                    loading={busy === 'step'}
+                    disabled={!ready || Boolean(error)}
+                    className="w-full max-w-xs"
+                  >
+                    Continuar
+                  </Button>
+                  <Button
+                    variant="tertiary"
+                    size="sm"
+                    onClick={() => void startDemo()}
+                    loading={busy === 'demo'}
+                    disabled={!ready || Boolean(error)}
+                  >
+                    Ver con datos de ejemplo
+                  </Button>
+                </div>
+                <p className="text-center text-ui-10 text-text-tertiary">
+                  Esta versión no cifra la base local ni los datos en la nube de extremo a extremo. No
+                  introduzcas datos sensibles reales.
+                </p>
+              </div>
             ) : null}
 
             {step === 'currency' ? (
@@ -398,17 +409,24 @@ export function OnboardingScreen() {
             {step === 'income' ? (
               <Card padding="lg">
                 <Stack gap={4}>
-                  <TextField
-                    label="Día del mes"
-                    type="number"
-                    min={1}
-                    max={31}
-                    value={incomeDayDraft}
-                    onChange={(event) => setIncomeDayDraft(event.target.value)}
-                    error={profileError}
-                    placeholder="Sin definir"
-                    help="Opcional. Si el mes es más corto, se ajusta al último día."
+                  <MonthDayPicker
+                    value={incomeDayDraft.trim() === '' ? null : Number(incomeDayDraft)}
+                    onSelect={(day) => setIncomeDayDraft(String(day))}
+                    label="Día del ingreso principal"
                   />
+                  <div className="text-center">
+                    <p className="text-ui-12-strong text-text-primary">
+                      {incomeDayDraft.trim() === ''
+                        ? 'Sin definir'
+                        : `Día ${incomeDayDraft} de cada mes`}
+                    </p>
+                    <p className="text-ui-10 text-text-secondary">
+                      Opcional. Si el mes es más corto, se ajusta al último día.
+                    </p>
+                    {profileError ? (
+                      <p className="mt-1 text-ui-11 text-status-danger-text">{profileError}</p>
+                    ) : null}
+                  </div>
                   <div className="flex flex-wrap justify-between gap-2">
                     <Button variant="tertiary" size="sm" onClick={() => setStep('currency')}>
                       Atrás
