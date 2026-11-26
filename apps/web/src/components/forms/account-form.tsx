@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   createAccount,
   decimalString,
@@ -15,17 +15,34 @@ import {
 import { Button, Card, Stack, TextField, SelectField, AmountField, Switch, useToast } from '@akari/ui';
 import { BankIcon } from '../bank-icon';
 import { useData } from '../providers';
+import { useSettings } from '../hooks';
 import { accountTypeOptions, bankOptions, currencyOptions } from '../../lib/options';
 import { errorMessage } from '../../lib/format';
 
-export function AccountForm({ account }: { account?: Account }) {
+export function AccountForm({
+  account,
+  defaultCurrency,
+  submitLabel,
+  showCancel = true,
+  onSaved,
+}: {
+  account?: Account;
+  defaultCurrency?: string;
+  submitLabel?: string;
+  showCancel?: boolean;
+  onSaved?: (account: Account) => void;
+}) {
   const router = useRouter();
   const { repositories } = useData();
+  const settings = useSettings();
+  const currencyInitialised = useRef(false);
   const { toast } = useToast();
   const [name, setName] = useState(account?.name ?? '');
   const [type, setType] = useState<AccountType>(account?.type ?? 'personal');
   const [bankId, setBankId] = useState<BankId>(account?.bankId ?? 'other');
-  const [currency, setCurrency] = useState(account?.currency ?? 'EUR');
+  const [currency, setCurrency] = useState(
+    account?.currency ?? defaultCurrency ?? settings?.primaryCurrency ?? 'EUR',
+  );
   const [balance, setBalance] = useState(
     account ? decimalString(money(account.initialBalanceMinor, account.currency)).replace('.', ',') : '',
   );
@@ -33,6 +50,13 @@ export function AccountForm({ account }: { account?: Account }) {
   const [includeInTotal, setIncludeInTotal] = useState(account?.includeInTotal ?? true);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (account || currencyInitialised.current) return;
+    currencyInitialised.current = true;
+    const preferred = defaultCurrency ?? settings?.primaryCurrency;
+    if (preferred) setCurrency(preferred);
+  }, [account, defaultCurrency, settings?.primaryCurrency]);
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -63,7 +87,8 @@ export function AccountForm({ account }: { account?: Account }) {
         ? await updateAccount(repositories, account.id, input)
         : await createAccount(repositories, input);
       toast({ title: account ? 'Cuenta actualizada' : 'Cuenta creada', tone: 'success' });
-      router.push(`/cuentas/${saved.id}`);
+      if (onSaved) onSaved(saved);
+      else router.push(`/cuentas/${saved.id}`);
     } catch (error) {
       const message = errorMessage(error, 'No se ha podido guardar la cuenta');
       toast({ title: 'Revisa los datos', description: message, tone: 'error' });
@@ -136,11 +161,13 @@ export function AccountForm({ account }: { account?: Account }) {
             help="Puedes excluir cuentas que no quieras sumar en el resumen."
           />
           <div className="flex flex-wrap justify-end gap-2 pt-2">
-            <Button variant="tertiary" onClick={() => router.back()}>
-              Cancelar
-            </Button>
+            {showCancel ? (
+              <Button variant="tertiary" onClick={() => router.back()}>
+                Cancelar
+              </Button>
+            ) : null}
             <Button type="submit" loading={saving}>
-              {account ? 'Guardar cambios' : 'Guardar cuenta'}
+              {submitLabel ?? (account ? 'Guardar cambios' : 'Guardar cuenta')}
             </Button>
           </div>
         </Stack>

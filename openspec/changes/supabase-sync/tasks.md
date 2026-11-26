@@ -36,6 +36,16 @@
 - [x] 5.3 Ejecutar `npm run typecheck`, `npm run lint`, `npm test` y `npm run build`; los cuatro terminan sin errores. La ejecución de `npm run e2e:worktree` queda pendiente por indicación de la persona usuaria; los E2E añadidos se dejaron preparados y se corrigieron dos selectores detectados en una ejecución previa.
 - [x] 5.4 Ejecutar `openspec validate supabase-sync` y revisar que no hay cambios en `docs/diseno/`, `design/` ni `openspec/specs/diseno/*`.
 
+## 6. Onboarding guiado y preferencias
+
+- [x] 6.1 Añadir `primaryCurrency` y `primaryIncomeDay` a `Settings`, con valores por defecto, y el caso de uso `updateProfilePreferences` con validación; verificar con tests de dominio que se guardan y que los valores inválidos se rechazan sin alterar los existentes.
+- [x] 6.2 Convertir `/onboarding` en un asistente de cinco pasos (perfil, primera cuenta, CSV informativo, primer movimiento y nube) con progreso, vuelta atrás y omisión por paso; verificar que el atajo «Omitir el asistente» completa el onboarding.
+- [x] 6.3 Reutilizar `AccountForm` y `MovementForm` con callbacks para crear la primera cuenta y el primer movimiento, incluyendo la divisa principal como valor por defecto; verificar que se puede omitir cada paso sin bloquear el resumen.
+- [x] 6.4 Pintar el paso de CSV con los bancos del catálogo, la copia honesta de privacidad y el estado «Próximamente», sin procesar archivos.
+- [x] 6.5 Añadir la migración `20261126100300_profile_preferences.sql` con `income_day`, el trigger actualizado y las instrucciones en `supabase/README.md`; verificar que se aplica después de las anteriores.
+- [x] 6.6 Sincronizar nombre, divisa y día de ingreso con `profiles` al conectar y al editar desde Ajustes, y mostrar los tres campos en el panel de perfil.
+- [ ] 6.7 Actualizar los E2E del onboarding y ejecutar la suite cuando la persona usuaria lo autorice; no se ejecutan en esta fase por indicación expresa.
+
 ## Workflow follow-up
 
 - Archivar el change y abrir la PR siguiendo el flujo de `AGENTS.md`; no mergear la PR.

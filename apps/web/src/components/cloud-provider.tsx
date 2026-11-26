@@ -27,7 +27,7 @@ import {
   type SyncEngine,
 } from '@akari/data';
 import { cloudEnabled, getSupabaseClient } from '../lib/supabase';
-import { fetchProfileName, saveProfileName } from '../lib/cloud-profile';
+import { fetchProfile, saveProfile } from '../lib/cloud-profile';
 
 export type CloudStatus =
   | 'disabled'
@@ -115,6 +115,10 @@ function errorMessage(error: unknown): string {
   return 'No se ha podido sincronizar. Los cambios siguen guardados en este dispositivo.';
 }
 
+function profileKey(profile: { displayName: string; currency: string; incomeDay: number }): string {
+  return `${profile.displayName}|${profile.currency}|${profile.incomeDay}`;
+}
+
 type CloudProviderProps = {
   db: AkariDB;
   repositories: AkariRepositories;
@@ -144,7 +148,7 @@ export function CloudProvider({
   const syncingRef = useRef(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pendingRef = useRef(0);
-  const lastPushedNameRef = useRef<string | null>(null);
+  const lastPushedProfileRef = useRef<string | null>(null);
 
   const settings = useLiveQuery(
     async () => (ready ? repositories.settings.get() : undefined),
@@ -236,18 +240,34 @@ export function CloudProvider({
       connectedUserRef.current = current.id;
 
       try {
-        const remoteName = await fetchProfileName(client, current.id);
-        if (remoteName) {
-          lastPushedNameRef.current = remoteName;
-          const settingsNow = await repositories.settings.get();
-          if (settingsNow.displayName !== remoteName) {
-            await repositories.settings.update({ displayName: remoteName });
+        const settingsNow = await repositories.settings.get();
+        const localProfile = {
+          displayName: settingsNow.displayName?.trim() || 'Marta',
+          currency: settingsNow.primaryCurrency ?? 'EUR',
+          incomeDay: settingsNow.primaryIncomeDay ?? 1,
+        };
+        const remote = await fetchProfile(client, current.id);
+        if (remote) {
+          const next = {
+            displayName: remote.displayName ?? localProfile.displayName,
+            currency: remote.currency ?? localProfile.currency,
+            incomeDay: remote.incomeDay ?? localProfile.incomeDay,
+          };
+          lastPushedProfileRef.current = profileKey(next);
+          if (
+            next.displayName !== settingsNow.displayName ||
+            next.currency !== settingsNow.primaryCurrency ||
+            next.incomeDay !== settingsNow.primaryIncomeDay
+          ) {
+            await repositories.settings.update({
+              displayName: next.displayName,
+              primaryCurrency: next.currency,
+              primaryIncomeDay: next.incomeDay,
+            });
           }
         } else {
-          const settingsNow = await repositories.settings.get();
-          const localName = settingsNow.displayName?.trim() || 'Marta';
-          lastPushedNameRef.current = localName;
-          await saveProfileName(client, current.id, localName);
+          lastPushedProfileRef.current = profileKey(localProfile);
+          await saveProfile(client, current.id, localProfile);
         }
       } catch (profileError) {
         // El perfil no bloquea la sincronización de los datos financieros.
@@ -375,16 +395,21 @@ export function CloudProvider({
     };
   }, [runSync]);
 
-  // Cambios del nombre en local se reflejan en el perfil remoto.
+  // Cambios del perfil en local se reflejan en el perfil remoto.
   useEffect(() => {
-    if (!client || !user || !settings?.displayName) return;
-    const name = settings.displayName.trim();
-    if (!name || name === lastPushedNameRef.current) return;
-    lastPushedNameRef.current = name;
-    void saveProfileName(client, user.id, name).catch((profileError: unknown) => {
+    if (!client || !user) return;
+    const profile = {
+      displayName: settings?.displayName?.trim() || 'Marta',
+      currency: settings?.primaryCurrency ?? 'EUR',
+      incomeDay: settings?.primaryIncomeDay ?? 1,
+    };
+    const key = profileKey(profile);
+    if (key === lastPushedProfileRef.current) return;
+    lastPushedProfileRef.current = key;
+    void saveProfile(client, user.id, profile).catch((profileError: unknown) => {
       setError(errorMessage(profileError));
     });
-  }, [client, settings?.displayName, user]);
+  }, [client, settings?.displayName, settings?.primaryCurrency, settings?.primaryIncomeDay, user]);
 
   const signUp = useCallback(
     async (email: string, password: string, displayName: string): Promise<AuthResult> => {
@@ -403,7 +428,11 @@ export function CloudProvider({
         email,
         password,
         options: {
-          data: { display_name: displayName },
+          data: {
+            display_name: displayName,
+            currency: settings?.primaryCurrency ?? 'EUR',
+            income_day: settings?.primaryIncomeDay ?? 1,
+          },
           emailRedirectTo:
             typeof window !== 'undefined' ? `${window.location.origin}/onboarding` : undefined,
         },
@@ -419,7 +448,7 @@ export function CloudProvider({
       await handleSession(account, 'upload');
       return { needsConfirmation: false };
     },
-    [client, db, handleSession],
+    [client, db, handleSession, settings?.primaryCurrency, settings?.primaryIncomeDay],
   );
 
   const signIn = useCallback(

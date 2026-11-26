@@ -78,7 +78,7 @@ Supabase replica las entidades en tablas PostgreSQL con `user_id`, `updated_at` 
 
 | Ruta | Pantalla | Flujo |
 | --- | --- | --- |
-| `/onboarding` | `M01`–`M04` adaptadas | 0 · Onboarding local |
+| `/onboarding` | `M01`–`M04` adaptadas | 0 · Asistente de perfil, cuenta, CSV informativo, movimiento y nube |
 | `/` | `W01` | E · Resumen |
 | `/cuentas/nueva` | `M06` en shell web | A · Alta de cuenta |
 | `/cuentas/[id]` | `W02` | E · Detalle |

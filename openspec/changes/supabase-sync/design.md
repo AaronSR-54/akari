@@ -18,6 +18,7 @@ La nube será Supabase (PostgreSQL + Auth) y cada cambio de esquema remoto debe 
 
 **Non-Goals:**
 
+- Importación real de CSV y parsers por banco; en este change solo se pinta el paso informativo.
 - Grupos compartidos entre usuarios, invitaciones y permisos por grupo.
 - Cifrado de extremo a extremo o cifrado de la base local.
 - Resolución de conflictos por campo, historial de versiones o fusión de cuentas distintas.
@@ -91,7 +92,19 @@ Mientras hay una cuenta conectada, «Importar copia», «Cargar datos de ejemplo
 
 Los disparadores de sincronización son: conexión establecida, cambio local (debounce de 1,5 s), foco/visibilidad, evento `online`, intervalo de 60 s y botón manual.
 
-### 9. Independencia del transporte para probar
+### 9. Asistente de onboarding y preferencias del perfil
+
+`/onboarding` pasa a ser un asistente con estado local de cinco pasos: perfil, primera cuenta, CSV informativo, primer movimiento y nube. El progreso se muestra con una barra y cada paso permite volver o omitirse; el perfil es el único obligatorio. «Omitir el asistente» completa el onboarding con los valores por defecto.
+
+- **Perfil.** `Settings` gana `primaryCurrency` y `primaryIncomeDay` opcionales con valores por defecto (`EUR` y `1`), de modo que las instalaciones existentes no necesitan migración de Dexie. La validación vive en `updateProfilePreferences` y `updateProfileName` delega en ella.
+- **Cuenta y movimiento.** Se reutilizan `AccountForm` y `MovementForm` con callbacks de guardado para no duplicar formularios ni validaciones. `AccountForm` acepta divisa por defecto, texto de envío y `onSaved`; `MovementForm` ya exponía `onSaved`, `showActions` y `framed`.
+- **CSV informativo.** Se muestran los bancos del catálogo con `BankIcon` y una copia de privacidad honesta: el archivo se procesará en el navegador, no se usa para nada más y Supabase cifra en tránsito y en reposo. No se promete cifrado de extremo a extremo ni se implementa todavía el parser.
+- **Sincronización del perfil.** `profiles` ya tenía `currency`; la migración 0004 añade `income_day`. El trigger de alta lee `currency` e `income_day` de `options.data`, y el cliente actualiza los tres campos al conectar o editar. Si la migración no está aplicada, la sincronización de datos sigue funcionando y el error de perfil se muestra sin bloquear.
+- **Divisa por defecto.** `AccountForm` usa `defaultCurrency` o `Settings.primaryCurrency` para nuevas cuentas, sin cambiar la divisa de las existentes.
+
+**Alternativa descartada:** guardar las preferencias solo en local. La divisa y el día de ingreso son datos de perfil y deben recuperarse al entrar desde otro dispositivo.
+
+### 10. Independencia del transporte para probar
 
 El motor de `packages/data/src/sync/engine.ts` depende de una interfaz `CloudGateway` (`fetchAll`, `upsert`, `softDelete`), no del cliente de Supabase. `createSupabaseGateway(client)` es la implementación real y las pruebas usan un gateway en memoria con `fake-indexeddb`. Así el comportamiento de sincronización se prueba sin red ni credenciales.
 

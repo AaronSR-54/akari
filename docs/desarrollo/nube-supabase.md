@@ -43,7 +43,7 @@ Pantalla / hook
 
 | Tabla | Contenido |
 | --- | --- |
-| `profiles` | Perfil público: nombre y divisa por defecto |
+| `profiles` | Perfil público: nombre, divisa principal y día de ingreso |
 | `accounts` | Cuentas personales, conjuntas y depósitos |
 | `movements` | Movimientos; `amount_minor` siempre positivo |
 | `recurrences` | Suscripciones e ingresos periódicos |
@@ -65,11 +65,12 @@ No hay cifrado de extremo a extremo: Supabase cifra en tránsito y en reposo seg
 
 ## Onboarding y ajustes
 
-- `/onboarding` mantiene «Empezar vacío» y «Ver con datos de ejemplo» y añade un campo de nombre y una tarjeta opcional para crear cuenta o iniciar sesión.
+- `/onboarding` es un asistente de cinco pasos: perfil (nombre, divisa principal y día de ingreso), primera cuenta, paso informativo de importación CSV, primer movimiento y cuenta en la nube. Cada paso se puede omitir salvo el perfil, y hay un atajo para omitir todo el asistente.
+- El paso de CSV muestra los bancos soportados y explica que la importación llegará próximamente; todavía no procesa archivos. La copia de privacidad indica que el archivo se procesará en el navegador, que no se usa para nada más y que Supabase cifra en tránsito y en reposo, sin prometer cifrado de extremo a extremo.
 - Al crear cuenta se suben los datos locales existentes (bootstrap).
 - Al iniciar sesión se descargan los de la cuenta; si el dispositivo ya tiene datos, se pide confirmación antes de sustituirlos.
 - Si el correo requiere confirmación, se muestra el aviso y la sesión se reanuda al volver desde el enlace.
-- `/ajustes` muestra el estado, el último sync, los cambios pendientes, «Sincronizar ahora» y «Desconectar».
+- `/ajustes` permite editar nombre, divisa principal y día de ingreso, y muestra el estado, el último sync, los cambios pendientes, «Sincronizar ahora» y «Desconectar».
 - Mientras hay una cuenta conectada, importar una copia, cargar ejemplos y borrar la base local están deshabilitados para no sustituir la nube por accidente. Exportar sigue disponible.
 
 ## Cambios de esquema

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { updateProfileName } from '@akari/domain';
+import { updateProfilePreferences } from '@akari/domain';
 import {
   backupToJson,
   exportBackup,
@@ -23,6 +23,7 @@ import {
   Inline,
   Modal,
   SectionHeader,
+  SelectField,
   SelectPill,
   SettingRow,
   Stack,
@@ -35,6 +36,7 @@ import { PageTitle } from '../../components/page-title';
 import { PageHeaderResponsive } from '../../components/page-header-responsive';
 import { HeadingMeta } from '../../components/heading-meta';
 import { defaultProfile, initialsFromName } from '../../lib/profile';
+import { currencyOptions } from '../../lib/options';
 import { useData } from '../../components/providers';
 import { PageSkeleton } from '../../components/page-skeleton';
 import { useCloud } from '../../components/cloud-provider';
@@ -61,6 +63,8 @@ export function SettingsScreen() {
   const [confirm, setConfirm] = useState<'reset' | 'demo' | 'import' | null>(null);
   const [editingName, setEditingName] = useState(false);
   const [nameDraft, setNameDraft] = useState('');
+  const [currencyDraft, setCurrencyDraft] = useState('EUR');
+  const [incomeDayDraft, setIncomeDayDraft] = useState('1');
   const [nameError, setNameError] = useState<string | undefined>();
   const [busy, setBusy] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -84,15 +88,19 @@ export function SettingsScreen() {
     }
   };
 
-  const saveName = async () => {
+  const saveProfile = async () => {
     setBusy(true);
     setNameError(undefined);
     try {
-      await updateProfileName(repositories, nameDraft);
+      await updateProfilePreferences(repositories, {
+        displayName: nameDraft,
+        primaryCurrency: currencyDraft,
+        primaryIncomeDay: Number(incomeDayDraft),
+      });
       setEditingName(false);
-      toast({ title: 'Nombre actualizado', tone: 'success' });
+      toast({ title: 'Perfil actualizado', tone: 'success' });
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'No se ha podido guardar el nombre.';
+      const message = error instanceof Error ? error.message : 'No se ha podido guardar el perfil.';
       setNameError(message);
       toast({ title: 'No se ha podido guardar', description: message, tone: 'error' });
     } finally {
@@ -210,6 +218,8 @@ export function SettingsScreen() {
                 size="sm"
                 onClick={() => {
                   setNameDraft(profileName);
+                  setCurrencyDraft(settings.primaryCurrency ?? 'EUR');
+                  setIncomeDayDraft(String(settings.primaryIncomeDay ?? 1));
                   setNameError(undefined);
                   setEditingName(true);
                 }}
@@ -226,8 +236,9 @@ export function SettingsScreen() {
             </div>
           </div>
           <p className="text-ui-10 text-text-secondary">
-            El nombre se guarda solo en este dispositivo. La foto se representa con iniciales y no se
-            almacenan imágenes.
+            Divisa principal: {settings.primaryCurrency ?? 'EUR'} · Ingreso principal el día{' '}
+            {settings.primaryIncomeDay ?? 1} de cada mes. Se sincroniza con tu perfil si hay una cuenta
+            conectada. La foto se representa con iniciales y no se almacenan imágenes.
           </p>
         </Card>
 
@@ -466,27 +477,45 @@ export function SettingsScreen() {
       <Modal
         open={editingName}
         onClose={() => setEditingName(false)}
-        title="Editar nombre"
+        title="Editar perfil"
         footer={
           <>
             <Button variant="tertiary" onClick={() => setEditingName(false)}>
               Cancelar
             </Button>
-            <Button onClick={() => void saveName()} loading={busy}>
+            <Button onClick={() => void saveProfile()} loading={busy}>
               Guardar
             </Button>
           </>
         }
       >
-        <TextField
-          label="Nombre"
-          value={nameDraft}
-          onChange={(event) => setNameDraft(event.target.value)}
-          error={nameError}
-          help="Se muestra en tu perfil y en el acceso de usuario. Máximo 40 caracteres."
-          maxLength={40}
-          data-autofocus
-        />
+        <Stack gap={3}>
+          <TextField
+            label="Nombre"
+            value={nameDraft}
+            onChange={(event) => setNameDraft(event.target.value)}
+            error={nameError}
+            help="Se muestra en tu perfil y en el acceso de usuario. Máximo 40 caracteres."
+            maxLength={40}
+            data-autofocus
+          />
+          <SelectField
+            label="Divisa principal"
+            value={currencyDraft}
+            onValueChange={setCurrencyDraft}
+            options={currencyOptions}
+            help="Se usará como divisa por defecto al crear nuevas cuentas."
+          />
+          <TextField
+            label="Día del ingreso principal"
+            type="number"
+            min={1}
+            max={31}
+            value={incomeDayDraft}
+            onChange={(event) => setIncomeDayDraft(event.target.value)}
+            help="Entre 1 y 31. Si el mes es más corto, se ajusta al último día."
+          />
+        </Stack>
       </Modal>
     </div>
   );

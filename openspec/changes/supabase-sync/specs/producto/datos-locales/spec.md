@@ -4,12 +4,17 @@
 
 ### Requirement: Inicialización del espacio de datos
 
-En la primera apertura, la aplicación SHALL crear un espacio de datos local, SHALL permitir recoger el nombre del perfil y SHALL dejar la aplicación lista para usarse sin depender de servicios remotos. La conexión con una cuenta en la nube MUST ser opcional.
+En la primera apertura, la aplicación SHALL crear un espacio de datos local y SHALL guiar a la persona con un asistente para configurar su perfil, su primera cuenta y su primer movimiento. La conexión con una cuenta en la nube y los pasos de cuenta y movimiento MUST ser opcionales.
 
 #### Scenario: Primera apertura
 
 - **WHEN** la persona abre la aplicación sin datos guardados
-- **THEN** se crea el espacio local y se ofrece un nombre de perfil, empezar vacío o cargar datos de ejemplo, con la nube como opción adicional
+- **THEN** se crea el espacio local y se muestra el asistente de perfil con nombre, divisa principal y día de ingreso, seguido de los pasos opcionales de cuenta, CSV, movimiento y nube
+
+#### Scenario: Omitir el asistente
+
+- **WHEN** la persona pulsa «Omitir el asistente»
+- **THEN** el onboarding se completa con los valores por defecto y la aplicación abre el resumen sin bloquear el uso
 
 #### Scenario: Aperturas posteriores
 
@@ -56,27 +61,32 @@ La aplicación SHALL permitir exportar e importar una copia de los datos locales
 
 ### Requirement: Nombre del perfil persistente
 
-La aplicación SHALL guardar el nombre editable del perfil en los ajustes locales del dispositivo y SHALL reutilizarlo en el panel y en el shell tras recargar. Sin cuenta conectada, el nombre MUST NOT enviarse a ningún servidor. Con cuenta conectada, el nombre SHALL sincronizarse con el perfil remoto.
+La aplicación SHALL guardar el nombre editable, la divisa principal y el día de ingreso del perfil en los ajustes locales y SHALL reutilizarlos tras recargar. Sin cuenta conectada, esos datos MUST NOT enviarse a ningún servidor. Con cuenta conectada, SHALL sincronizarse con el perfil remoto.
 
 #### Scenario: Guardado y persistencia
 
-- **WHEN** se guarda un nombre válido desde el panel de ajustes
-- **THEN** el nombre se escribe en los ajustes locales y sigue visible en `/ajustes` y en el avatar del shell después de recargar
+- **WHEN** se guardan un nombre, una divisa y un día de ingreso válidos desde el asistente o desde Ajustes
+- **THEN** los valores se escriben en los ajustes locales y siguen visibles tras recargar
 
 #### Scenario: Validación del nombre
 
-- **WHEN** se intenta guardar un nombre vacío o que supera la longitud permitida
-- **THEN** el cambio se rechaza con un mensaje comprensible y el nombre guardado permanece intacto
+- **WHEN** se intenta guardar un nombre vacío, una divisa que no es un código ISO de tres letras o un día fuera de 1–31
+- **THEN** el cambio se rechaza con un mensaje comprensible y los valores guardados permanecen intactos
 
-#### Scenario: Sincronización del nombre
+#### Scenario: Divisa por defecto
 
-- **WHEN** hay una cuenta conectada y se guarda un nombre válido
-- **THEN** el nombre se actualiza también en el perfil remoto y se recupera al entrar desde otro dispositivo
+- **WHEN** se crea una cuenta nueva
+- **THEN** la divisa principal del perfil aparece seleccionada por defecto, sin cambiar la divisa de cuentas existentes
+
+#### Scenario: Sincronización del perfil
+
+- **WHEN** hay una cuenta conectada y se guarda cualquier preferencia del perfil
+- **THEN** el perfil remoto se actualiza y los valores se recuperan al entrar desde otro dispositivo
 
 #### Scenario: Dato existente sin nombre
 
-- **WHEN** se abre una instalación creada antes de que existiera este campo
-- **THEN** se usa el nombre por defecto sin borrar ni alterar los ajustes ya guardados
+- **WHEN** se abre una instalación creada antes de que existieran estos campos
+- **THEN** se usan `EUR` y el día 1 sin borrar ni alterar los ajustes ya guardados
 
 ## ADDED Requirements
 

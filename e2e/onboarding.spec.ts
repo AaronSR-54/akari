@@ -5,8 +5,8 @@ test.describe('onboarding', () => {
   test('primera apertura redirige y empezar vacío no se repite', async ({ page }) => {
     await page.goto('/');
     await expect(page).toHaveURL(/\/onboarding/);
-    await expect(page.getByRole('heading', { name: /Tus cuentas/ })).toBeVisible();
-    await page.getByRole('button', { name: 'Empezar vacío' }).click();
+    await expect(page.getByRole('heading', { name: 'Tu perfil' })).toBeVisible();
+    await page.getByRole('button', { name: 'Omitir el asistente' }).click();
     await expect(page).toHaveURL(/\/$/);
     await expectGreetingForViewport(page);
     await expect(page.getByText('Tu resumen empieza con una cuenta')).toBeVisible();
@@ -72,7 +72,8 @@ test.describe('onboarding', () => {
   test('el nombre del onboarding se guarda en el perfil', async ({ page }) => {
     await page.goto('/onboarding');
     await page.getByLabel('Tu nombre').fill('Lucía');
-    await page.getByRole('button', { name: 'Empezar vacío' }).click();
+    await page.getByRole('button', { name: 'Continuar' }).click();
+    await page.getByRole('button', { name: 'Omitir el asistente' }).click();
     await page.waitForURL(/\/$/);
     await page.getByRole('link', { name: 'Ajustes', exact: true }).first().click();
     await expect(

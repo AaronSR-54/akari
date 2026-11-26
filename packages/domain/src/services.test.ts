@@ -12,6 +12,7 @@ import {
   updateAccount,
   updateGroupRole,
   updateProfileName,
+  updateProfilePreferences,
   ValidationError,
   type BankId,
   type Group,
@@ -500,5 +501,28 @@ describe('nombre del perfil', () => {
     const repositories = memoryRepositories();
     await expect(updateProfileName(repositories, 'A'.repeat(41))).rejects.toThrow(/40 caracteres/);
     expect((await repositories.settings.get()).displayName).toBeUndefined();
+  });
+
+  it('guarda la divisa principal y el día de ingreso', async () => {
+    const repositories = memoryRepositories();
+    const updated = await updateProfilePreferences(repositories, {
+      primaryCurrency: 'usd',
+      primaryIncomeDay: 25,
+    });
+    expect(updated.primaryCurrency).toBe('USD');
+    expect(updated.primaryIncomeDay).toBe(25);
+  });
+
+  it('rechaza una divisa o un día de ingreso inválidos', async () => {
+    const repositories = memoryRepositories();
+    await expect(
+      updateProfilePreferences(repositories, { primaryCurrency: 'euros' }),
+    ).rejects.toThrow(ValidationError);
+    await expect(
+      updateProfilePreferences(repositories, { primaryIncomeDay: 32 }),
+    ).rejects.toThrow(/entre 1 y 31/);
+    const settings = await repositories.settings.get();
+    expect(settings.primaryCurrency).toBeUndefined();
+    expect(settings.primaryIncomeDay).toBeUndefined();
   });
 });

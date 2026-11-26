@@ -37,22 +37,22 @@ La aplicación SHALL permitir crear una cuenta y iniciar sesión con email y con
 
 ### Requirement: Perfil de usuario
 
-La aplicación SHALL guardar el nombre del perfil en la nube cuando hay una cuenta conectada y SHALL reflejarlo en el shell y en Ajustes. El nombre MUST validarse con las mismas reglas que en modo local.
+La aplicación SHALL guardar en la nube el nombre, la divisa principal y el día de ingreso del perfil cuando hay una cuenta conectada y SHALL reflejarlos en el shell y en Ajustes. Las preferencias MUST validarse con las mismas reglas que en modo local.
 
-#### Scenario: Nombre actualizado
+#### Scenario: Perfil actualizado
 
-- **WHEN** se guarda un nombre válido desde Ajustes con la cuenta conectada
-- **THEN** el nombre se actualiza en el perfil remoto y se mantiene tras recargar o entrar desde otro dispositivo
+- **WHEN** se guarda un nombre, una divisa o un día de ingreso válidos desde Ajustes con la cuenta conectada
+- **THEN** el perfil remoto se actualiza y se mantiene tras recargar o entrar desde otro dispositivo
 
-#### Scenario: Nombre recuperado
+#### Scenario: Perfil recuperado
 
 - **WHEN** se inicia sesión en un dispositivo nuevo
-- **THEN** el nombre del perfil remoto sustituye al valor local por defecto
+- **THEN** el nombre, la divisa principal y el día de ingreso del perfil remoto sustituyen a los valores locales por defecto
 
-#### Scenario: Nombre inválido
+#### Scenario: Perfil inválido
 
-- **WHEN** el nombre está vacío o supera 40 caracteres
-- **THEN** el cambio se rechaza y el nombre remoto y local permanecen intactos
+- **WHEN** el nombre está vacío o supera 40 caracteres, la divisa no es un código ISO o el día no está entre 1 y 31
+- **THEN** el cambio se rechaza y el perfil remoto y local permanecen intactos
 
 ### Requirement: Sincronización local-first
 
@@ -118,17 +118,27 @@ Cada fila remota SHALL pertenecer a un único usuario y PostgreSQL MUST aplicar 
 
 ### Requirement: Onboarding de perfil y nube
 
-La pantalla de primeros pasos SHALL recoger el nombre del perfil y SHALL ofrecer, de forma opcional, crear una cuenta o iniciar sesión sin impedir el flujo local existente.
+La pantalla de primeros pasos SHALL guiar con un asistente de perfil, primera cuenta, paso informativo de CSV, primer movimiento y cuenta opcional en la nube, sin impedir el flujo local existente. Cada paso posterior al perfil MUST poder omitirse.
+
+#### Scenario: Perfil inicial
+
+- **WHEN** la persona completa el primer paso
+- **THEN** se guardan su nombre, divisa principal y día de ingreso antes de continuar
 
 #### Scenario: Continuar sin cuenta
 
-- **WHEN** la persona elige empezar vacío o con datos de ejemplo sin conectar una cuenta
-- **THEN** el onboarding termina igual que antes y los datos quedan solo en el dispositivo
+- **WHEN** la persona omite los pasos opcionales o termina sin conectar una cuenta
+- **THEN** el onboarding se completa y los datos quedan solo en el dispositivo
+
+#### Scenario: Paso de CSV informativo
+
+- **WHEN** la persona llega al paso de importación
+- **THEN** ve los bancos soportados y una explicación honesta de que la importación llegará próximamente, sin que se procese ningún archivo
 
 #### Scenario: Alta desde el onboarding
 
 - **WHEN** la persona crea una cuenta desde el onboarding
-- **THEN** el nombre introducido se guarda en el perfil y los datos locales existentes se suben a la nube
+- **THEN** su perfil (nombre, divisa y día de ingreso) se guarda en la nube y los datos locales existentes se suben
 
 #### Scenario: Inicio de sesión con datos locales
 
