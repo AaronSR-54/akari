@@ -8,7 +8,6 @@ import {
   Badge,
   Banner,
   Button,
-  Card,
   cn,
   Icon,
   Inline,
@@ -23,6 +22,7 @@ import {
 import { useSettings } from '../hooks';
 import { useData } from '../providers';
 import { CloudAccountCard } from '../account-panel';
+import { useCloud } from '../cloud-provider';
 import { BankIcon } from '../bank-icon';
 import { appNow } from '../../lib/clock';
 import { defaultProfile } from '../../lib/profile';
@@ -148,6 +148,7 @@ export function OnboardingScreen() {
   const router = useRouter();
   const { db, repositories, ready, error } = useData();
   const settings = useSettings();
+  const cloud = useCloud();
   const { toast } = useToast();
 
   const [step, setStep] = useState<Step>('name');
@@ -157,8 +158,11 @@ export function OnboardingScreen() {
   const [incomeDayDraft, setIncomeDayDraft] = useState('');
   const [profileError, setProfileError] = useState<string | undefined>();
   const [contentHeight, setContentHeight] = useState<number>();
+  const [asideHeight, setAsideHeight] = useState<number>();
   const initialised = useRef(false);
+  const redirected = useRef(false);
   const contentRef = useRef<HTMLDivElement>(null);
+  const asideRef = useRef<HTMLParagraphElement>(null);
 
   useEffect(() => {
     if (initialised.current || !settings) return;
@@ -169,6 +173,24 @@ export function OnboardingScreen() {
   }, [settings]);
 
   useEffect(() => {
+    if (!settings || redirected.current) return;
+    if (settings.onboardingCompleted) {
+      redirected.current = true;
+      router.replace('/');
+      return;
+    }
+    if (!cloud.user) return;
+    // Con una sesión de nube activa, el asistente ya no aporta nada: la cuenta
+    // existe y sus datos vienen de Supabase. Lo damos por completado y vamos al
+    // resumen para no rebotar entre ambas pantallas.
+    redirected.current = true;
+    void repositories.settings
+      .update({ onboardingCompleted: true })
+      .catch(() => undefined)
+      .then(() => router.replace('/'));
+  }, [settings, cloud.user, repositories, router]);
+
+  useEffect(() => {
     const element = contentRef.current;
     if (!element) return;
     const measure = () => setContentHeight(element.offsetHeight);
@@ -177,6 +199,16 @@ export function OnboardingScreen() {
     observer.observe(element);
     return () => observer.disconnect();
   }, [step, error]);
+
+  useEffect(() => {
+    const element = asideRef.current;
+    if (!element) return;
+    const measure = () => setAsideHeight(element.offsetHeight);
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [step]);
 
   const meta = STEP_META[step];
   const stepIndex = STEPS.indexOf(step);
@@ -301,12 +333,29 @@ export function OnboardingScreen() {
                 </h1>
               </div>
             </div>
-            <p className="mt-3 text-ui-12 text-text-secondary lg:mt-4 lg:text-ui-13">
-              {meta.description}
-            </p>
-            <p className="mt-4 hidden text-ui-10 text-text-tertiary lg:block">
+            <div
+              className="mt-3 overflow-hidden transition-[height] duration-slow ease-out motion-reduce:transition-none lg:mt-4"
+              style={{ height: asideHeight }}
+            >
+              <p ref={asideRef} className="text-ui-12 text-text-secondary lg:text-ui-13">
+                {meta.description}
+              </p>
+            </div>
+            {step === 'name' ? (
+              <Button
+                variant="tertiary"
+                size="sm"
+                className="mt-4"
+                onClick={() => void startDemo()}
+                loading={busy === 'demo'}
+                disabled={!ready || Boolean(error)}
+              >
+                Ver con datos de ejemplo
+              </Button>
+            ) : null}
+            <p className="mt-4 text-ui-10 text-text-tertiary">
               Tus datos se guardan primero en este dispositivo. La nube es opcional y se puede
-              activar al final.
+              activar al final. Esta versión no cifra la base local ni la nube de extremo a extremo.
             </p>
           </aside>
 
@@ -318,216 +367,190 @@ export function OnboardingScreen() {
             ) : null}
 
             <div
-              className="overflow-hidden transition-[height] duration-slow ease-out motion-reduce:transition-none"
+              className="overflow-hidden rounded-xl border border-border-subtle bg-surface-default transition-[height] duration-slow ease-out motion-reduce:transition-none"
               style={{ height: contentHeight }}
             >
-              <div ref={contentRef} key={step} className="min-w-0">
+              <div ref={contentRef} key={step} className="min-w-0 p-6">
                 {step === 'name' ? (
-                  <Card padding="lg">
-                    <div className="flex min-h-[360px] flex-col items-center justify-center gap-5 py-6">
-                      <label htmlFor="onboarding-name" className="sr-only">
-                        Tu nombre
-                      </label>
-                      <input
-                        id="onboarding-name"
-                        value={nameDraft}
-                        onChange={(event) => setNameDraft(event.target.value)}
-                        maxLength={40}
-                        autoComplete="name"
-                        autoFocus
-                        spellCheck={false}
-                        aria-invalid={profileError ? true : undefined}
-                        aria-describedby="onboarding-name-help"
-                        placeholder="Tu nombre"
-                        className={cn(
-                          'w-full max-w-xl cursor-text border-0 bg-transparent p-0 text-center text-ui-32-bold caret-accent-default outline-none ring-0 placeholder:text-text-placeholder focus:outline-none focus:ring-0 md:text-heading-xxl',
-                          profileError ? 'text-status-danger-text' : 'text-text-primary',
-                        )}
-                      />
-                      <p
-                        id="onboarding-name-help"
-                        className={cn(
-                          'max-w-sm text-center text-ui-11',
-                          profileError ? 'text-status-danger-text' : 'text-text-secondary',
-                        )}
-                        aria-live="polite"
+                  <div className="flex flex-col items-center justify-center gap-5 py-6">
+                    <label htmlFor="onboarding-name" className="sr-only">
+                      Tu nombre
+                    </label>
+                    <input
+                      id="onboarding-name"
+                      value={nameDraft}
+                      onChange={(event) => setNameDraft(event.target.value)}
+                      maxLength={40}
+                      autoComplete="name"
+                      autoFocus
+                      spellCheck={false}
+                      aria-invalid={profileError ? true : undefined}
+                      aria-describedby="onboarding-name-help"
+                      placeholder="Tu nombre"
+                      className={cn(
+                        'w-full max-w-xl cursor-text border-0 bg-transparent p-0 text-center text-ui-32-bold caret-accent-default outline-none ring-0 placeholder:text-text-placeholder focus:outline-none focus:ring-0 md:text-heading-xxl',
+                        profileError ? 'text-status-danger-text' : 'text-text-primary',
+                      )}
+                    />
+                    <p
+                      id="onboarding-name-help"
+                      className={cn(
+                        'max-w-sm text-center text-ui-11',
+                        profileError ? 'text-status-danger-text' : 'text-text-secondary',
+                      )}
+                      aria-live="polite"
+                    >
+                      {profileError ??
+                        'Toca el texto y escribe tu nombre. No hay nada que seleccionar.'}
+                    </p>
+                    <div className="flex flex-wrap justify-end gap-2 self-stretch">
+                      <Button
+                        onClick={() => void continueStep()}
+                        loading={busy === 'step'}
+                        disabled={!ready || Boolean(error)}
                       >
-                        {profileError ??
-                          'Toca el texto y escribe tu nombre. No hay nada que seleccionar.'}
-                      </p>
-                      <div className="flex flex-col items-center gap-2">
-                        <Button
-                          onClick={() => void continueStep()}
-                          loading={busy === 'step'}
-                          disabled={!ready || Boolean(error)}
-                          className="w-full max-w-xs"
-                        >
-                          Continuar
-                        </Button>
-                        <Button
-                          variant="tertiary"
-                          size="sm"
-                          onClick={() => void startDemo()}
-                          loading={busy === 'demo'}
-                          disabled={!ready || Boolean(error)}
-                        >
-                          Ver con datos de ejemplo
-                        </Button>
-                      </div>
-                      <p className="text-center text-ui-10 text-text-tertiary">
-                        Esta versión no cifra la base local ni los datos en la nube de extremo a
-                        extremo. No introduzcas datos sensibles reales.
-                      </p>
+                        Continuar
+                      </Button>
                     </div>
-                  </Card>
+                  </div>
                 ) : null}
 
                 {step === 'currency' ? (
-                  <Card padding="lg">
-                    <Stack gap={4}>
-                      <div className="grid grid-cols-2 gap-3">
-                        {currencyOptions.map((option) => {
-                          const selected = currencyDraft === option.value;
-                          return (
-                            <button
-                              key={option.value}
-                              type="button"
-                              onClick={() => setCurrencyDraft(option.value)}
-                              aria-pressed={selected}
-                              className={cn(
-                                'flex flex-col items-start gap-1 rounded-xl border px-4 py-3 text-left transition-colors',
-                                selected
-                                  ? 'border-accent-default bg-accent-soft text-text-primary'
-                                  : 'border-border-subtle bg-surface-default text-text-secondary hover:bg-surface-sunken',
-                              )}
-                            >
-                              <span className="text-ui-24-bold">
-                                {CURRENCY_SYMBOL[option.value]}
-                              </span>
-                              <span className="text-ui-12-strong">{option.label}</span>
-                              <span className="text-ui-10 text-text-tertiary">{option.value}</span>
-                            </button>
-                          );
-                        })}
-                      </div>
-                      <div className="flex flex-wrap justify-between gap-2">
-                        <Button variant="tertiary" size="sm" onClick={() => setStep('name')}>
-                          Atrás
+                  <Stack gap={4}>
+                    <div className="grid grid-cols-2 gap-3">
+                      {currencyOptions.map((option) => {
+                        const selected = currencyDraft === option.value;
+                        return (
+                          <button
+                            key={option.value}
+                            type="button"
+                            onClick={() => setCurrencyDraft(option.value)}
+                            aria-pressed={selected}
+                            className={cn(
+                              'flex flex-col items-start gap-1 rounded-xl border px-4 py-3 text-left transition-colors',
+                              selected
+                                ? 'border-accent-default bg-accent-soft text-text-primary'
+                                : 'border-border-subtle bg-surface-default text-text-secondary hover:bg-surface-sunken',
+                            )}
+                          >
+                            <span className="text-ui-24-bold">{CURRENCY_SYMBOL[option.value]}</span>
+                            <span className="text-ui-12-strong">{option.label}</span>
+                            <span className="text-ui-10 text-text-tertiary">{option.value}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <div className="flex flex-wrap justify-between gap-2">
+                      <Button variant="tertiary" size="sm" onClick={() => setStep('name')}>
+                        Atrás
+                      </Button>
+                      <Button onClick={() => void continueStep()} loading={busy === 'step'}>
+                        Continuar
+                      </Button>
+                    </div>
+                  </Stack>
+                ) : null}
+
+                {step === 'income' ? (
+                  <Stack gap={4}>
+                    <MonthDayPicker
+                      value={incomeDayDraft.trim() === '' ? null : Number(incomeDayDraft)}
+                      onSelect={(day) => setIncomeDayDraft(String(day))}
+                      label="Día del ingreso principal"
+                    />
+                    <div className="text-center">
+                      <p className="text-ui-12-strong text-text-primary">
+                        {incomeDayDraft.trim() === ''
+                          ? 'Sin definir'
+                          : `Día ${incomeDayDraft} de cada mes`}
+                      </p>
+                      <p className="text-ui-10 text-text-secondary">
+                        Opcional. Si el mes es más corto, se ajusta al último día.
+                      </p>
+                      {profileError ? (
+                        <p className="mt-1 text-ui-11 text-status-danger-text">{profileError}</p>
+                      ) : null}
+                    </div>
+                    <div className="flex flex-wrap justify-between gap-2">
+                      <Button variant="tertiary" size="sm" onClick={() => setStep('currency')}>
+                        Atrás
+                      </Button>
+                      <div className="flex flex-wrap gap-2">
+                        <Button variant="tertiary" onClick={() => void skipIncome()}>
+                          No lo tengo
                         </Button>
                         <Button onClick={() => void continueStep()} loading={busy === 'step'}>
                           Continuar
                         </Button>
                       </div>
-                    </Stack>
-                  </Card>
-                ) : null}
-
-                {step === 'income' ? (
-                  <Card padding="lg">
-                    <Stack gap={4}>
-                      <MonthDayPicker
-                        value={incomeDayDraft.trim() === '' ? null : Number(incomeDayDraft)}
-                        onSelect={(day) => setIncomeDayDraft(String(day))}
-                        label="Día del ingreso principal"
-                      />
-                      <div className="text-center">
-                        <p className="text-ui-12-strong text-text-primary">
-                          {incomeDayDraft.trim() === ''
-                            ? 'Sin definir'
-                            : `Día ${incomeDayDraft} de cada mes`}
-                        </p>
-                        <p className="text-ui-10 text-text-secondary">
-                          Opcional. Si el mes es más corto, se ajusta al último día.
-                        </p>
-                        {profileError ? (
-                          <p className="mt-1 text-ui-11 text-status-danger-text">{profileError}</p>
-                        ) : null}
-                      </div>
-                      <div className="flex flex-wrap justify-between gap-2">
-                        <Button variant="tertiary" size="sm" onClick={() => setStep('currency')}>
-                          Atrás
-                        </Button>
-                        <div className="flex flex-wrap gap-2">
-                          <Button variant="tertiary" onClick={() => void skipIncome()}>
-                            No lo tengo
-                          </Button>
-                          <Button onClick={() => void continueStep()} loading={busy === 'step'}>
-                            Continuar
-                          </Button>
-                        </div>
-                      </div>
-                    </Stack>
-                  </Card>
+                    </div>
+                  </Stack>
                 ) : null}
 
                 {step === 'banks' ? (
-                  <Card padding="lg">
-                    <Stack gap={4}>
-                      <SectionHeader
-                        title="Bancos compatibles"
-                        action={<Badge tone="info">Próximamente</Badge>}
-                      />
-                      <ul
-                        aria-label="Bancos compatibles"
-                        className="grid grid-cols-4 justify-items-center gap-4 sm:grid-cols-5"
-                      >
-                        {bankCatalog
-                          .filter((bank) => bank.icon === 'app')
-                          .map((bank) => (
-                            <li key={bank.id} title={bank.name} aria-label={bank.name} role="img">
-                              <span className="grid h-16 w-16 place-items-center rounded-full border border-border-subtle bg-surface-default p-1 shadow-sm sm:h-[72px] sm:w-[72px]">
-                                <BankIcon bankId={bank.id} size={64} />
-                              </span>
-                            </li>
-                          ))}
-                      </ul>
-                      <Banner tone="info" title="Tus datos bancarios no se usan para nada">
-                        El archivo se procesará en tu navegador y solo servirá como atajo para crear
-                        tus movimientos, sin configurarlo todo a mano. No lo enviamos a tu banco ni
-                        lo usamos con otros fines. Supabase cifra los datos en tránsito y en reposo;
-                        el cifrado de extremo a extremo llegará más adelante.
-                      </Banner>
-                      <div className="flex flex-wrap justify-between gap-2">
-                        <Button variant="tertiary" size="sm" onClick={() => setStep('income')}>
+                  <Stack gap={4}>
+                    <SectionHeader
+                      title="Bancos compatibles"
+                      action={<Badge tone="info">Próximamente</Badge>}
+                    />
+                    <ul
+                      aria-label="Bancos compatibles"
+                      className="grid grid-cols-4 justify-items-center gap-4 sm:grid-cols-5"
+                    >
+                      {bankCatalog
+                        .filter((bank) => bank.icon === 'app')
+                        .map((bank) => (
+                          <li key={bank.id} title={bank.name} aria-label={bank.name} role="img">
+                            <span className="grid h-16 w-16 place-items-center rounded-full border border-border-subtle bg-surface-default p-1 shadow-sm sm:h-[72px] sm:w-[72px]">
+                              <BankIcon bankId={bank.id} size={64} />
+                            </span>
+                          </li>
+                        ))}
+                    </ul>
+                    <Banner tone="info" title="Tus datos bancarios no se usan para nada">
+                      El archivo se procesará en tu navegador y solo servirá como atajo para crear
+                      tus movimientos, sin configurarlo todo a mano. No lo enviamos a tu banco ni lo
+                      usamos con otros fines. Supabase cifra los datos en tránsito y en reposo; el
+                      cifrado de extremo a extremo llegará más adelante.
+                    </Banner>
+                    <div className="flex flex-wrap justify-between gap-2">
+                      <Button variant="tertiary" size="sm" onClick={() => setStep('income')}>
+                        Atrás
+                      </Button>
+                      <div className="flex flex-wrap gap-2">
+                        <Button variant="tertiary" onClick={() => void finish()}>
+                          Omitir
+                        </Button>
+                        <Button onClick={() => void continueStep()} loading={busy === 'step'}>
+                          Continuar
+                        </Button>
+                      </div>
+                    </div>
+                  </Stack>
+                ) : null}
+
+                {step === 'cloud' ? (
+                  <Stack gap={4}>
+                    <CloudAccountCard variant="onboarding" bare defaultName={nameDraft} />
+                    <div className="flex flex-col gap-3 border-t border-border-subtle pt-4">
+                      <p className="text-ui-12 text-text-secondary">
+                        Si no conectas una cuenta, tus datos se quedan en este dispositivo. Puedes
+                        hacerlo más tarde desde Ajustes.
+                      </p>
+                      <Inline className="flex-wrap justify-between gap-2">
+                        <Button variant="tertiary" onClick={() => setStep('banks')}>
                           Atrás
                         </Button>
                         <div className="flex flex-wrap gap-2">
                           <Button variant="tertiary" onClick={() => void finish()}>
-                            Omitir
+                            Ahora no
                           </Button>
-                          <Button onClick={() => void continueStep()} loading={busy === 'step'}>
-                            Continuar
+                          <Button onClick={() => void finish()} loading={busy === 'finish'}>
+                            Terminar
                           </Button>
                         </div>
-                      </div>
-                    </Stack>
-                  </Card>
-                ) : null}
-
-                {step === 'cloud' ? (
-                  <Stack gap={3}>
-                    <CloudAccountCard variant="onboarding" defaultName={nameDraft} />
-                    <Card padding="md">
-                      <Stack gap={3}>
-                        <p className="text-ui-12 text-text-secondary">
-                          Si no conectas una cuenta, tus datos se quedan en este dispositivo. Puedes
-                          hacerlo más tarde desde Ajustes.
-                        </p>
-                        <Inline className="flex-wrap justify-between gap-2">
-                          <Button variant="tertiary" onClick={() => setStep('banks')}>
-                            Atrás
-                          </Button>
-                          <div className="flex flex-wrap gap-2">
-                            <Button variant="tertiary" onClick={() => void finish()}>
-                              Ahora no
-                            </Button>
-                            <Button onClick={() => void finish()} loading={busy === 'finish'}>
-                              Terminar
-                            </Button>
-                          </div>
-                        </Inline>
-                      </Stack>
-                    </Card>
+                      </Inline>
+                    </div>
                   </Stack>
                 ) : null}
               </div>

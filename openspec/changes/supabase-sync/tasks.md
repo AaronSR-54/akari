@@ -44,6 +44,8 @@
 - [x] 6.4 Añadir la guía de primera cuenta y primer movimiento dentro de la app: tarjeta de «Primeros pasos» en el resumen y aviso con acción en el detalle de una cuenta sin movimientos.
 - [x] 6.5 Añadir las migraciones `20261126100300_profile_preferences.sql` y `20261126100400_optional_income_day.sql` y las instrucciones en `supabase/README.md`; verificar que se aplican después de las anteriores.
 - [x] 6.6 Sincronizar nombre, divisa y día de ingreso con `profiles` al conectar y al editar desde Ajustes, y mostrar los tres campos en el panel de perfil.
+- [x] 6.8 Unificar la tarjeta de los pasos con una altura animada, mover «Ver con datos de ejemplo» bajo la explicación y alinear las acciones del paso de nombre con el resto del asistente.
+- [x] 6.9 Añadir la página `/entrar` con la marca de Akari reutilizando el formulario de la modal, redirigir el onboarding cuando ya hay sesión y añadir «Cerrar sesión» en Ajustes.
 - [ ] 6.7 Actualizar los E2E del onboarding y ejecutar la suite cuando la persona usuaria lo autorice; no se ejecutan en esta fase por indicación expresa.
 
 ## Workflow follow-up

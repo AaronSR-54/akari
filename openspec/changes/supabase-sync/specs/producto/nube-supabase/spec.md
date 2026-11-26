@@ -32,8 +32,19 @@ La aplicación SHALL permitir crear una cuenta y iniciar sesión con email y con
 
 #### Scenario: Cierre de sesión
 
-- **WHEN** la persona pulsa «Desconectar»
+- **WHEN** la persona pulsa «Cerrar sesión» en Ajustes
 - **THEN** se elimina la sesión del dispositivo y los datos locales permanecen disponibles sin sincronizar
+
+#### Scenario: Página de acceso dedicada
+
+- **WHEN** la persona abre `/entrar`
+- **THEN** ve la marca de Akari y el mismo formulario de acceso y alta que la modal, con «Iniciar sesión» preseleccionado
+- **AND** si ya tiene una sesión activa se le redirige al resumen
+
+#### Scenario: Onboarding con sesión activa
+
+- **WHEN** una persona con sesión iniciada abre `/onboarding`
+- **THEN** se le redirige al resumen sin repetir el asistente
 
 ### Requirement: Perfil de usuario
 

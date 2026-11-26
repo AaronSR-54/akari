@@ -84,7 +84,11 @@ export function SettingsScreen() {
       await repositories.settings.update(patch);
       toast({ title: 'Ajustes guardados', tone: 'success' });
     } catch (error) {
-      toast({ title: 'No se han podido guardar', description: storageErrorMessage(error), tone: 'error' });
+      toast({
+        title: 'No se han podido guardar',
+        description: storageErrorMessage(error),
+        tone: 'error',
+      });
     }
   };
 
@@ -118,9 +122,17 @@ export function SettingsScreen() {
       anchor.download = `akari-copia-${new Date().toISOString().slice(0, 10)}.json`;
       anchor.click();
       URL.revokeObjectURL(url);
-      toast({ title: 'Copia exportada', description: 'Recuerda que no está cifrada.', tone: 'success' });
+      toast({
+        title: 'Copia exportada',
+        description: 'Recuerda que no está cifrada.',
+        tone: 'success',
+      });
     } catch (error) {
-      toast({ title: 'No se ha podido exportar', description: storageErrorMessage(error), tone: 'error' });
+      toast({
+        title: 'No se ha podido exportar',
+        description: storageErrorMessage(error),
+        tone: 'error',
+      });
     }
   };
 
@@ -136,7 +148,11 @@ export function SettingsScreen() {
       const parsed = JSON.parse(text) as unknown;
       const result = await importBackup(db, parsed);
       setConfirm(null);
-      toast({ title: 'Copia importada', description: `${result.imported} registros restaurados.`, tone: 'success' });
+      toast({
+        title: 'Copia importada',
+        description: `${result.imported} registros restaurados.`,
+        tone: 'success',
+      });
     } catch (error) {
       toast({
         title: 'No se ha podido importar',
@@ -161,7 +177,11 @@ export function SettingsScreen() {
       toast({ title: 'Datos de ejemplo cargados', tone: 'success' });
       router.replace('/');
     } catch (error) {
-      toast({ title: 'No se han podido cargar los datos', description: storageErrorMessage(error), tone: 'error' });
+      toast({
+        title: 'No se han podido cargar los datos',
+        description: storageErrorMessage(error),
+        tone: 'error',
+      });
       setBusy(false);
     }
   };
@@ -178,13 +198,19 @@ export function SettingsScreen() {
       toast({ title: 'Datos eliminados', tone: 'success' });
       router.replace('/onboarding');
     } catch (error) {
-      toast({ title: 'No se han podido eliminar', description: storageErrorMessage(error), tone: 'error' });
+      toast({
+        title: 'No se han podido eliminar',
+        description: storageErrorMessage(error),
+        tone: 'error',
+      });
       setBusy(false);
     }
   };
 
   const usagePercent =
-    storage?.usage && storage.quota ? Math.min(100, Math.round((storage.usage / storage.quota) * 100)) : 0;
+    storage?.usage && storage.quota
+      ? Math.min(100, Math.round((storage.usage / storage.quota) * 100))
+      : 0;
 
   return (
     <div>
@@ -203,7 +229,12 @@ export function SettingsScreen() {
         <Banner tone="info" title="Sin cifrado de extremo a extremo">
           Los datos se guardan en este navegador y, si conectas una cuenta, en Supabase. No hay
           cifrado de extremo a extremo ni contraseña local. No uses datos reales sensibles.{' '}
-          <a href={DOCS_URL} className="underline underline-offset-4" target="_blank" rel="noreferrer">
+          <a
+            href={DOCS_URL}
+            className="underline underline-offset-4"
+            target="_blank"
+            rel="noreferrer"
+          >
             Ver desviaciones documentadas
           </a>
           .
@@ -259,7 +290,11 @@ export function SettingsScreen() {
                     ? 'IndexedDB en este dispositivo + copia en Supabase'
                     : 'Base local en este dispositivo · IndexedDB, sin cifrar'
                 }
-                action={<Badge tone={connected ? 'positive' : 'neutral'}>{connected ? 'Local + nube' : 'Local'}</Badge>}
+                action={
+                  <Badge tone={connected ? 'positive' : 'neutral'}>
+                    {connected ? 'Local + nube' : 'Local'}
+                  </Badge>
+                }
               />
               <SettingRow
                 title="Apariencia"
@@ -283,7 +318,9 @@ export function SettingsScreen() {
                     <SelectPill
                       ariaLabel="Navegación de escritorio"
                       value={settings.shellMode}
-                      onChange={(value) => void update({ shellMode: value as 'sidebar' | 'header' })}
+                      onChange={(value) =>
+                        void update({ shellMode: value as 'sidebar' | 'header' })
+                      }
                       options={[
                         { value: 'sidebar', label: 'Sidebar' },
                         { value: 'header', label: 'Header' },
@@ -305,6 +342,25 @@ export function SettingsScreen() {
                   </Badge>
                 }
               />
+              {connected ? (
+                <SettingRow
+                  title="Sesión"
+                  description="Cierra la sesión en este dispositivo. Los datos locales se conservan."
+                  action={
+                    <Button
+                      variant="tertiary"
+                      size="sm"
+                      onClick={() => {
+                        void cloud.signOut().then(() => {
+                          toast({ title: 'Sesión cerrada', tone: 'success' });
+                        });
+                      }}
+                    >
+                      Cerrar sesión
+                    </Button>
+                  }
+                />
+              ) : null}
               <SettingRow
                 title="Contraseña"
                 description={
@@ -415,7 +471,10 @@ export function SettingsScreen() {
                     : 'persistencia no concedida'}
               </p>
               <div className="mt-2 h-2 overflow-hidden rounded-full bg-surface-sunken">
-                <div className="h-full rounded-full bg-accent-default" style={{ width: `${Math.max(4, usagePercent)}%` }} />
+                <div
+                  className="h-full rounded-full bg-accent-default"
+                  style={{ width: `${Math.max(4, usagePercent)}%` }}
+                />
               </div>
               <p className="mt-2 text-ui-10 text-text-secondary">
                 {storage?.message ?? 'Comprobando almacenamiento…'}
@@ -426,8 +485,8 @@ export function SettingsScreen() {
               <p className="text-ui-11 text-text-secondary">Copia de seguridad</p>
               <p className="text-ui-24-bold text-text-primary">Sin cifrar</p>
               <p className="text-ui-10 text-text-secondary">
-                El archivo se puede leer con cualquier editor. Guárdalo en un lugar seguro o espera al
-                cambio de cifrado.
+                El archivo se puede leer con cualquier editor. Guárdalo en un lugar seguro o espera
+                al cambio de cifrado.
               </p>
             </Card>
 

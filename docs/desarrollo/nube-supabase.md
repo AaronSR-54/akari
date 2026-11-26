@@ -71,7 +71,8 @@ No hay cifrado de extremo a extremo: Supabase cifra en tránsito y en reposo seg
 - Al crear cuenta se suben los datos locales existentes (bootstrap).
 - Al iniciar sesión se descargan los de la cuenta; si el dispositivo ya tiene datos, se pide confirmación antes de sustituirlos.
 - Si el correo requiere confirmación, se muestra el aviso y la sesión se reanuda al volver desde el enlace.
-- `/ajustes` permite editar nombre, divisa principal y día de ingreso, y muestra el estado, el último sync, los cambios pendientes, «Sincronizar ahora» y «Desconectar».
+- `/ajustes` permite editar nombre, divisa principal y día de ingreso, y muestra el estado, el último sync, los cambios pendientes, «Sincronizar ahora» y «Cerrar sesión».
+- `/entrar` es la página de acceso dedicada: reutiliza el formulario de la modal de cuenta, muestra la marca de Akari y abre en «Iniciar sesión»; si ya hay una sesión activa redirige al resumen. `/onboarding` también redirige al resumen cuando la persona ya tiene sesión.
 - Mientras hay una cuenta conectada, importar una copia, cargar ejemplos y borrar la base local están deshabilitados para no sustituir la nube por accidente. Exportar sigue disponible.
 
 ## Cambios de esquema
