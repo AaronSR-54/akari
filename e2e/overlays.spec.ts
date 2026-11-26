@@ -5,9 +5,10 @@ test.describe('overlays', () => {
   test('atenúa y difumina el fondo y bloquea el scroll de la página', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 420 });
     await seedDemo(page);
-    await page.evaluate(() => window.scrollTo(0, 240));
-    await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(0);
-    const scrollBefore = await page.evaluate(() => window.scrollY);
+    const scroller = page.locator('main');
+    await scroller.evaluate((element) => element.scrollTo(0, 240));
+    await expect.poll(() => scroller.evaluate((element) => element.scrollTop)).toBeGreaterThan(0);
+    const scrollBefore = await scroller.evaluate((element) => element.scrollTop);
 
     await page.keyboard.press('Control+k');
     const dialog = page.getByRole('dialog', { name: 'Buscar en akari' });
@@ -27,16 +28,18 @@ test.describe('overlays', () => {
     await page.mouse.wheel(0, 600);
     await page.mouse.wheel(0, -600);
     await page.waitForTimeout(200);
-    expect(await page.evaluate(() => window.scrollY)).toBe(scrollBefore);
+    expect(await scroller.evaluate((element) => element.scrollTop)).toBe(scrollBefore);
     expect(await page.evaluate(() => document.body.style.overflow)).toBe('hidden');
     expect(await page.evaluate(() => document.documentElement.style.overflow)).toBe('hidden');
+    expect(await page.evaluate(() => document.documentElement.dataset.scrollLocked)).toBe('true');
 
     await page.keyboard.press('Escape');
     await expect(dialog).toBeHidden();
-    expect(await page.evaluate(() => window.scrollY)).toBe(scrollBefore);
+    expect(await scroller.evaluate((element) => element.scrollTop)).toBe(scrollBefore);
     expect(await page.evaluate(() => document.body.style.overflow)).toBe('');
+    expect(await page.evaluate(() => document.documentElement.dataset.scrollLocked)).toBeUndefined();
 
-    await page.evaluate(() => window.scrollTo(0, 0));
-    await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
+    await scroller.evaluate((element) => element.scrollTo(0, 0));
+    await expect.poll(() => scroller.evaluate((element) => element.scrollTop)).toBe(0);
   });
 });
