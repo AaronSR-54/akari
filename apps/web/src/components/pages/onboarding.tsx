@@ -156,7 +156,9 @@ export function OnboardingScreen() {
   const [currencyDraft, setCurrencyDraft] = useState('EUR');
   const [incomeDayDraft, setIncomeDayDraft] = useState('');
   const [profileError, setProfileError] = useState<string | undefined>();
+  const [contentHeight, setContentHeight] = useState<number>();
   const initialised = useRef(false);
+  const contentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (initialised.current || !settings) return;
@@ -165,6 +167,16 @@ export function OnboardingScreen() {
     setCurrencyDraft(settings.primaryCurrency ?? 'EUR');
     setIncomeDayDraft(settings.primaryIncomeDay == null ? '' : String(settings.primaryIncomeDay));
   }, [settings]);
+
+  useEffect(() => {
+    const element = contentRef.current;
+    if (!element) return;
+    const measure = () => setContentHeight(element.offsetHeight);
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [step, error]);
 
   const meta = STEP_META[step];
   const stepIndex = STEPS.indexOf(step);
@@ -277,7 +289,7 @@ export function OnboardingScreen() {
         <div className="mt-8 grid flex-1 gap-8 lg:grid-cols-[300px_minmax(0,1fr)] lg:gap-12">
           <aside className="lg:pt-2">
             <div className="flex items-center gap-3 lg:block">
-              <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-accent-soft text-accent-strong lg:h-16 lg:w-16">
+              <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-accent-soft text-accent-strong lg:h-16 lg:w-16">
                 <Icon name={meta.icon} size={20} />
               </span>
               <div className="min-w-0 lg:mt-5">
@@ -298,219 +310,228 @@ export function OnboardingScreen() {
             </p>
           </aside>
 
-          <section key={step} className="min-w-0">
+          <section className="min-w-0">
             {error ? (
               <Banner tone="error" title="Almacenamiento no disponible">
                 {error}
               </Banner>
             ) : null}
 
-            {step === 'name' ? (
-              <Card padding="lg">
-                <div className="flex min-h-[360px] flex-col items-center justify-center gap-5 py-6">
-                  <label htmlFor="onboarding-name" className="sr-only">
-                    Tu nombre
-                  </label>
-                  <input
-                    id="onboarding-name"
-                    value={nameDraft}
-                    onChange={(event) => setNameDraft(event.target.value)}
-                    maxLength={40}
-                    autoComplete="name"
-                    autoFocus
-                    spellCheck={false}
-                    aria-invalid={profileError ? true : undefined}
-                    aria-describedby="onboarding-name-help"
-                    placeholder="Tu nombre"
-                    className={cn(
-                      'w-full max-w-xl cursor-text border-0 bg-transparent p-0 text-center text-ui-32-bold caret-accent-default outline-none ring-0 placeholder:text-text-placeholder focus:outline-none focus:ring-0 md:text-heading-xxl',
-                      profileError ? 'text-status-danger-text' : 'text-text-primary',
-                    )}
-                  />
-                  <p
-                    id="onboarding-name-help"
-                    className={cn(
-                      'max-w-sm text-center text-ui-11',
-                      profileError ? 'text-status-danger-text' : 'text-text-secondary',
-                    )}
-                    aria-live="polite"
-                  >
-                    {profileError ??
-                      'Toca el texto y escribe tu nombre. No hay nada que seleccionar.'}
-                  </p>
-                  <div className="flex flex-col items-center gap-2">
-                    <Button
-                      onClick={() => void continueStep()}
-                      loading={busy === 'step'}
-                      disabled={!ready || Boolean(error)}
-                      className="w-full max-w-xs"
-                    >
-                      Continuar
-                    </Button>
-                    <Button
-                      variant="tertiary"
-                      size="sm"
-                      onClick={() => void startDemo()}
-                      loading={busy === 'demo'}
-                      disabled={!ready || Boolean(error)}
-                    >
-                      Ver con datos de ejemplo
-                    </Button>
-                  </div>
-                  <p className="text-center text-ui-10 text-text-tertiary">
-                    Esta versión no cifra la base local ni los datos en la nube de extremo a
-                    extremo. No introduzcas datos sensibles reales.
-                  </p>
-                </div>
-              </Card>
-            ) : null}
-
-            {step === 'currency' ? (
-              <Card padding="lg">
-                <Stack gap={4}>
-                  <div className="grid grid-cols-2 gap-3">
-                    {currencyOptions.map((option) => {
-                      const selected = currencyDraft === option.value;
-                      return (
-                        <button
-                          key={option.value}
-                          type="button"
-                          onClick={() => setCurrencyDraft(option.value)}
-                          aria-pressed={selected}
-                          className={cn(
-                            'flex flex-col items-start gap-1 rounded-xl border px-4 py-3 text-left transition-colors',
-                            selected
-                              ? 'border-accent-default bg-accent-soft text-text-primary'
-                              : 'border-border-subtle bg-surface-default text-text-secondary hover:bg-surface-sunken',
-                          )}
+            <div
+              className="overflow-hidden transition-[height] duration-slow ease-out motion-reduce:transition-none"
+              style={{ height: contentHeight }}
+            >
+              <div ref={contentRef} key={step} className="min-w-0">
+                {step === 'name' ? (
+                  <Card padding="lg">
+                    <div className="flex min-h-[360px] flex-col items-center justify-center gap-5 py-6">
+                      <label htmlFor="onboarding-name" className="sr-only">
+                        Tu nombre
+                      </label>
+                      <input
+                        id="onboarding-name"
+                        value={nameDraft}
+                        onChange={(event) => setNameDraft(event.target.value)}
+                        maxLength={40}
+                        autoComplete="name"
+                        autoFocus
+                        spellCheck={false}
+                        aria-invalid={profileError ? true : undefined}
+                        aria-describedby="onboarding-name-help"
+                        placeholder="Tu nombre"
+                        className={cn(
+                          'w-full max-w-xl cursor-text border-0 bg-transparent p-0 text-center text-ui-32-bold caret-accent-default outline-none ring-0 placeholder:text-text-placeholder focus:outline-none focus:ring-0 md:text-heading-xxl',
+                          profileError ? 'text-status-danger-text' : 'text-text-primary',
+                        )}
+                      />
+                      <p
+                        id="onboarding-name-help"
+                        className={cn(
+                          'max-w-sm text-center text-ui-11',
+                          profileError ? 'text-status-danger-text' : 'text-text-secondary',
+                        )}
+                        aria-live="polite"
+                      >
+                        {profileError ??
+                          'Toca el texto y escribe tu nombre. No hay nada que seleccionar.'}
+                      </p>
+                      <div className="flex flex-col items-center gap-2">
+                        <Button
+                          onClick={() => void continueStep()}
+                          loading={busy === 'step'}
+                          disabled={!ready || Boolean(error)}
+                          className="w-full max-w-xs"
                         >
-                          <span className="text-ui-24-bold">{CURRENCY_SYMBOL[option.value]}</span>
-                          <span className="text-ui-12-strong">{option.label}</span>
-                          <span className="text-ui-10 text-text-tertiary">{option.value}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                  <div className="flex flex-wrap justify-between gap-2">
-                    <Button variant="tertiary" size="sm" onClick={() => setStep('name')}>
-                      Atrás
-                    </Button>
-                    <Button onClick={() => void continueStep()} loading={busy === 'step'}>
-                      Continuar
-                    </Button>
-                  </div>
-                </Stack>
-              </Card>
-            ) : null}
-
-            {step === 'income' ? (
-              <Card padding="lg">
-                <Stack gap={4}>
-                  <MonthDayPicker
-                    value={incomeDayDraft.trim() === '' ? null : Number(incomeDayDraft)}
-                    onSelect={(day) => setIncomeDayDraft(String(day))}
-                    label="Día del ingreso principal"
-                  />
-                  <div className="text-center">
-                    <p className="text-ui-12-strong text-text-primary">
-                      {incomeDayDraft.trim() === ''
-                        ? 'Sin definir'
-                        : `Día ${incomeDayDraft} de cada mes`}
-                    </p>
-                    <p className="text-ui-10 text-text-secondary">
-                      Opcional. Si el mes es más corto, se ajusta al último día.
-                    </p>
-                    {profileError ? (
-                      <p className="mt-1 text-ui-11 text-status-danger-text">{profileError}</p>
-                    ) : null}
-                  </div>
-                  <div className="flex flex-wrap justify-between gap-2">
-                    <Button variant="tertiary" size="sm" onClick={() => setStep('currency')}>
-                      Atrás
-                    </Button>
-                    <div className="flex flex-wrap gap-2">
-                      <Button variant="tertiary" onClick={() => void skipIncome()}>
-                        No lo tengo
-                      </Button>
-                      <Button onClick={() => void continueStep()} loading={busy === 'step'}>
-                        Continuar
-                      </Button>
-                    </div>
-                  </div>
-                </Stack>
-              </Card>
-            ) : null}
-
-            {step === 'banks' ? (
-              <Card padding="lg">
-                <Stack gap={4}>
-                  <SectionHeader
-                    title="Bancos compatibles"
-                    action={<Badge tone="info">Próximamente</Badge>}
-                  />
-                  <ul
-                    aria-label="Bancos compatibles"
-                    className="grid grid-cols-4 justify-items-center gap-4 sm:grid-cols-5"
-                  >
-                    {bankCatalog
-                      .filter((bank) => bank.icon === 'app')
-                      .map((bank) => (
-                        <li key={bank.id} title={bank.name} aria-label={bank.name} role="img">
-                          <span className="grid h-16 w-16 place-items-center rounded-full border border-border-subtle bg-surface-default p-1 shadow-sm sm:h-[72px] sm:w-[72px]">
-                            <BankIcon bankId={bank.id} size={64} />
-                          </span>
-                        </li>
-                      ))}
-                  </ul>
-                  <Banner tone="info" title="Tus datos bancarios no se usan para nada">
-                    El archivo se procesará en tu navegador y solo servirá como atajo para crear tus
-                    movimientos, sin configurarlo todo a mano. No lo enviamos a tu banco ni lo
-                    usamos con otros fines. Supabase cifra los datos en tránsito y en reposo; el
-                    cifrado de extremo a extremo llegará más adelante.
-                  </Banner>
-                  <div className="flex flex-wrap justify-between gap-2">
-                    <Button variant="tertiary" size="sm" onClick={() => setStep('income')}>
-                      Atrás
-                    </Button>
-                    <div className="flex flex-wrap gap-2">
-                      <Button variant="tertiary" onClick={() => void finish()}>
-                        Omitir
-                      </Button>
-                      <Button onClick={() => void continueStep()} loading={busy === 'step'}>
-                        Continuar
-                      </Button>
-                    </div>
-                  </div>
-                </Stack>
-              </Card>
-            ) : null}
-
-            {step === 'cloud' ? (
-              <Stack gap={3}>
-                <CloudAccountCard variant="onboarding" defaultName={nameDraft} />
-                <Card padding="md">
-                  <Stack gap={3}>
-                    <p className="text-ui-12 text-text-secondary">
-                      Si no conectas una cuenta, tus datos se quedan en este dispositivo. Puedes
-                      hacerlo más tarde desde Ajustes.
-                    </p>
-                    <Inline className="flex-wrap justify-between gap-2">
-                      <Button variant="tertiary" onClick={() => setStep('banks')}>
-                        Atrás
-                      </Button>
-                      <div className="flex flex-wrap gap-2">
-                        <Button variant="tertiary" onClick={() => void finish()}>
-                          Ahora no
+                          Continuar
                         </Button>
-                        <Button onClick={() => void finish()} loading={busy === 'finish'}>
-                          Terminar
+                        <Button
+                          variant="tertiary"
+                          size="sm"
+                          onClick={() => void startDemo()}
+                          loading={busy === 'demo'}
+                          disabled={!ready || Boolean(error)}
+                        >
+                          Ver con datos de ejemplo
                         </Button>
                       </div>
-                    </Inline>
+                      <p className="text-center text-ui-10 text-text-tertiary">
+                        Esta versión no cifra la base local ni los datos en la nube de extremo a
+                        extremo. No introduzcas datos sensibles reales.
+                      </p>
+                    </div>
+                  </Card>
+                ) : null}
+
+                {step === 'currency' ? (
+                  <Card padding="lg">
+                    <Stack gap={4}>
+                      <div className="grid grid-cols-2 gap-3">
+                        {currencyOptions.map((option) => {
+                          const selected = currencyDraft === option.value;
+                          return (
+                            <button
+                              key={option.value}
+                              type="button"
+                              onClick={() => setCurrencyDraft(option.value)}
+                              aria-pressed={selected}
+                              className={cn(
+                                'flex flex-col items-start gap-1 rounded-xl border px-4 py-3 text-left transition-colors',
+                                selected
+                                  ? 'border-accent-default bg-accent-soft text-text-primary'
+                                  : 'border-border-subtle bg-surface-default text-text-secondary hover:bg-surface-sunken',
+                              )}
+                            >
+                              <span className="text-ui-24-bold">
+                                {CURRENCY_SYMBOL[option.value]}
+                              </span>
+                              <span className="text-ui-12-strong">{option.label}</span>
+                              <span className="text-ui-10 text-text-tertiary">{option.value}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                      <div className="flex flex-wrap justify-between gap-2">
+                        <Button variant="tertiary" size="sm" onClick={() => setStep('name')}>
+                          Atrás
+                        </Button>
+                        <Button onClick={() => void continueStep()} loading={busy === 'step'}>
+                          Continuar
+                        </Button>
+                      </div>
+                    </Stack>
+                  </Card>
+                ) : null}
+
+                {step === 'income' ? (
+                  <Card padding="lg">
+                    <Stack gap={4}>
+                      <MonthDayPicker
+                        value={incomeDayDraft.trim() === '' ? null : Number(incomeDayDraft)}
+                        onSelect={(day) => setIncomeDayDraft(String(day))}
+                        label="Día del ingreso principal"
+                      />
+                      <div className="text-center">
+                        <p className="text-ui-12-strong text-text-primary">
+                          {incomeDayDraft.trim() === ''
+                            ? 'Sin definir'
+                            : `Día ${incomeDayDraft} de cada mes`}
+                        </p>
+                        <p className="text-ui-10 text-text-secondary">
+                          Opcional. Si el mes es más corto, se ajusta al último día.
+                        </p>
+                        {profileError ? (
+                          <p className="mt-1 text-ui-11 text-status-danger-text">{profileError}</p>
+                        ) : null}
+                      </div>
+                      <div className="flex flex-wrap justify-between gap-2">
+                        <Button variant="tertiary" size="sm" onClick={() => setStep('currency')}>
+                          Atrás
+                        </Button>
+                        <div className="flex flex-wrap gap-2">
+                          <Button variant="tertiary" onClick={() => void skipIncome()}>
+                            No lo tengo
+                          </Button>
+                          <Button onClick={() => void continueStep()} loading={busy === 'step'}>
+                            Continuar
+                          </Button>
+                        </div>
+                      </div>
+                    </Stack>
+                  </Card>
+                ) : null}
+
+                {step === 'banks' ? (
+                  <Card padding="lg">
+                    <Stack gap={4}>
+                      <SectionHeader
+                        title="Bancos compatibles"
+                        action={<Badge tone="info">Próximamente</Badge>}
+                      />
+                      <ul
+                        aria-label="Bancos compatibles"
+                        className="grid grid-cols-4 justify-items-center gap-4 sm:grid-cols-5"
+                      >
+                        {bankCatalog
+                          .filter((bank) => bank.icon === 'app')
+                          .map((bank) => (
+                            <li key={bank.id} title={bank.name} aria-label={bank.name} role="img">
+                              <span className="grid h-16 w-16 place-items-center rounded-full border border-border-subtle bg-surface-default p-1 shadow-sm sm:h-[72px] sm:w-[72px]">
+                                <BankIcon bankId={bank.id} size={64} />
+                              </span>
+                            </li>
+                          ))}
+                      </ul>
+                      <Banner tone="info" title="Tus datos bancarios no se usan para nada">
+                        El archivo se procesará en tu navegador y solo servirá como atajo para crear
+                        tus movimientos, sin configurarlo todo a mano. No lo enviamos a tu banco ni
+                        lo usamos con otros fines. Supabase cifra los datos en tránsito y en reposo;
+                        el cifrado de extremo a extremo llegará más adelante.
+                      </Banner>
+                      <div className="flex flex-wrap justify-between gap-2">
+                        <Button variant="tertiary" size="sm" onClick={() => setStep('income')}>
+                          Atrás
+                        </Button>
+                        <div className="flex flex-wrap gap-2">
+                          <Button variant="tertiary" onClick={() => void finish()}>
+                            Omitir
+                          </Button>
+                          <Button onClick={() => void continueStep()} loading={busy === 'step'}>
+                            Continuar
+                          </Button>
+                        </div>
+                      </div>
+                    </Stack>
+                  </Card>
+                ) : null}
+
+                {step === 'cloud' ? (
+                  <Stack gap={3}>
+                    <CloudAccountCard variant="onboarding" defaultName={nameDraft} />
+                    <Card padding="md">
+                      <Stack gap={3}>
+                        <p className="text-ui-12 text-text-secondary">
+                          Si no conectas una cuenta, tus datos se quedan en este dispositivo. Puedes
+                          hacerlo más tarde desde Ajustes.
+                        </p>
+                        <Inline className="flex-wrap justify-between gap-2">
+                          <Button variant="tertiary" onClick={() => setStep('banks')}>
+                            Atrás
+                          </Button>
+                          <div className="flex flex-wrap gap-2">
+                            <Button variant="tertiary" onClick={() => void finish()}>
+                              Ahora no
+                            </Button>
+                            <Button onClick={() => void finish()} loading={busy === 'finish'}>
+                              Terminar
+                            </Button>
+                          </div>
+                        </Inline>
+                      </Stack>
+                    </Card>
                   </Stack>
-                </Card>
-              </Stack>
-            ) : null}
+                ) : null}
+              </div>
+            </div>
           </section>
         </div>
       </PageContainer>
