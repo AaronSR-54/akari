@@ -2,11 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
-import {
-  bankCatalog,
-  updateProfilePreferences,
-  type ProfilePreferencesInput,
-} from '@akari/domain';
+import { bankCatalog, updateProfilePreferences, type ProfilePreferencesInput } from '@akari/domain';
 import { loadDemoDatabase, storageErrorMessage } from '@akari/data';
 import {
   Badge,
@@ -167,9 +163,7 @@ export function OnboardingScreen() {
     initialised.current = true;
     setNameDraft(settings.displayName ?? defaultProfile.displayName);
     setCurrencyDraft(settings.primaryCurrency ?? 'EUR');
-    setIncomeDayDraft(
-      settings.primaryIncomeDay == null ? '' : String(settings.primaryIncomeDay),
-    );
+    setIncomeDayDraft(settings.primaryIncomeDay == null ? '' : String(settings.primaryIncomeDay));
   }, [settings]);
 
   const meta = STEP_META[step];
@@ -312,60 +306,63 @@ export function OnboardingScreen() {
             ) : null}
 
             {step === 'name' ? (
-              <div className="flex min-h-[360px] flex-col items-center justify-center gap-5 py-6">
-                <label htmlFor="onboarding-name" className="sr-only">
-                  Tu nombre
-                </label>
-                <input
-                  id="onboarding-name"
-                  value={nameDraft}
-                  onChange={(event) => setNameDraft(event.target.value)}
-                  maxLength={40}
-                  autoComplete="name"
-                  autoFocus
-                  spellCheck={false}
-                  aria-invalid={profileError ? true : undefined}
-                  aria-describedby="onboarding-name-help"
-                  placeholder="Tu nombre"
-                  className={cn(
-                    'w-full max-w-xl cursor-text border-0 bg-transparent p-0 text-center text-ui-32-bold caret-accent-default outline-none ring-0 placeholder:text-text-placeholder focus:outline-none focus:ring-0 md:text-heading-xxl',
-                    profileError ? 'text-status-danger-text' : 'text-text-primary',
-                  )}
-                />
-                <p
-                  id="onboarding-name-help"
-                  className={cn(
-                    'max-w-sm text-center text-ui-11',
-                    profileError ? 'text-status-danger-text' : 'text-text-secondary',
-                  )}
-                  aria-live="polite"
-                >
-                  {profileError ?? 'Toca el texto y escribe tu nombre. No hay nada que seleccionar.'}
-                </p>
-                <div className="flex flex-col items-center gap-2">
-                  <Button
-                    onClick={() => void continueStep()}
-                    loading={busy === 'step'}
-                    disabled={!ready || Boolean(error)}
-                    className="w-full max-w-xs"
+              <Card padding="lg">
+                <div className="flex min-h-[360px] flex-col items-center justify-center gap-5 py-6">
+                  <label htmlFor="onboarding-name" className="sr-only">
+                    Tu nombre
+                  </label>
+                  <input
+                    id="onboarding-name"
+                    value={nameDraft}
+                    onChange={(event) => setNameDraft(event.target.value)}
+                    maxLength={40}
+                    autoComplete="name"
+                    autoFocus
+                    spellCheck={false}
+                    aria-invalid={profileError ? true : undefined}
+                    aria-describedby="onboarding-name-help"
+                    placeholder="Tu nombre"
+                    className={cn(
+                      'w-full max-w-xl cursor-text border-0 bg-transparent p-0 text-center text-ui-32-bold caret-accent-default outline-none ring-0 placeholder:text-text-placeholder focus:outline-none focus:ring-0 md:text-heading-xxl',
+                      profileError ? 'text-status-danger-text' : 'text-text-primary',
+                    )}
+                  />
+                  <p
+                    id="onboarding-name-help"
+                    className={cn(
+                      'max-w-sm text-center text-ui-11',
+                      profileError ? 'text-status-danger-text' : 'text-text-secondary',
+                    )}
+                    aria-live="polite"
                   >
-                    Continuar
-                  </Button>
-                  <Button
-                    variant="tertiary"
-                    size="sm"
-                    onClick={() => void startDemo()}
-                    loading={busy === 'demo'}
-                    disabled={!ready || Boolean(error)}
-                  >
-                    Ver con datos de ejemplo
-                  </Button>
+                    {profileError ??
+                      'Toca el texto y escribe tu nombre. No hay nada que seleccionar.'}
+                  </p>
+                  <div className="flex flex-col items-center gap-2">
+                    <Button
+                      onClick={() => void continueStep()}
+                      loading={busy === 'step'}
+                      disabled={!ready || Boolean(error)}
+                      className="w-full max-w-xs"
+                    >
+                      Continuar
+                    </Button>
+                    <Button
+                      variant="tertiary"
+                      size="sm"
+                      onClick={() => void startDemo()}
+                      loading={busy === 'demo'}
+                      disabled={!ready || Boolean(error)}
+                    >
+                      Ver con datos de ejemplo
+                    </Button>
+                  </div>
+                  <p className="text-center text-ui-10 text-text-tertiary">
+                    Esta versión no cifra la base local ni los datos en la nube de extremo a
+                    extremo. No introduzcas datos sensibles reales.
+                  </p>
                 </div>
-                <p className="text-center text-ui-10 text-text-tertiary">
-                  Esta versión no cifra la base local ni los datos en la nube de extremo a extremo. No
-                  introduzcas datos sensibles reales.
-                </p>
-              </div>
+              </Card>
             ) : null}
 
             {step === 'currency' ? (
@@ -467,9 +464,9 @@ export function OnboardingScreen() {
                   </ul>
                   <Banner tone="info" title="Tus datos bancarios no se usan para nada">
                     El archivo se procesará en tu navegador y solo servirá como atajo para crear tus
-                    movimientos, sin configurarlo todo a mano. No lo enviamos a tu banco ni lo usamos
-                    con otros fines. Supabase cifra los datos en tránsito y en reposo; el cifrado de
-                    extremo a extremo llegará más adelante.
+                    movimientos, sin configurarlo todo a mano. No lo enviamos a tu banco ni lo
+                    usamos con otros fines. Supabase cifra los datos en tránsito y en reposo; el
+                    cifrado de extremo a extremo llegará más adelante.
                   </Banner>
                   <div className="flex flex-wrap justify-between gap-2">
                     <Button variant="tertiary" size="sm" onClick={() => setStep('income')}>
