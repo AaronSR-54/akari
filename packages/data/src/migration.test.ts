@@ -44,7 +44,43 @@ class V2DB extends Dexie {
   }
 }
 
-let current: AkariDB | LegacyDB | V2DB | null = null;
+class V3DB extends Dexie {
+  constructor(name: string) {
+    super(name);
+    this.version(1).stores({
+      accounts: 'id, type, includeInTotal, archivedAt',
+      movements: 'id, accountId, date, type, category, recurrenceId, installmentPlanId',
+      recurrences: 'id, accountId, nextDate',
+      installments: 'id, accountId',
+      groups: 'id',
+      groupExpenses: 'id, groupId, date',
+      transfers: 'id, groupId, status',
+      settings: 'id',
+    });
+    this.version(2).stores({
+      accounts: 'id, type, includeInTotal, archivedAt',
+      movements: 'id, accountId, date, type, category, recurrenceId, installmentPlanId, [accountId+date]',
+      recurrences: 'id, accountId, nextDate',
+      installments: 'id, accountId',
+      groups: 'id',
+      groupExpenses: 'id, groupId, date, [groupId+date]',
+      transfers: 'id, groupId, status',
+      settings: 'id',
+    });
+    this.version(3).stores({
+      accounts: 'id, type, bankId, includeInTotal, archivedAt',
+      movements: 'id, accountId, date, type, category, recurrenceId, installmentPlanId, [accountId+date]',
+      recurrences: 'id, accountId, nextDate',
+      installments: 'id, accountId',
+      groups: 'id',
+      groupExpenses: 'id, groupId, date, [groupId+date]',
+      transfers: 'id, groupId, status',
+      settings: 'id',
+    });
+  }
+}
+
+let current: AkariDB | LegacyDB | V2DB | V3DB | null = null;
 
 afterEach(async () => {
   if (current) {
@@ -100,7 +136,7 @@ describe('migrations', () => {
     expect(movements).toHaveLength(1);
     expect(movements[0]?.concept).toBe('Cena');
     expect(movements[0]?.memberId).toBeNull();
-    expect(migrated.verno).toBe(3);
+    expect(migrated.verno).toBe(4);
   });
 
   it('migra de v2 a v3 sin reescribir cuentas ni movimientos', async () => {
@@ -140,6 +176,30 @@ describe('migrations', () => {
     expect(movements).toHaveLength(1);
     expect(movements[0]?.concept).toBe('Café');
     expect(movements[0]?.memberId).toBeNull();
-    expect(migrated.verno).toBe(3);
+    expect(migrated.verno).toBe(4);
+  });
+
+  it('migra de v3 a v4 conservando los datos y crea el estado de sincronización', async () => {
+    const name = `migration-v4-${Math.random().toString(36).slice(2)}`;
+    const legacy = new V3DB(name);
+    current = legacy;
+    await legacy.table('accounts').put({
+      id: 'acc-1',
+      name: 'Antigua',
+      type: 'personal',
+      currency: 'EUR',
+      initialBalanceMinor: 100,
+      includeInTotal: true,
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+    });
+    legacy.close();
+
+    const migrated = new AkariDB(name);
+    current = migrated;
+    expect(await migrated.accounts.count()).toBe(1);
+    expect(await migrated.syncState.count()).toBe(0);
+    expect(await migrated.syncMeta.count()).toBe(0);
+    expect(migrated.verno).toBe(4);
   });
 });

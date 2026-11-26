@@ -37,6 +37,8 @@ import { HeadingMeta } from '../../components/heading-meta';
 import { defaultProfile, initialsFromName } from '../../lib/profile';
 import { useData } from '../../components/providers';
 import { PageSkeleton } from '../../components/page-skeleton';
+import { useCloud } from '../../components/cloud-provider';
+import { CloudAccountCard } from '../../components/account-panel';
 
 const DOCS_URL = 'https://github.com/AaronSR-54/akari/blob/main/docs/desarrollo/desviaciones.md';
 
@@ -50,6 +52,8 @@ function formatBytes(value: number | null): string {
 export function SettingsScreen() {
   const settings = useSettings();
   const { db, repositories } = useData();
+  const cloud = useCloud();
+  const connected = Boolean(cloud.user);
   const { toast } = useToast();
   const { preference, setPreference } = useTheme();
   const router = useRouter();
@@ -114,6 +118,10 @@ export function SettingsScreen() {
 
   const importData = async (file: File | null) => {
     if (!file) return;
+    if (connected) {
+      toast({ title: 'Desconecta la cuenta para importar', tone: 'info' });
+      return;
+    }
     setBusy(true);
     try {
       const text = await file.text();
@@ -134,6 +142,10 @@ export function SettingsScreen() {
   };
 
   const loadDemo = async () => {
+    if (connected) {
+      toast({ title: 'Desconecta la cuenta para cargar ejemplos', tone: 'info' });
+      return;
+    }
     setBusy(true);
     try {
       await loadDemoDatabase(db, appNow());
@@ -147,6 +159,10 @@ export function SettingsScreen() {
   };
 
   const reset = async () => {
+    if (connected) {
+      toast({ title: 'Desconecta la cuenta para borrar la base local', tone: 'info' });
+      return;
+    }
     setBusy(true);
     try {
       await resetDatabase(db);
@@ -174,11 +190,11 @@ export function SettingsScreen() {
             </Button>
           }
         />
-        <HeadingMeta detail="Tu perfil y los datos guardados en este dispositivo. La nube es opcional y aún no está activa." />
+        <HeadingMeta detail="Tu perfil y los datos guardados en este dispositivo, con una copia opcional en la nube." />
 
-        <Banner tone="info" title="Esta fase es local y sin cifrado">
-          Los datos se guardan en este navegador. La sincronización, el cifrado y la contraseña local
-          llegarán en un cambio posterior. No uses datos reales sensibles.{' '}
+        <Banner tone="info" title="Sin cifrado de extremo a extremo">
+          Los datos se guardan en este navegador y, si conectas una cuenta, en Supabase. No hay
+          cifrado de extremo a extremo ni contraseña local. No uses datos reales sensibles.{' '}
           <a href={DOCS_URL} className="underline underline-offset-4" target="_blank" rel="noreferrer">
             Ver desviaciones documentadas
           </a>
@@ -215,13 +231,19 @@ export function SettingsScreen() {
           </p>
         </Card>
 
+        <CloudAccountCard variant="settings" />
+
         <div className="grid gap-4 lg:grid-cols-[1.06fr_1fr]">
           <Card padding="none" className="px-5 py-2">
             <div className="flex flex-col divide-y divide-border-subtle">
               <SettingRow
                 title="Ubicación de los datos"
-                description="Base local en este dispositivo · IndexedDB, sin cifrar"
-                action={<Badge tone="neutral">Local</Badge>}
+                description={
+                  connected
+                    ? 'IndexedDB en este dispositivo + copia en Supabase'
+                    : 'Base local en este dispositivo · IndexedDB, sin cifrar'
+                }
+                action={<Badge tone={connected ? 'positive' : 'neutral'}>{connected ? 'Local + nube' : 'Local'}</Badge>}
               />
               <SettingRow
                 title="Apariencia"
@@ -256,13 +278,29 @@ export function SettingsScreen() {
               />
               <SettingRow
                 title="Sincronización en la nube"
-                description="Desactivada · no hay servidor ni conflictos remotos"
-                action={<Badge tone="neutral">No disponible</Badge>}
+                description={
+                  connected
+                    ? `Conectada como ${cloud.user?.email ?? 'tu cuenta'}`
+                    : 'Opcional · conecta una cuenta para continuar en otro dispositivo'
+                }
+                action={
+                  <Badge tone={connected ? 'positive' : 'neutral'}>
+                    {connected ? 'Activa' : 'Sin conectar'}
+                  </Badge>
+                }
               />
               <SettingRow
                 title="Contraseña"
-                description="No configurada · llegará con el cifrado local"
-                action={<Badge tone="warning">Pendiente</Badge>}
+                description={
+                  connected
+                    ? 'La gestiona Supabase; Akari no guarda tu contraseña'
+                    : 'Sin contraseña local · el cifrado de la base local sigue pendiente'
+                }
+                action={
+                  <Badge tone={connected ? 'info' : 'warning'}>
+                    {connected ? 'Supabase' : 'Pendiente'}
+                  </Badge>
+                }
               />
               <SettingRow
                 title="Exportar copia"
@@ -275,9 +313,19 @@ export function SettingsScreen() {
               />
               <SettingRow
                 title="Importar copia"
-                description="Restaura una copia exportada desde este u otro navegador"
+                description={
+                  connected
+                    ? 'Desconecta la cuenta para importar: una copia local no debe sustituir la nube'
+                    : 'Restaura una copia exportada desde este u otro navegador'
+                }
                 action={
-                  <Button variant="secondary" size="sm" onClick={() => fileRef.current?.click()} loading={busy}>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => fileRef.current?.click()}
+                    loading={busy}
+                    disabled={connected}
+                  >
                     Importar
                   </Button>
                 }
@@ -292,19 +340,37 @@ export function SettingsScreen() {
               />
               <SettingRow
                 title="Datos de ejemplo"
-                description="Sustituye los datos actuales por cuentas, movimientos y grupos de ejemplo"
+                description={
+                  connected
+                    ? 'Desconecta la cuenta para sustituir los datos locales por ejemplos'
+                    : 'Sustituye los datos actuales por cuentas, movimientos y grupos de ejemplo'
+                }
                 action={
-                  <Button variant="secondary" size="sm" onClick={() => setConfirm('demo')}>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => setConfirm('demo')}
+                    disabled={connected}
+                  >
                     Cargar
                   </Button>
                 }
               />
               <SettingRow
                 title="Borrar base local"
-                description="Elimina los datos de este dispositivo. No se puede deshacer"
+                description={
+                  connected
+                    ? 'Desconecta la cuenta para borrar la base local sin afectar a la nube'
+                    : 'Elimina los datos de este dispositivo. No se puede deshacer'
+                }
                 danger
                 action={
-                  <Button variant="tertiary" size="sm" onClick={() => setConfirm('reset')}>
+                  <Button
+                    variant="tertiary"
+                    size="sm"
+                    onClick={() => setConfirm('reset')}
+                    disabled={connected}
+                  >
                     Borrar
                   </Button>
                 }
@@ -352,8 +418,9 @@ export function SettingsScreen() {
             <Card padding="md" className="flex flex-col gap-1.5">
               <SectionHeader title="Límites de esta fase" />
               <p className="text-ui-10 text-text-secondary">
-                Sin nube, sin contraseña y sin app móvil. Todo se guarda en IndexedDB y se puede
-                exportar o borrar desde esta pantalla.
+                Sin cifrado de extremo a extremo ni app móvil. Los datos viven en IndexedDB y, si
+                conectas una cuenta, se sincronizan con Supabase. Los grupos compartidos entre
+                usuarios llegarán en un cambio posterior.
               </p>
               <Inline className="pt-1">
                 <a

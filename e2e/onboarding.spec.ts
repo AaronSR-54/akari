@@ -69,10 +69,27 @@ test.describe('onboarding', () => {
     );
   });
 
+  test('el nombre del onboarding se guarda en el perfil', async ({ page }) => {
+    await page.goto('/onboarding');
+    await page.getByLabel('Tu nombre').fill('Lucía');
+    await page.getByRole('button', { name: 'Empezar vacío' }).click();
+    await page.waitForURL(/\/$/);
+    await page.getByRole('link', { name: 'Ajustes', exact: true }).first().click();
+    await expect(
+      page.locator('[data-profile="panel"]').getByText('Lucía', { exact: true }),
+    ).toBeVisible();
+  });
+
+  test('la nube aparece como opción no configurada', async ({ page }) => {
+    await page.goto('/onboarding');
+    await expect(page.getByText('La nube no está configurada en esta instalación.')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Crear cuenta o iniciar sesión' })).toHaveCount(0);
+  });
+
   test('el aviso de almacenamiento sin cifrado es visible', async ({ page }) => {
     await startEmpty(page);
     await page.getByRole('link', { name: 'Ajustes', exact: true }).first().click();
-    await expect(page.getByText('Esta fase es local y sin cifrado')).toBeVisible();
+    await expect(page.getByText('Sin cifrado de extremo a extremo', { exact: true })).toBeVisible();
     await expect(page.getByRole('link', { name: /Ver desviaciones documentadas/ })).toHaveAttribute(
       'href',
       /desviaciones\.md/,

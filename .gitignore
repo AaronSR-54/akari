@@ -13,3 +13,7 @@ test-results/
 !.env.example
 
 .opsx/
+
+# Supabase CLI (artefactos locales)
+supabase/.temp/
+supabase/.branches/

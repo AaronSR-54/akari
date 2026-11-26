@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@akari/domain": "0.1.0",
+    "@supabase/supabase-js": "^2.119.2",
     "dexie": "^4.4.7"
   },
   "devDependencies": {

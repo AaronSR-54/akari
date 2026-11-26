@@ -13,9 +13,9 @@ Este documento registra las diferencias entre el diseño aprobado (`docs/diseno/
 ## 2. Sincronización
 
 - **Diseño:** nube opcional, tiempo real, conflictos y modo sin conexión (M04, M17, W06).
-- **Implementación:** solo local. No hay cuentas de usuario, servidor, cola de subida ni resolución de conflictos.
-- **Consecuencia:** la app funciona sin conexión por definición; el estado «sin conexión» de `StatePage` existe como componente, pero no se muestra un banner de sincronización porque no hay sincronización que mostrar.
-- **Cierre:** cambio propio de backend/sync; requiere definir identidad, permisos remotos y conflictos.
+- **Implementación:** cuenta opcional con Supabase Auth, sincronización local-first por usuario y resolución «el cambio local pendiente gana». Sin tiempo real por websockets: se sincroniza al iniciar sesión, al cambiar datos, al recuperar el foco, al volver la conexión, cada 60 s si hay pendientes y a mano.
+- **Consecuencia:** la app sigue funcionando sin conexión y sin cuenta; el estado «sin conexión» del panel de cuenta ya tiene datos reales. No hay fusión por campo, historial de versiones ni grupos compartidos entre usuarios.
+- **Cierre:** el tiempo real, la fusión de conflictos y la colaboración entre usuarios quedan para changes posteriores.
 
 ## 3. App móvil
 
@@ -27,9 +27,9 @@ Este documento registra las diferencias entre el diseño aprobado (`docs/diseno/
 ## 4. Invitaciones y permisos remotos
 
 - **Diseño:** invitaciones pendientes y roles Admin/Editor/Lectora en cuentas conjuntas (M14).
-- **Implementación:** los grupos tienen miembros y roles locales; no hay invitaciones ni verificación de identidad.
-- **Consecuencia:** cualquier persona con acceso al navegador puede cambiar roles desde la administración local. No se comparte información entre dispositivos.
-- **Cierre:** llega con backend/sync.
+- **Implementación:** los grupos tienen miembros y roles locales; Supabase aísla los datos por usuario y todavía no hay invitaciones ni grupos compartidos entre cuentas.
+- **Consecuencia:** cualquier persona con acceso al navegador puede cambiar roles desde la administración local. Los datos se sincronizan entre dispositivos del mismo usuario, no entre personas distintas.
+- **Cierre:** llegará con un change de grupos compartidos e invitaciones.
 
 ## 5. Divisas
 
@@ -182,3 +182,11 @@ Quedan fuera, además de las superficies nativas: la creación de planes de plaz
 - **Motivo:** la tarjeta `jzpfrh87h0yh` pide un componente calendario para los date pickers y el usuario pidió reutilizarlo como modal inferior en móvil.
 - **Consecuencia:** la fecha deja de escribirse o pegarse a mano y el selector nativo desaparece. La hoja inferior coincide con el `Bottom/Sheet` de la referencia histórica; el panel mensual es una decisión de código. No se han modificado FigCraft, `design/` ni `docs/diseno/`.
 - **Cierre:** el código es la fuente de verdad visual; la trazabilidad vive en `producto/componentes`.
+
+## 25. Cuenta y nube con Supabase (change `supabase-sync`)
+
+- **Diseño:** nube opcional con identidad, sincronización y conflictos; el cifrado local y de extremo a extremo seguía pendiente.
+- **Implementación:** email y contraseña con Supabase Auth, perfil con nombre, sincronización local-first por usuario, borrados lógicos y panel de cuenta en Ajustes. Cada modificación del esquema remoto vive en `supabase/migrations/`. Importar copias, cargar ejemplos y borrar la base local se deshabilitan mientras hay una cuenta conectada.
+- **Motivo:** las tarjetas `4meqc4n99j2g` y `6x8444lhgadh` piden guardar los datos en la nube y completar el onboarding con datos de usuario y perfil; se confirmó Supabase/PostgreSQL, local-first y alcance de un solo usuario.
+- **Consecuencia:** la app deja de ser «solo local» cuando se conecta una cuenta, pero mantiene el funcionamiento sin conexión y sin cuenta. No hay cifrado de extremo a extremo, tiempo real, grupos compartidos ni resolución por campo.
+- **Cierre:** el cifrado de extremo a extremo y la colaboración entre usuarios quedan para changes posteriores. La trazabilidad vive en `producto/nube-supabase` y `producto/datos-locales`.
