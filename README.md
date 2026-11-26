@@ -29,7 +29,7 @@ npm install
 npm run dev
 ```
 
-Abre `http://localhost:3000`. La primera vez te llevará a `/onboarding`, donde puedes poner tu nombre, empezar vacío o cargar datos de ejemplo. La cuenta en la nube es opcional; si la quieres, aplica las migraciones de `supabase/migrations/` y define `NEXT_PUBLIC_SUPABASE_URL` y `NEXT_PUBLIC_SUPABASE_ANON_KEY` en `.env.local` (ver [Nube y sincronización](docs/desarrollo/nube-supabase.md)).
+Abre `http://localhost:3000`. La primera vez te llevará a `/onboarding`, donde puedes poner tu nombre, empezar vacío o cargar datos de ejemplo. La cuenta en la nube es opcional; si la quieres, aplica las migraciones de `supabase/migrations/` y define `NEXT_PUBLIC_SUPABASE_URL` y `NEXT_PUBLIC_SUPABASE_ANON_KEY` en `apps/web/.env.local` (ver [Nube y sincronización](docs/desarrollo/nube-supabase.md)).
 
 ## Comandos
 

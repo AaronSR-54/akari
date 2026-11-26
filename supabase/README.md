@@ -48,14 +48,14 @@ npx supabase db push
 
 ## 4. Configurar la app
 
-Crea `.env.local` en la raíz del proyecto (ignorado por Git):
+Crea `apps/web/.env.local` (ignorado por Git; Next.js lee los env desde el directorio de la app):
 
 ```bash
 NEXT_PUBLIC_SUPABASE_URL=https://<project-ref>.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon-public-key>
 ```
 
-En un worktree, crea su propio `.env.local` (Next.js solo lee el directorio del proyecto). No copies la `service_role` key ni el `.env` de Kan.
+En un worktree, crea su propio `apps/web/.env.local`. No copies la `service_role` key ni el `.env` de Kan. Usa la **Publishable key** (`sb_publishable_...`) o la **anon public** legacy, nunca una `sb_secret_...`.
 
 Sin estas variables la app arranca en modo local y el panel de cuenta explica que la nube no está disponible.
 

@@ -30,7 +30,7 @@ La app usa Webpack (`next dev --webpack`) porque los paquetes internos importan 
 ## Nube opcional (Supabase)
 
 1. Aplica los archivos de `supabase/migrations/` en un proyecto de Supabase, en orden.
-2. Crea `.env.local` en la raíz con:
+2. Crea `apps/web/.env.local` con:
 
 ```bash
 NEXT_PUBLIC_SUPABASE_URL=https://<project-ref>.supabase.co
@@ -39,7 +39,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon-public-key>
 
 Sin esas variables la app arranca en modo local y la tarjeta de cuenta aparece como «Sin configurar». Nunca uses la `service_role` key en el cliente. La guía completa está en [Nube y sincronización](./nube-supabase.md) y en [`supabase/README.md`](../../supabase/README.md).
 
-En un worktree, Next.js lee el `.env.local` de su propio directorio; créalo allí para probar la nube.
+En un worktree, crea `apps/web/.env.local` dentro de ese worktree para probar la nube.
 
 ## Build de producción
 

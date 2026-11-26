@@ -7,7 +7,7 @@ Akari sigue siendo local-first: IndexedDB es la fuente inmediata y la app funcio
 1. Crea un proyecto en <https://supabase.com/dashboard>.
 2. Aplica los archivos de `supabase/migrations/` en orden desde el SQL Editor. El detalle está en [`supabase/README.md`](../../supabase/README.md).
 3. Configura Auth con email y contraseña. Para desarrollo puedes desactivar la confirmación de correo.
-4. Crea `.env.local` en la raíz del proyecto:
+4. Crea `apps/web/.env.local` (Next.js lee los `.env.local` desde el directorio de la app):
 
 ```bash
 NEXT_PUBLIC_SUPABASE_URL=https://<project-ref>.supabase.co
@@ -16,7 +16,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon-public-key>
 
 Sin estas variables la app arranca en modo local y el panel de cuenta explica que la nube no está disponible. Nunca uses la `service_role` key en el cliente.
 
-En un worktree, Next.js solo lee el `.env.local` de su propio directorio; créalo allí si vas a probar la nube.
+En un worktree, crea `apps/web/.env.local` dentro de ese worktree. Si prefieres tener un único archivo en la raíz, puedes hacer que `apps/web/.env.local` sea un enlace simbólico a `../../.env.local`.
 
 ## Arquitectura
 
