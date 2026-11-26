@@ -2,7 +2,11 @@
 
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
-import { bankCatalog, updateProfilePreferences, type Account } from '@akari/domain';
+import {
+  bankCatalog,
+  updateProfilePreferences,
+  type ProfilePreferencesInput,
+} from '@akari/domain';
 import { loadDemoDatabase, storageErrorMessage } from '@akari/data';
 import {
   Badge,
@@ -15,49 +19,46 @@ import {
   Logo,
   PageContainer,
   SectionHeader,
-  SelectField,
   Stack,
   TextField,
   useToast,
   type IconName,
 } from '@akari/ui';
-import { useAccounts, useSettings } from '../hooks';
+import { useSettings } from '../hooks';
 import { useData } from '../providers';
 import { CloudAccountCard } from '../account-panel';
-import { AccountForm } from '../forms/account-form';
-import { MovementForm } from '../forms/movement-form';
 import { BankIcon } from '../bank-icon';
 import { appNow } from '../../lib/clock';
 import { defaultProfile } from '../../lib/profile';
 import { currencyOptions } from '../../lib/options';
 
-const STEPS = ['profile', 'account', 'csv', 'movement', 'cloud'] as const;
+const STEPS = ['name', 'currency', 'income', 'banks', 'cloud'] as const;
 type Step = (typeof STEPS)[number];
 
 const STEP_META: Record<Step, { title: string; description: string; icon: IconName }> = {
-  profile: {
-    title: 'Tu perfil',
+  name: {
+    title: '¿Cómo te llamas?',
     description:
-      'Empezamos por lo básico: cómo te llamas, tu divisa principal y el día en que suele entrar tu ingreso. Podrás cambiarlo cuando quieras en Ajustes.',
+      'Así te saludamos en el resumen y personalizamos tu perfil. Puedes cambiarlo cuando quieras en Ajustes.',
     icon: 'users',
   },
-  account: {
-    title: 'Tu primera cuenta',
+  currency: {
+    title: 'Tu divisa favorita',
     description:
-      'Crea la cuenta donde vivirán tus movimientos. Si prefieres hacerlo más tarde, puedes omitir este paso.',
+      'La usaremos por defecto al crear cuentas y al mostrar importes. Las cuentas existentes conservan su divisa.',
     icon: 'wallet',
   },
-  csv: {
-    title: 'Importa tus movimientos',
+  income: {
+    title: 'Tu ingreso mensual',
     description:
-      'El atajo para no configurarlo todo a mano. Estamos preparando la importación de CSV de tu banco.',
-    icon: 'arrows',
+      'Si sueles cobrar un día concreto del mes, dínoslo para afinar avisos y previsiones. Es opcional.',
+    icon: 'clock',
   },
-  movement: {
-    title: 'Tu primer movimiento',
+  banks: {
+    title: 'Tu banco',
     description:
-      'Registra un gasto o un ingreso para ver cómo funciona el resumen. Si se repite, crearemos la suscripción.',
-    icon: 'add',
+      'Estamos preparando la importación de movimientos desde el CSV de tu banco. Muy pronto podrás usarla como atajo.',
+    icon: 'arrows',
   },
   cloud: {
     title: 'Guarda tus datos',
@@ -65,6 +66,13 @@ const STEP_META: Record<Step, { title: string; description: string; icon: IconNa
       'La nube es opcional: sirve para recuperar tus datos en otro dispositivo y no depender de este navegador.',
     icon: 'insights',
   },
+};
+
+const CURRENCY_SYMBOL: Record<string, string> = {
+  EUR: '€',
+  USD: '$',
+  GBP: '£',
+  JPY: '¥',
 };
 
 function Stepper({ step }: { step: Step }) {
@@ -144,18 +152,14 @@ export function OnboardingScreen() {
   const router = useRouter();
   const { db, repositories, ready, error } = useData();
   const settings = useSettings();
-  const accounts = useAccounts();
   const { toast } = useToast();
 
-  const [step, setStep] = useState<Step>('profile');
-  const [busy, setBusy] = useState<'profile' | 'demo' | 'finish' | null>(null);
+  const [step, setStep] = useState<Step>('name');
+  const [busy, setBusy] = useState<'step' | 'demo' | 'finish' | null>(null);
   const [nameDraft, setNameDraft] = useState<string>(defaultProfile.displayName);
   const [currencyDraft, setCurrencyDraft] = useState('EUR');
-  const [incomeDayDraft, setIncomeDayDraft] = useState('1');
+  const [incomeDayDraft, setIncomeDayDraft] = useState('');
   const [profileError, setProfileError] = useState<string | undefined>();
-  const [createdAccount, setCreatedAccount] = useState<Account | null>(null);
-  const [movementSaved, setMovementSaved] = useState(false);
-  const [formKey, setFormKey] = useState(0);
   const initialised = useRef(false);
 
   useEffect(() => {
@@ -163,10 +167,27 @@ export function OnboardingScreen() {
     initialised.current = true;
     setNameDraft(settings.displayName ?? defaultProfile.displayName);
     setCurrencyDraft(settings.primaryCurrency ?? 'EUR');
-    setIncomeDayDraft(String(settings.primaryIncomeDay ?? 1));
+    setIncomeDayDraft(
+      settings.primaryIncomeDay == null ? '' : String(settings.primaryIncomeDay),
+    );
   }, [settings]);
 
   const meta = STEP_META[step];
+  const stepIndex = STEPS.indexOf(step);
+
+  const savePreferences = async (patch: ProfilePreferencesInput): Promise<boolean> => {
+    setProfileError(undefined);
+    try {
+      await updateProfilePreferences(repositories, patch);
+      return true;
+    } catch (saveError) {
+      const message =
+        saveError instanceof Error ? saveError.message : 'No se ha podido guardar el perfil.';
+      setProfileError(message);
+      toast({ title: 'Revisa tus datos', description: message, tone: 'error' });
+      return false;
+    }
+  };
 
   const finish = async (markCompleted = true) => {
     setBusy('finish');
@@ -185,35 +206,44 @@ export function OnboardingScreen() {
     }
   };
 
-  const saveProfile = async (): Promise<boolean> => {
-    setProfileError(undefined);
-    try {
-      await updateProfilePreferences(repositories, {
-        displayName: nameDraft,
-        primaryCurrency: currencyDraft,
-        primaryIncomeDay: Number(incomeDayDraft),
+  const continueStep = async () => {
+    setBusy('step');
+    let saved = true;
+
+    if (step === 'name') {
+      saved = await savePreferences({ displayName: nameDraft });
+      if (saved) setStep('currency');
+    } else if (step === 'currency') {
+      saved = await savePreferences({ primaryCurrency: currencyDraft });
+      if (saved) setStep('income');
+    } else if (step === 'income') {
+      saved = await savePreferences({
+        primaryIncomeDay: incomeDayDraft.trim() === '' ? null : Number(incomeDayDraft),
       });
-      return true;
-    } catch (saveError) {
-      const message =
-        saveError instanceof Error ? saveError.message : 'No se ha podido guardar el perfil.';
-      setProfileError(message);
-      toast({ title: 'Revisa tus datos', description: message, tone: 'error' });
-      return false;
+      if (saved) setStep('banks');
+    } else if (step === 'banks') {
+      setStep('cloud');
     }
+
+    setBusy(null);
+    if (!saved) return;
   };
 
-  const continueProfile = async () => {
-    setBusy('profile');
-    const saved = await saveProfile();
+  const skipIncome = async () => {
+    setBusy('step');
+    const saved = await savePreferences({ primaryIncomeDay: null });
     setBusy(null);
-    if (saved) setStep('account');
+    if (saved) setStep('banks');
   };
 
   const startDemo = async () => {
     setBusy('demo');
     try {
-      const saved = await saveProfile();
+      const saved = await savePreferences({
+        displayName: nameDraft,
+        primaryCurrency: currencyDraft,
+        primaryIncomeDay: incomeDayDraft.trim() === '' ? null : Number(incomeDayDraft),
+      });
       if (!saved) {
         setBusy(null);
         return;
@@ -222,7 +252,7 @@ export function OnboardingScreen() {
       await updateProfilePreferences(repositories, {
         displayName: nameDraft,
         primaryCurrency: currencyDraft,
-        primaryIncomeDay: Number(incomeDayDraft),
+        primaryIncomeDay: incomeDayDraft.trim() === '' ? null : Number(incomeDayDraft),
       });
       toast({ title: 'Datos de ejemplo cargados', tone: 'success' });
       router.replace('/');
@@ -235,10 +265,6 @@ export function OnboardingScreen() {
       setBusy(null);
     }
   };
-
-  const movementAccounts =
-    accounts && accounts.length > 0 ? accounts : createdAccount ? [createdAccount] : [];
-  const defaultAccountId = createdAccount?.id ?? accounts?.[0]?.id;
 
   return (
     <main className="min-h-screen bg-surface-canvas">
@@ -262,7 +288,7 @@ export function OnboardingScreen() {
               </span>
               <div className="min-w-0 lg:mt-5">
                 <p className="text-ui-10 uppercase tracking-[0.16em] text-accent-strong">
-                  Paso {STEPS.indexOf(step) + 1} de {STEPS.length}
+                  Paso {stepIndex + 1} de {STEPS.length}
                 </p>
                 <h1 className="text-ui-20-bold text-text-primary lg:text-ui-32-bold">
                   {meta.title}
@@ -291,7 +317,7 @@ export function OnboardingScreen() {
               </Banner>
             ) : null}
 
-            {step === 'profile' ? (
+            {step === 'name' ? (
               <Card padding="lg">
                 <Stack gap={4}>
                   <TextField
@@ -302,25 +328,8 @@ export function OnboardingScreen() {
                     help="Se muestra en tu perfil y en el shell. Máximo 40 caracteres."
                     maxLength={40}
                     autoComplete="name"
+                    data-autofocus
                   />
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <SelectField
-                      label="Divisa principal"
-                      value={currencyDraft}
-                      onValueChange={setCurrencyDraft}
-                      options={currencyOptions}
-                      help="Se usará por defecto al crear cuentas."
-                    />
-                    <TextField
-                      label="Día de tu ingreso principal"
-                      type="number"
-                      min={1}
-                      max={31}
-                      value={incomeDayDraft}
-                      onChange={(event) => setIncomeDayDraft(event.target.value)}
-                      help="Entre 1 y 31. Si el mes es más corto, se ajusta al último día."
-                    />
-                  </div>
                   <div className="flex flex-col gap-2 pt-1 sm:flex-row sm:items-center sm:justify-between">
                     <Button
                       variant="tertiary"
@@ -332,8 +341,8 @@ export function OnboardingScreen() {
                       Ver con datos de ejemplo
                     </Button>
                     <Button
-                      onClick={() => void continueProfile()}
-                      loading={busy === 'profile'}
+                      onClick={() => void continueStep()}
+                      loading={busy === 'step'}
                       disabled={!ready || Boolean(error)}
                     >
                       Continuar
@@ -348,65 +357,93 @@ export function OnboardingScreen() {
               </Card>
             ) : null}
 
-            {step === 'account' ? (
-              <Stack gap={3}>
-                {accounts && accounts.length > 0 ? (
-                  <Card padding="lg">
-                    <Stack gap={3}>
-                      <SectionHeader title="Ya tienes una cuenta" />
-                      <p className="text-ui-12 text-text-secondary">
-                        Puedes seguir con {accounts[0]?.name ?? 'tu cuenta'} o crear otra más
-                        adelante.
-                      </p>
-                      <div className="flex flex-wrap gap-2">
-                        <Button onClick={() => setStep('csv')}>Continuar</Button>
-                        <Button variant="tertiary" onClick={() => setStep('profile')}>
-                          Atrás
-                        </Button>
-                      </div>
-                    </Stack>
-                  </Card>
-                ) : (
-                  <AccountForm
-                    defaultCurrency={currencyDraft}
-                    submitLabel="Crear cuenta y continuar"
-                    showCancel={false}
-                    onSaved={(account) => {
-                      setCreatedAccount(account);
-                      setStep('csv');
-                    }}
-                  />
-                )}
-                {!accounts || accounts.length === 0 ? (
+            {step === 'currency' ? (
+              <Card padding="lg">
+                <Stack gap={4}>
+                  <div className="grid grid-cols-2 gap-3">
+                    {currencyOptions.map((option) => {
+                      const selected = currencyDraft === option.value;
+                      return (
+                        <button
+                          key={option.value}
+                          type="button"
+                          onClick={() => setCurrencyDraft(option.value)}
+                          aria-pressed={selected}
+                          className={cn(
+                            'flex flex-col items-start gap-1 rounded-xl border px-4 py-3 text-left transition-colors',
+                            selected
+                              ? 'border-accent-default bg-accent-soft text-text-primary'
+                              : 'border-border-subtle bg-surface-default text-text-secondary hover:bg-surface-sunken',
+                          )}
+                        >
+                          <span className="text-ui-24-bold">{CURRENCY_SYMBOL[option.value]}</span>
+                          <span className="text-ui-12-strong">{option.label}</span>
+                          <span className="text-ui-10 text-text-tertiary">{option.value}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
                   <div className="flex flex-wrap justify-between gap-2">
-                    <Button variant="tertiary" size="sm" onClick={() => setStep('profile')}>
+                    <Button variant="tertiary" size="sm" onClick={() => setStep('name')}>
                       Atrás
                     </Button>
-                    <Button variant="tertiary" size="sm" onClick={() => setStep('csv')}>
-                      Omitir este paso
+                    <Button onClick={() => void continueStep()} loading={busy === 'step'}>
+                      Continuar
                     </Button>
                   </div>
-                ) : null}
-              </Stack>
+                </Stack>
+              </Card>
             ) : null}
 
-            {step === 'csv' ? (
+            {step === 'income' ? (
+              <Card padding="lg">
+                <Stack gap={4}>
+                  <TextField
+                    label="Día del mes"
+                    type="number"
+                    min={1}
+                    max={31}
+                    value={incomeDayDraft}
+                    onChange={(event) => setIncomeDayDraft(event.target.value)}
+                    error={profileError}
+                    placeholder="Sin definir"
+                    help="Opcional. Si el mes es más corto, se ajusta al último día."
+                  />
+                  <div className="flex flex-wrap justify-between gap-2">
+                    <Button variant="tertiary" size="sm" onClick={() => setStep('currency')}>
+                      Atrás
+                    </Button>
+                    <div className="flex flex-wrap gap-2">
+                      <Button variant="tertiary" onClick={() => void skipIncome()}>
+                        No lo tengo
+                      </Button>
+                      <Button onClick={() => void continueStep()} loading={busy === 'step'}>
+                        Continuar
+                      </Button>
+                    </div>
+                  </div>
+                </Stack>
+              </Card>
+            ) : null}
+
+            {step === 'banks' ? (
               <Card padding="lg">
                 <Stack gap={4}>
                   <SectionHeader
                     title="Bancos compatibles"
                     action={<Badge tone="info">Próximamente</Badge>}
                   />
-                  <ul className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+                  <ul
+                    aria-label="Bancos compatibles"
+                    className="grid grid-cols-4 justify-items-center gap-4 sm:grid-cols-5"
+                  >
                     {bankCatalog
                       .filter((bank) => bank.icon === 'app')
                       .map((bank) => (
-                        <li
-                          key={bank.id}
-                          className="flex items-center gap-2 rounded-lg border border-border-subtle bg-surface-default px-2 py-1.5"
-                        >
-                          <BankIcon bankId={bank.id} size={20} />
-                          <span className="truncate text-ui-10 text-text-secondary">{bank.name}</span>
+                        <li key={bank.id} title={bank.name} aria-label={bank.name} role="img">
+                          <span className="grid h-16 w-16 place-items-center rounded-full border border-border-subtle bg-surface-default p-1 shadow-sm sm:h-[72px] sm:w-[72px]">
+                            <BankIcon bankId={bank.id} size={64} />
+                          </span>
                         </li>
                       ))}
                   </ul>
@@ -416,90 +453,21 @@ export function OnboardingScreen() {
                     con otros fines. Supabase cifra los datos en tránsito y en reposo; el cifrado de
                     extremo a extremo llegará más adelante.
                   </Banner>
-                  <Inline className="flex-wrap justify-between gap-2">
-                    <Button variant="tertiary" size="sm" onClick={() => setStep('account')}>
+                  <div className="flex flex-wrap justify-between gap-2">
+                    <Button variant="tertiary" size="sm" onClick={() => setStep('income')}>
                       Atrás
                     </Button>
                     <div className="flex flex-wrap gap-2">
-                      <Button variant="tertiary" size="sm" onClick={() => setStep('movement')}>
-                        Omitir este paso
+                      <Button variant="tertiary" onClick={() => void finish()}>
+                        Omitir
                       </Button>
-                      <Button onClick={() => setStep('movement')}>Continuar y añadir a mano</Button>
+                      <Button onClick={() => void continueStep()} loading={busy === 'step'}>
+                        Continuar
+                      </Button>
                     </div>
-                  </Inline>
+                  </div>
                 </Stack>
               </Card>
-            ) : null}
-
-            {step === 'movement' ? (
-              <Stack gap={3}>
-                {movementAccounts.length === 0 ? (
-                  <Card padding="lg">
-                    <Stack gap={3}>
-                      <SectionHeader title="Aún no hay cuentas" />
-                      <p className="text-ui-12 text-text-secondary">
-                        Para registrar un movimiento necesitas una cuenta. Puedes crearla ahora o
-                        omitir este paso.
-                      </p>
-                      <Inline className="flex-wrap gap-2">
-                        <Button onClick={() => setStep('account')}>Crear una cuenta</Button>
-                        <Button variant="tertiary" onClick={() => setStep('cloud')}>
-                          Omitir este paso
-                        </Button>
-                      </Inline>
-                    </Stack>
-                  </Card>
-                ) : movementSaved ? (
-                  <Card padding="lg">
-                    <Stack gap={3}>
-                      <SectionHeader title="Movimiento guardado" />
-                      <Banner tone="success" title="Todo listo">
-                        Puedes añadir otro movimiento o continuar con la cuenta en la nube.
-                      </Banner>
-                      <Inline className="flex-wrap justify-between gap-2">
-                        <Button
-                          variant="tertiary"
-                          size="sm"
-                          onClick={() => {
-                            setMovementSaved(false);
-                            setFormKey((value) => value + 1);
-                          }}
-                        >
-                          Añadir otro
-                        </Button>
-                        <Button onClick={() => setStep('cloud')}>Continuar</Button>
-                      </Inline>
-                    </Stack>
-                  </Card>
-                ) : (
-                  <Card padding="lg">
-                    <Stack gap={4}>
-                      <MovementForm
-                        key={formKey}
-                        accounts={movementAccounts}
-                        defaultAccountId={defaultAccountId}
-                        showActions={false}
-                        framed={false}
-                        formId="onboarding-movement"
-                        onSaved={() => setMovementSaved(true)}
-                      />
-                      <div className="flex flex-wrap justify-between gap-2">
-                        <Button variant="tertiary" size="sm" onClick={() => setStep('csv')}>
-                          Atrás
-                        </Button>
-                        <div className="flex flex-wrap gap-2">
-                          <Button variant="tertiary" size="sm" onClick={() => setStep('cloud')}>
-                            Omitir este paso
-                          </Button>
-                          <Button type="submit" form="onboarding-movement">
-                            Guardar movimiento
-                          </Button>
-                        </div>
-                      </div>
-                    </Stack>
-                  </Card>
-                )}
-              </Stack>
             ) : null}
 
             {step === 'cloud' ? (
@@ -512,7 +480,7 @@ export function OnboardingScreen() {
                       hacerlo más tarde desde Ajustes.
                     </p>
                     <Inline className="flex-wrap justify-between gap-2">
-                      <Button variant="tertiary" onClick={() => setStep('movement')}>
+                      <Button variant="tertiary" onClick={() => setStep('banks')}>
                         Atrás
                       </Button>
                       <div className="flex flex-wrap gap-2">

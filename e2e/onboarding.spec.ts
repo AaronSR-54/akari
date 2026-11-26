@@ -5,7 +5,7 @@ test.describe('onboarding', () => {
   test('primera apertura redirige y empezar vacío no se repite', async ({ page }) => {
     await page.goto('/');
     await expect(page).toHaveURL(/\/onboarding/);
-    await expect(page.getByRole('heading', { name: 'Tu perfil' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: '¿Cómo te llamas?' })).toBeVisible();
     await page.getByRole('button', { name: 'Omitir el asistente' }).click();
     await expect(page).toHaveURL(/\/$/);
     await expectGreetingForViewport(page);

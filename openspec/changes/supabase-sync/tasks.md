@@ -38,11 +38,11 @@
 
 ## 6. Onboarding guiado y preferencias
 
-- [x] 6.1 Añadir `primaryCurrency` y `primaryIncomeDay` a `Settings`, con valores por defecto, y el caso de uso `updateProfilePreferences` con validación; verificar con tests de dominio que se guardan y que los valores inválidos se rechazan sin alterar los existentes.
-- [x] 6.2 Convertir `/onboarding` en un asistente de cinco pasos (perfil, primera cuenta, CSV informativo, primer movimiento y nube) con progreso, vuelta atrás y omisión por paso; verificar que el atajo «Omitir el asistente» completa el onboarding.
-- [x] 6.3 Reutilizar `AccountForm` y `MovementForm` con callbacks para crear la primera cuenta y el primer movimiento, incluyendo la divisa principal como valor por defecto; verificar que se puede omitir cada paso sin bloquear el resumen.
-- [x] 6.4 Pintar el paso de CSV con los bancos del catálogo, la copia honesta de privacidad y el estado «Próximamente», sin procesar archivos.
-- [x] 6.5 Añadir la migración `20261126100300_profile_preferences.sql` con `income_day`, el trigger actualizado y las instrucciones en `supabase/README.md`; verificar que se aplica después de las anteriores.
+- [x] 6.1 Añadir `primaryCurrency` y `primaryIncomeDay` opcionales a `Settings` y el caso de uso `updateProfilePreferences` con validación, incluido el día sin definir (`null`); verificar con tests de dominio que se guardan y que los valores inválidos se rechazan sin alterar los existentes.
+- [x] 6.2 Convertir `/onboarding` en un asistente visual con stepper y cinco pasos (nombre, divisa, día de ingreso opcional, bancos y nube), con progreso, vuelta atrás y omisión por paso; verificar que el atajo «Omitir el asistente» completa el onboarding.
+- [x] 6.3 Pintar el paso de bancos con iconos circulares grandes y sin nombres, la copia honesta de privacidad y el estado «Próximamente», sin procesar archivos.
+- [x] 6.4 Añadir la guía de primera cuenta y primer movimiento dentro de la app: tarjeta de «Primeros pasos» en el resumen y aviso con acción en el detalle de una cuenta sin movimientos.
+- [x] 6.5 Añadir las migraciones `20261126100300_profile_preferences.sql` y `20261126100400_optional_income_day.sql` y las instrucciones en `supabase/README.md`; verificar que se aplican después de las anteriores.
 - [x] 6.6 Sincronizar nombre, divisa y día de ingreso con `profiles` al conectar y al editar desde Ajustes, y mostrar los tres campos en el panel de perfil.
 - [ ] 6.7 Actualizar los E2E del onboarding y ejecutar la suite cuando la persona usuaria lo autorice; no se ejecutan en esta fase por indicación expresa.
 

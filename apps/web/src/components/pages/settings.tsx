@@ -64,7 +64,7 @@ export function SettingsScreen() {
   const [editingName, setEditingName] = useState(false);
   const [nameDraft, setNameDraft] = useState('');
   const [currencyDraft, setCurrencyDraft] = useState('EUR');
-  const [incomeDayDraft, setIncomeDayDraft] = useState('1');
+  const [incomeDayDraft, setIncomeDayDraft] = useState('');
   const [nameError, setNameError] = useState<string | undefined>();
   const [busy, setBusy] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -95,7 +95,7 @@ export function SettingsScreen() {
       await updateProfilePreferences(repositories, {
         displayName: nameDraft,
         primaryCurrency: currencyDraft,
-        primaryIncomeDay: Number(incomeDayDraft),
+        primaryIncomeDay: incomeDayDraft.trim() === '' ? null : Number(incomeDayDraft),
       });
       setEditingName(false);
       toast({ title: 'Perfil actualizado', tone: 'success' });
@@ -219,7 +219,9 @@ export function SettingsScreen() {
                 onClick={() => {
                   setNameDraft(profileName);
                   setCurrencyDraft(settings.primaryCurrency ?? 'EUR');
-                  setIncomeDayDraft(String(settings.primaryIncomeDay ?? 1));
+                  setIncomeDayDraft(
+                    settings.primaryIncomeDay == null ? '' : String(settings.primaryIncomeDay),
+                  );
                   setNameError(undefined);
                   setEditingName(true);
                 }}
@@ -236,9 +238,12 @@ export function SettingsScreen() {
             </div>
           </div>
           <p className="text-ui-10 text-text-secondary">
-            Divisa principal: {settings.primaryCurrency ?? 'EUR'} · Ingreso principal el día{' '}
-            {settings.primaryIncomeDay ?? 1} de cada mes. Se sincroniza con tu perfil si hay una cuenta
-            conectada. La foto se representa con iniciales y no se almacenan imágenes.
+            Divisa principal: {settings.primaryCurrency ?? 'EUR'} · Ingreso principal:{' '}
+            {settings.primaryIncomeDay == null
+              ? 'sin definir'
+              : `el día ${settings.primaryIncomeDay} de cada mes`}
+            . Se sincroniza con tu perfil si hay una cuenta conectada. La foto se representa con
+            iniciales y no se almacenan imágenes.
           </p>
         </Card>
 
@@ -513,7 +518,8 @@ export function SettingsScreen() {
             max={31}
             value={incomeDayDraft}
             onChange={(event) => setIncomeDayDraft(event.target.value)}
-            help="Entre 1 y 31. Si el mes es más corto, se ajusta al último día."
+            placeholder="Sin definir"
+            help="Opcional. Entre 1 y 31; si el mes es más corto, se ajusta al último día."
           />
         </Stack>
       </Modal>

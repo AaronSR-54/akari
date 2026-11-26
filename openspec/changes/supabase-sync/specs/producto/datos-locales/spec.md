@@ -4,12 +4,12 @@
 
 ### Requirement: Inicialización del espacio de datos
 
-En la primera apertura, la aplicación SHALL crear un espacio de datos local y SHALL guiar a la persona con un asistente para configurar su perfil, su primera cuenta y su primer movimiento. La conexión con una cuenta en la nube y los pasos de cuenta y movimiento MUST ser opcionales.
+En la primera apertura, la aplicación SHALL crear un espacio de datos local y SHALL guiar a la persona con un asistente visual para configurar su nombre, divisa, día de ingreso opcional y banco. La conexión con una cuenta en la nube MUST ser opcional; la primera cuenta y el primer movimiento se guían después dentro de la app.
 
 #### Scenario: Primera apertura
 
 - **WHEN** la persona abre la aplicación sin datos guardados
-- **THEN** se crea el espacio local y se muestra el asistente de perfil con nombre, divisa principal y día de ingreso, seguido de los pasos opcionales de cuenta, CSV, movimiento y nube
+- **THEN** se crea el espacio local y se muestra el asistente con los pasos de nombre, divisa, día de ingreso opcional, bancos y nube
 
 #### Scenario: Omitir el asistente
 
@@ -86,7 +86,7 @@ La aplicación SHALL guardar el nombre editable, la divisa principal y el día d
 #### Scenario: Dato existente sin nombre
 
 - **WHEN** se abre una instalación creada antes de que existieran estos campos
-- **THEN** se usan `EUR` y el día 1 sin borrar ni alterar los ajustes ya guardados
+- **THEN** se usa `EUR` como divisa y el día de ingreso queda sin definir, sin borrar ni alterar los ajustes ya guardados
 
 ## ADDED Requirements
 

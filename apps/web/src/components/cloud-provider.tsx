@@ -115,7 +115,7 @@ function errorMessage(error: unknown): string {
   return 'No se ha podido sincronizar. Los cambios siguen guardados en este dispositivo.';
 }
 
-function profileKey(profile: { displayName: string; currency: string; incomeDay: number }): string {
+function profileKey(profile: { displayName: string; currency: string; incomeDay: number | null }): string {
   return `${profile.displayName}|${profile.currency}|${profile.incomeDay}`;
 }
 
@@ -244,7 +244,7 @@ export function CloudProvider({
         const localProfile = {
           displayName: settingsNow.displayName?.trim() || 'Marta',
           currency: settingsNow.primaryCurrency ?? 'EUR',
-          incomeDay: settingsNow.primaryIncomeDay ?? 1,
+          incomeDay: settingsNow.primaryIncomeDay ?? null,
         };
         const remote = await fetchProfile(client, current.id);
         if (remote) {
@@ -401,7 +401,7 @@ export function CloudProvider({
     const profile = {
       displayName: settings?.displayName?.trim() || 'Marta',
       currency: settings?.primaryCurrency ?? 'EUR',
-      incomeDay: settings?.primaryIncomeDay ?? 1,
+      incomeDay: settings?.primaryIncomeDay ?? null,
     };
     const key = profileKey(profile);
     if (key === lastPushedProfileRef.current) return;
@@ -431,7 +431,7 @@ export function CloudProvider({
           data: {
             display_name: displayName,
             currency: settings?.primaryCurrency ?? 'EUR',
-            income_day: settings?.primaryIncomeDay ?? 1,
+            income_day: settings?.primaryIncomeDay ?? null,
           },
           emailRedirectTo:
             typeof window !== 'undefined' ? `${window.location.origin}/onboarding` : undefined,

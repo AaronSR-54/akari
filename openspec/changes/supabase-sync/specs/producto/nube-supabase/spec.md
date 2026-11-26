@@ -118,22 +118,27 @@ Cada fila remota SHALL pertenecer a un único usuario y PostgreSQL MUST aplicar 
 
 ### Requirement: Onboarding de perfil y nube
 
-La pantalla de primeros pasos SHALL guiar con un asistente de perfil, primera cuenta, paso informativo de CSV, primer movimiento y cuenta opcional en la nube, sin impedir el flujo local existente. Cada paso posterior al perfil MUST poder omitirse.
+La pantalla de primeros pasos SHALL guiar con un asistente visual de nombre, divisa, día de ingreso opcional, bancos compatibles y cuenta opcional en la nube, sin impedir el flujo local existente. Cada paso posterior al nombre MUST poder omitirse. La primera cuenta y el primer movimiento se crean dentro de la app, no dentro del asistente.
 
 #### Scenario: Perfil inicial
 
-- **WHEN** la persona completa el primer paso
-- **THEN** se guardan su nombre, divisa principal y día de ingreso antes de continuar
+- **WHEN** la persona completa los pasos de nombre, divisa y día de ingreso
+- **THEN** se guardan los valores y el día de ingreso puede quedar sin definir
 
 #### Scenario: Continuar sin cuenta
 
 - **WHEN** la persona omite los pasos opcionales o termina sin conectar una cuenta
 - **THEN** el onboarding se completa y los datos quedan solo en el dispositivo
 
-#### Scenario: Paso de CSV informativo
+#### Scenario: Paso de bancos informativo
 
-- **WHEN** la persona llega al paso de importación
-- **THEN** ve los bancos soportados y una explicación honesta de que la importación llegará próximamente, sin que se procese ningún archivo
+- **WHEN** la persona llega al paso de bancos
+- **THEN** ve los iconos circulares de los bancos soportados y una explicación honesta de que la importación llegará próximamente, sin que se procese ningún archivo
+
+#### Scenario: Guía dentro de la app
+
+- **WHEN** termina el onboarding sin cuenta o sin movimientos
+- **THEN** el resumen muestra los primeros pasos y el detalle de una cuenta sin movimientos invita a añadir el primero
 
 #### Scenario: Alta desde el onboarding
 

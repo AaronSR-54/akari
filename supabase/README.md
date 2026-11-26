@@ -18,12 +18,13 @@ Los archivos se aplican **por orden** y son idempotentes en su mayor parte. Cada
 | 2 | `migrations/20261126100100_cloud_functions.sql` | `updated_at`, triggers y perfil al registrarse |
 | 3 | `migrations/20261126100200_cloud_rls.sql` | Row Level Security y permisos |
 | 4 | `migrations/20261126100300_profile_preferences.sql` | Día de ingreso y preferencias del perfil |
+| 5 | `migrations/20261126100400_optional_income_day.sql` | Día de ingreso opcional en el alta |
 
 ### Opción A · Editor SQL (recomendada para empezar)
 
 1. Abre **SQL Editor** en el panel de Supabase.
 2. Pega el contenido del archivo 1 y pulsa **Run**.
-3. Repite con los archivos 2, 3 y 4.
+3. Repite con los archivos 2, 3, 4 y 5.
 4. Comprueba en **Table Editor** que aparecen las tablas `profiles`, `accounts`, `movements`, `recurrences`, `installment_plans`, `groups`, `group_expenses` y `transfers`.
 
 ### Opción B · Supabase CLI

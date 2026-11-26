@@ -94,11 +94,12 @@ Los disparadores de sincronización son: conexión establecida, cambio local (de
 
 ### 9. Asistente de onboarding y preferencias del perfil
 
-`/onboarding` pasa a ser un asistente con estado local de cinco pasos: perfil, primera cuenta, CSV informativo, primer movimiento y nube. El progreso se muestra con una barra y cada paso permite volver o omitirse; el perfil es el único obligatorio. «Omitir el asistente» completa el onboarding con los valores por defecto.
+`/onboarding` es un asistente visual con stepper y estado local de cinco pasos: nombre, divisa, día de ingreso opcional, bancos y nube. El progreso se muestra con círculos numerados y etiquetas en escritorio y puntos en móvil; cada paso permite volver y los pasos posteriores al nombre se pueden omitir. «Omitir el asistente» completa el onboarding con los valores por defecto.
 
-- **Perfil.** `Settings` gana `primaryCurrency` y `primaryIncomeDay` opcionales con valores por defecto (`EUR` y `1`), de modo que las instalaciones existentes no necesitan migración de Dexie. La validación vive en `updateProfilePreferences` y `updateProfileName` delega en ella.
-- **Cuenta y movimiento.** Se reutilizan `AccountForm` y `MovementForm` con callbacks de guardado para no duplicar formularios ni validaciones. `AccountForm` acepta divisa por defecto, texto de envío y `onSaved`; `MovementForm` ya exponía `onSaved`, `showActions` y `framed`.
-- **CSV informativo.** Se muestran los bancos del catálogo con `BankIcon` y una copia de privacidad honesta: el archivo se procesará en el navegador, no se usa para nada más y Supabase cifra en tránsito y en reposo. No se promete cifrado de extremo a extremo ni se implementa todavía el parser.
+- **Perfil.** `Settings` gana `primaryCurrency` y `primaryIncomeDay` opcionales; la divisa por defecto es `EUR` y el día puede quedar sin definir. No hace falta migración de Dexie. La validación vive en `updateProfilePreferences` y `updateProfileName` delega en ella.
+- **Cuenta y movimiento fuera del asistente.** El onboarding no incrusta formularios de cuenta ni de movimiento. Al terminar, el resumen muestra una tarjeta de «Primeros pasos» y el detalle de una cuenta sin movimientos invita a registrar el primero, reutilizando las rutas normales de alta.
+- **Bancos.** Se muestran los bancos del catálogo como iconos circulares de 64 px, sin nombre visible, en una rejilla. El paso es informativo: explica que la importación CSV llegará próximamente, que el archivo se procesará en el navegador, que no se usa para nada más y que Supabase cifra en tránsito y en reposo. No se promete cifrado de extremo a extremo ni se implementa todavía el parser.
+- **Día opcional.** `income_day` admite `NULL`; la migración 0005 evita asumir el día 1 cuando el alta no lo envía.
 - **Sincronización del perfil.** `profiles` ya tenía `currency`; la migración 0004 añade `income_day`. El trigger de alta lee `currency` e `income_day` de `options.data`, y el cliente actualiza los tres campos al conectar o editar. Si la migración no está aplicada, la sincronización de datos sigue funcionando y el error de perfil se muestra sin bloquear.
 - **Divisa por defecto.** `AccountForm` usa `defaultCurrency` o `Settings.primaryCurrency` para nuevas cuentas, sin cambiar la divisa de las existentes.
 

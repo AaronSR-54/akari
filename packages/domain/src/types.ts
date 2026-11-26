@@ -139,7 +139,7 @@ export type Settings = {
   /** Divisa principal para nuevas cuentas y formato por defecto. */
   primaryCurrency?: string;
   /** Día del mes del ingreso principal (1-31); se ajusta al último día si el mes es corto. */
-  primaryIncomeDay?: number;
+  primaryIncomeDay?: number | null;
   /** Versión del seed de ejemplo; permite refrescar demos antiguas. */
   demoSeedVersion?: number;
   /** Identificadores de avisos ya vistos; se recorta a los más recientes. */
@@ -154,7 +154,7 @@ export const defaultSettings: Settings = {
   demoLoaded: false,
   displayName: 'Marta',
   primaryCurrency: 'EUR',
-  primaryIncomeDay: 1,
+  primaryIncomeDay: null,
 };
 
 export type AccountInput = {

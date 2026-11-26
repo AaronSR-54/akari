@@ -65,8 +65,9 @@ No hay cifrado de extremo a extremo: Supabase cifra en tránsito y en reposo seg
 
 ## Onboarding y ajustes
 
-- `/onboarding` es un asistente de cinco pasos: perfil (nombre, divisa principal y día de ingreso), primera cuenta, paso informativo de importación CSV, primer movimiento y cuenta en la nube. Cada paso se puede omitir salvo el perfil, y hay un atajo para omitir todo el asistente.
-- El paso de CSV muestra los bancos soportados y explica que la importación llegará próximamente; todavía no procesa archivos. La copia de privacidad indica que el archivo se procesará en el navegador, que no se usa para nada más y que Supabase cifra en tránsito y en reposo, sin prometer cifrado de extremo a extremo.
+- `/onboarding` es un asistente de cinco pasos: nombre, divisa principal, día de ingreso opcional, bancos compatibles (paso informativo de CSV) y cuenta en la nube. Hay un atajo para omitir todo el asistente.
+- La primera cuenta y el primer movimiento se crean ya dentro de la app: el resumen muestra una tarjeta de «Primeros pasos» mientras falten, y el detalle de una cuenta sin movimientos invita a añadir el primero.
+- El paso de bancos muestra los iconos circulares de los bancos soportados y explica que la importación CSV llegará próximamente; todavía no procesa archivos. La copia de privacidad indica que el archivo se procesará en el navegador, que no se usa para nada más y que Supabase cifra en tránsito y en reposo, sin prometer cifrado de extremo a extremo.
 - Al crear cuenta se suben los datos locales existentes (bootstrap).
 - Al iniciar sesión se descargan los de la cuenta; si el dispositivo ya tiene datos, se pide confirmación antes de sustituirlos.
 - Si el correo requiere confirmación, se muestra el aviso y la sesión se reanuda al volver desde el enlace.

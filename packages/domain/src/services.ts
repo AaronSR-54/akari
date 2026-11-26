@@ -61,7 +61,7 @@ function nowIso(): string {
 export type ProfilePreferencesInput = {
   displayName?: string;
   primaryCurrency?: string;
-  primaryIncomeDay?: number;
+  primaryIncomeDay?: number | null;
 };
 
 export async function updateProfilePreferences(
@@ -90,11 +90,15 @@ export async function updateProfilePreferences(
   }
 
   if (input.primaryIncomeDay !== undefined) {
-    const day = input.primaryIncomeDay;
-    if (!Number.isInteger(day) || day < 1 || day > 31) {
-      throw new ValidationError('El día de ingreso debe estar entre 1 y 31', 'primaryIncomeDay');
+    if (input.primaryIncomeDay === null) {
+      patch.primaryIncomeDay = null;
+    } else {
+      const day = input.primaryIncomeDay;
+      if (!Number.isInteger(day) || day < 1 || day > 31) {
+        throw new ValidationError('El día de ingreso debe estar entre 1 y 31', 'primaryIncomeDay');
+      }
+      patch.primaryIncomeDay = day;
     }
-    patch.primaryIncomeDay = day;
   }
 
   return repositories.settings.update(patch);
@@ -658,6 +662,7 @@ export type Overview = {
   };
   upcoming: ReturnType<typeof upcomingPayments>;
   recentMovements: Movement[];
+  movementCount: number;
   dailyExpenses: ReturnType<typeof dailyTotals>;
   balancesByAccount: Record<string, ReturnType<typeof calculateAccountBalance>>;
 };
@@ -707,6 +712,7 @@ export async function getOverview(
 
   return {
     accounts: activeAccounts,
+    movementCount: movements.length,
     totalBalances,
     projections: [...projectedTotals.values()],
     month: {

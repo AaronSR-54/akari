@@ -36,7 +36,7 @@ export async function fetchProfile(
 export async function saveProfile(
   client: SupabaseClient,
   userId: string,
-  profile: { displayName: string; currency: string; incomeDay: number },
+  profile: { displayName: string; currency: string; incomeDay: number | null },
 ): Promise<void> {
   const { error } = await client.from('profiles').upsert(
     {

@@ -511,6 +511,9 @@ describe('nombre del perfil', () => {
     });
     expect(updated.primaryCurrency).toBe('USD');
     expect(updated.primaryIncomeDay).toBe(25);
+
+    const cleared = await updateProfilePreferences(repositories, { primaryIncomeDay: null });
+    expect(cleared.primaryIncomeDay).toBeNull();
   });
 
   it('rechaza una divisa o un día de ingreso inválidos', async () => {

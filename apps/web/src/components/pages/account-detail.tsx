@@ -148,6 +148,16 @@ export function AccountDetailScreen({ accountId }: { accountId: string }) {
           label={typeLabel[account.type] ?? account.type}
           detail={`${account.currency} · ${formatUpdated(account.updatedAt)}`}
         />
+        {movements.length === 0 ? (
+          <Banner
+            tone="info"
+            title="Primer paso completado"
+            action={<ActionLink href={`/movimientos/nuevo?cuenta=${account.id}`}>Añadir primer movimiento</ActionLink>}
+          >
+            Tu cuenta ya está creada. Registra tu primer gasto o ingreso para empezar a ver el
+            resumen en movimiento.
+          </Banner>
+        ) : null}
 
         {projected.minor < 0 ? (
           <Banner tone="warning" title="El saldo estimado a fin de mes es negativo">
