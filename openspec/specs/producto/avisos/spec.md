@@ -7,7 +7,7 @@ El panel desplegable de avisos reúne los pagos próximos, la actividad de las c
 
 ### Requirement: Apertura y cierre del panel de avisos
 
-El shell SHALL abrir un panel desplegable anclado al botón de avisos de la cabecera, tanto con la navegación lateral como con la cabecera superior, y SHALL difuminar el fondo de la página con el mismo desenfoque ligero que las modales. MUST cerrarlo con Escape, con la ✕ o al pulsar fuera del panel.
+El shell SHALL abrir un panel desplegable anclado al botón de avisos de la cabecera, tanto con la navegación lateral como con la cabecera superior, y SHALL difuminar el fondo de la página con el mismo desenfoque ligero que las modales. Mientras el panel está abierto, SHALL bloquear el scroll del documento y MUST restaurarlo al cerrarlo. MUST cerrarlo con Escape, con la ✕ o al pulsar fuera del panel.
 
 #### Scenario: Apertura con navegación lateral
 
@@ -23,6 +23,11 @@ El shell SHALL abrir un panel desplegable anclado al botón de avisos de la cabe
 
 - **WHEN** el panel de avisos está abierto
 - **THEN** el resto de la página se ve difuminado con un desenfoque ligero, sin trampa de foco
+
+#### Scenario: Scroll bloqueado
+
+- **WHEN** el panel de avisos está abierto y la persona usa la rueda, el trackpad o el teclado para desplazarse
+- **THEN** la página de fondo no se desplaza y el scroll vuelve a funcionar al cerrar el panel por cualquiera de sus vías
 
 #### Scenario: Cierre del panel
 
