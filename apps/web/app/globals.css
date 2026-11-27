@@ -37,6 +37,17 @@
   *:focus-visible {
     outline: none;
   }
+
+  html[data-scroll-locked='true'] [data-shell-scroll] {
+    overflow: hidden;
+  }
+
+  @media (min-width: 1024px) {
+    * {
+      scrollbar-width: thin;
+      scrollbar-color: rgb(var(--color-accent-default-rgb) / 0.55) transparent;
+    }
+  }
 }
 
 @layer utilities {

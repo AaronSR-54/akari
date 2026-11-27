@@ -87,14 +87,14 @@ function AppShellInner({ children }: { children: ReactNode }) {
   ) : null;
 
   return (
-    <div className="min-h-screen bg-surface-canvas lg:p-4">
+    <div className="min-h-screen bg-surface-canvas lg:h-screen lg:overflow-clip lg:p-4 lg:pr-0">
       <a
         href="#contenido"
         className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[70] focus:rounded-full focus:bg-accent-default focus:px-4 focus:py-2 focus:text-ui-12-strong focus:text-accent-ink"
       >
         Saltar al contenido
       </a>
-      <div className="flex min-h-screen gap-4 lg:min-h-[calc(100vh-2rem)]">
+      <div className="flex min-h-screen gap-4 lg:h-[calc(100vh-2rem)] lg:min-h-0">
         {sidebarMode ? (
           <>
             <div
@@ -104,7 +104,7 @@ function AppShellInner({ children }: { children: ReactNode }) {
             <Sidebar pinned={sidebarPinned} onPinnedChange={setSidebarPinned} displayName={displayName} />
           </>
         ) : null}
-        <div className="flex min-w-0 flex-1 flex-col">
+        <div className="flex min-w-0 flex-1 flex-col lg:min-h-0">
           {sidebarMode ? null : (
             <HeaderNav
               onOpenSearch={() => setSearchOpen(true)}
@@ -128,7 +128,11 @@ function AppShellInner({ children }: { children: ReactNode }) {
               notificationsPanel={notificationsPanel}
             />
           ) : null}
-          <main id="contenido" className="flex-1 px-5 pb-24 pt-6 md:px-6 md:pb-8 lg:px-8">
+          <main
+            id="contenido"
+            data-shell-scroll
+            className="flex-1 px-5 pb-24 pt-6 md:px-6 md:pb-8 lg:min-h-0 lg:overflow-y-auto lg:px-8"
+          >
             {error ? (
               <StatePage
                 type="error"

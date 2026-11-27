@@ -3,6 +3,7 @@ const overlayStack: string[] = [];
 let scrollLockCount = 0;
 let previousBodyOverflow = '';
 let previousRootOverflow = '';
+let previousScrollLocked = '';
 
 /** Registra un overlay abierto; el último registrado es la capa superior. */
 export function pushOverlay(id: string) {
@@ -26,8 +27,10 @@ export function acquireScrollLock(): () => void {
     if (typeof document !== 'undefined') {
       previousBodyOverflow = document.body.style.overflow;
       previousRootOverflow = document.documentElement.style.overflow;
+      previousScrollLocked = document.documentElement.dataset.scrollLocked ?? '';
       document.body.style.overflow = 'hidden';
       document.documentElement.style.overflow = 'hidden';
+      document.documentElement.dataset.scrollLocked = 'true';
     }
   }
   scrollLockCount += 1;
@@ -40,6 +43,11 @@ export function acquireScrollLock(): () => void {
     if (scrollLockCount === 0 && typeof document !== 'undefined') {
       document.body.style.overflow = previousBodyOverflow;
       document.documentElement.style.overflow = previousRootOverflow;
+      if (previousScrollLocked) {
+        document.documentElement.dataset.scrollLocked = previousScrollLocked;
+      } else {
+        delete document.documentElement.dataset.scrollLocked;
+      }
     }
   };
 }
