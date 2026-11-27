@@ -87,7 +87,7 @@ function AppShellInner({ children }: { children: ReactNode }) {
   ) : null;
 
   return (
-    <div className="min-h-screen bg-surface-canvas lg:h-screen lg:overflow-hidden lg:p-4 lg:pr-0">
+    <div className="min-h-screen bg-surface-canvas lg:h-screen lg:overflow-clip lg:p-4 lg:pr-0">
       <a
         href="#contenido"
         className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[70] focus:rounded-full focus:bg-accent-default focus:px-4 focus:py-2 focus:text-ui-12-strong focus:text-accent-ink"
