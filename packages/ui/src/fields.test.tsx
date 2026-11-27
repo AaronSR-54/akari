@@ -6,6 +6,7 @@ import {
   AmountField,
   Checkbox,
   DateField,
+  DateRangeField,
   SearchField,
   SelectField,
   SelectPill,
@@ -13,6 +14,7 @@ import {
   TextField,
   TextareaField,
 } from './fields.js';
+import type { BusinessDateRange } from './dates.js';
 import { Modal } from './feedback.js';
 
 function stubMatchMedia(matches: boolean) {
@@ -51,6 +53,40 @@ function stubMatchMedia(matches: boolean) {
 function DateFieldHarness({ initial = '2026-11-25' }: { initial?: string }) {
   const [value, setValue] = useState(initial);
   return <DateField label="Fecha" value={value} onValueChange={setValue} required />;
+}
+
+const rangePresets = [
+  { value: 'all', label: 'Cualquier fecha', range: {} },
+  {
+    value: 'november',
+    label: 'Este mes',
+    range: { start: '2026-11-01', end: '2026-11-30' },
+  },
+];
+
+function DateRangeFieldHarness({
+  initial = {},
+  variant = 'field' as const,
+  showToday,
+  showHint,
+}: {
+  initial?: BusinessDateRange;
+  variant?: 'field' | 'pill';
+  showToday?: boolean;
+  showHint?: boolean;
+}) {
+  const [value, setValue] = useState<BusinessDateRange>(initial);
+  return (
+    <DateRangeField
+      label="Periodo"
+      value={value}
+      onValueChange={setValue}
+      presets={rangePresets}
+      variant={variant}
+      showToday={showToday}
+      showHint={showHint}
+    />
+  );
 }
 
 const typeOptions = [
@@ -376,6 +412,44 @@ describe('fields', () => {
     expect(trigger).toHaveAttribute('aria-expanded', 'false');
   });
 
+  it('en móvil abre una hoja inferior con las opciones y devuelve el foco', async () => {
+    const media = stubMatchMedia(true);
+    const user = userEvent.setup();
+    try {
+      render(<SelectHarness />);
+      const trigger = screen.getByRole('combobox', { name: 'Tipo' });
+
+      await user.click(trigger);
+      const sheet = screen.getByRole('dialog', { name: 'Tipo' });
+      expect(sheet).toHaveAttribute('aria-modal', 'true');
+      expect(sheet.className).toContain('rounded-t-xl');
+      expect(within(sheet).getByRole('listbox', { name: 'Tipo' })).toBeInTheDocument();
+      expect(within(sheet).getByRole('option', { name: 'Personal' })).toHaveFocus();
+
+      await user.click(within(sheet).getByRole('option', { name: 'Depósito' }));
+      expect(screen.queryByRole('dialog', { name: 'Tipo' })).not.toBeInTheDocument();
+      expect(trigger).toHaveTextContent('Depósito');
+      expect(trigger).toHaveFocus();
+    } finally {
+      media.restore();
+    }
+  });
+
+  it('abre el panel sin desplazar la página con scrollIntoView', async () => {
+    const user = userEvent.setup();
+    const scrollIntoView = vi.fn();
+    const original = Element.prototype.scrollIntoView;
+    Element.prototype.scrollIntoView = scrollIntoView;
+    try {
+      render(<SelectHarness />);
+      await user.click(screen.getByRole('combobox', { name: 'Tipo' }));
+      expect(screen.getByRole('listbox', { name: 'Tipo' })).toBeInTheDocument();
+      expect(scrollIntoView).not.toHaveBeenCalled();
+    } finally {
+      Element.prototype.scrollIntoView = original;
+    }
+  });
+
   it('la píldora comparte el panel accesible', async () => {
     const user = userEvent.setup();
     const onChange = vi.fn();
@@ -396,6 +470,103 @@ describe('fields', () => {
     await user.click(trigger);
     await user.click(screen.getByRole('option', { name: 'Oscuro' }));
     expect(onChange).toHaveBeenCalledWith('dark');
+  });
+
+  it('aplica un rango personalizado y deshabilita Aplicar hasta tener ambos extremos', async () => {
+    const user = userEvent.setup();
+    render(<DateRangeFieldHarness />);
+    const trigger = screen.getByRole('button', { name: 'Periodo' });
+
+    expect(trigger).toHaveTextContent('Cualquier fecha');
+    await user.click(trigger);
+    const panel = screen.getByRole('dialog', { name: 'Periodo' });
+    const apply = within(panel).getByRole('button', { name: 'Aplicar' });
+    expect(apply).toBeDisabled();
+
+    await user.click(within(panel).getByRole('button', { name: '10 nov 2026' }));
+    expect(apply).toBeDisabled();
+    await user.click(within(panel).getByRole('button', { name: '20 nov 2026' }));
+    expect(apply).toBeEnabled();
+    await user.click(apply);
+
+    expect(screen.queryByRole('dialog', { name: 'Periodo' })).not.toBeInTheDocument();
+    expect(trigger).toHaveTextContent('10–20 nov 2026');
+    expect(trigger).toHaveFocus();
+  });
+
+  it('elige un atajo y cierra el panel sin pedir Aplicar', async () => {
+    const user = userEvent.setup();
+    render(<DateRangeFieldHarness />);
+    const trigger = screen.getByRole('button', { name: 'Periodo' });
+
+    await user.click(trigger);
+    const shortcut = screen.getByRole('button', { name: 'Este mes' });
+    expect(shortcut.parentElement?.className).toContain('justify-center');
+    await user.click(shortcut);
+
+    expect(screen.queryByRole('dialog', { name: 'Periodo' })).not.toBeInTheDocument();
+    expect(trigger).toHaveTextContent('Este mes');
+  });
+
+  it('cierra sin aplicar y conserva el rango anterior', async () => {
+    const user = userEvent.setup();
+    render(<DateRangeFieldHarness initial={{ start: '2026-11-01', end: '2026-11-30' }} />);
+    const trigger = screen.getByRole('button', { name: 'Periodo' });
+
+    await user.click(trigger);
+    await user.click(screen.getByRole('button', { name: '10 nov 2026' }));
+    await user.keyboard('{Escape}');
+
+    expect(screen.queryByRole('dialog', { name: 'Periodo' })).not.toBeInTheDocument();
+    expect(trigger).toHaveTextContent('Este mes');
+  });
+
+  it('en móvil abre la hoja inferior y aplica el rango', async () => {
+    const media = stubMatchMedia(true);
+    const user = userEvent.setup();
+    try {
+      render(<DateRangeFieldHarness />);
+      const trigger = screen.getByRole('button', { name: 'Periodo' });
+
+      await user.click(trigger);
+      const sheet = screen.getByRole('dialog', { name: 'Periodo' });
+      expect(sheet).toHaveAttribute('aria-modal', 'true');
+      expect(sheet.className).toContain('rounded-t-xl');
+
+      await user.click(within(sheet).getByRole('button', { name: '10 nov 2026' }));
+      await user.click(within(sheet).getByRole('button', { name: '20 nov 2026' }));
+      await user.click(within(sheet).getByRole('button', { name: 'Aplicar' }));
+
+      expect(screen.queryByRole('dialog', { name: 'Periodo' })).not.toBeInTheDocument();
+      expect(trigger).toHaveTextContent('10–20 nov 2026');
+      expect(trigger).toHaveFocus();
+    } finally {
+      media.restore();
+    }
+  });
+
+  it('la variante pill usa el mismo disparador y panel accesible', async () => {
+    const user = userEvent.setup();
+    render(<DateRangeFieldHarness variant="pill" />);
+    const trigger = screen.getByRole('button', { name: 'Periodo' });
+
+    expect(trigger.className).toContain('rounded-full');
+    await user.click(trigger);
+    expect(screen.getByRole('dialog', { name: 'Periodo' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Hoy' })).toBeInTheDocument();
+  });
+
+  it('oculta Hoy y la pista cuando se pide y mantiene Aplicar y Limpiar', async () => {
+    const user = userEvent.setup();
+    render(<DateRangeFieldHarness showToday={false} showHint={false} />);
+    const trigger = screen.getByRole('button', { name: 'Periodo' });
+
+    await user.click(trigger);
+    const panel = screen.getByRole('dialog', { name: 'Periodo' });
+    expect(within(panel).queryByRole('button', { name: 'Hoy' })).not.toBeInTheDocument();
+    expect(within(panel).queryByText(/Elige la fecha/)).not.toBeInTheDocument();
+    expect(within(panel).getByRole('button', { name: 'Aplicar' })).toBeVisible();
+    expect(within(panel).getByRole('button', { name: 'Limpiar' })).toBeVisible();
   });
 
   it('Switch cambia con click y teclado', async () => {

@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { useRef } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { useFloatingPanel } from './floating.js';
@@ -159,5 +159,22 @@ describe('useFloatingPanel', () => {
     render(<Harness rect={{ top: 100, bottom: 148, left: 280, width: 324 }} />);
     expect(panel().style.width).toBe('284px');
     expect(panel().style.left).toBe('8px');
+  });
+
+  it('se desplaza con la página en lugar de quedarse sticky en el viewport', () => {
+    setViewport(1440, 900);
+    const rect = { top: 300, bottom: 348, left: 100, width: 324 };
+    render(<Harness rect={rect} />);
+    expect(panel().style.top).toBe('352px');
+
+    Object.defineProperty(window, 'scrollY', { configurable: true, value: 120 });
+    rect.top = 100;
+    rect.bottom = 148;
+    fireEvent.scroll(window);
+    expect(panel().style.top).toBe('232px');
+
+    fireEvent.scroll(panel());
+    expect(panel().style.top).toBe('232px');
+    Object.defineProperty(window, 'scrollY', { configurable: true, value: 0 });
   });
 });

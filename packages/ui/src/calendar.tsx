@@ -1,12 +1,6 @@
 'use client';
 
-import {
-  useEffect,
-  useId,
-  useRef,
-  useState,
-  type KeyboardEvent as ReactKeyboardEvent,
-} from 'react';
+import { useEffect, useId, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { Button, IconButton } from './buttons.js';
 import { cn } from './cn.js';
 import {
@@ -18,6 +12,7 @@ import {
   startOfMonthGrid,
   toBusinessKey,
   todayBusinessKey,
+  type BusinessDateRange,
 } from './dates.js';
 import { IconChevronLeft } from './icons.js';
 
@@ -57,9 +52,12 @@ type CalendarView = 'days' | 'months' | 'years';
 
 export type CalendarProps = {
   value?: string;
-  onSelect: (value: string) => void;
+  onSelect?: (value: string) => void;
   onCancel?: () => void;
   labelledBy?: string;
+  range?: BusinessDateRange;
+  onRangeChange?: (range: BusinessDateRange) => void;
+  showToday?: boolean;
 };
 
 function clampToMonth(source: Date, year: number, monthIndex: number): Date {
@@ -67,22 +65,41 @@ function clampToMonth(source: Date, year: number, monthIndex: number): Date {
   return new Date(year, monthIndex, Math.min(source.getDate(), lastDay));
 }
 
-export function Calendar({ value, onSelect, onCancel, labelledBy }: CalendarProps) {
+export function Calendar({
+  value,
+  onSelect,
+  onCancel,
+  labelledBy,
+  range,
+  onRangeChange,
+  showToday = true,
+}: CalendarProps) {
   const monthLabelId = useId();
   const todayKey = todayBusinessKey();
   const today = parseBusinessDate(todayKey);
-  const selectedDate = value ? parseBusinessDate(value) : null;
+  const rangeMode = Boolean(onRangeChange);
+  const rangeStart = range?.start;
+  const rangeEnd = range?.end;
+  const focusKey = value ?? rangeStart ?? rangeEnd ?? todayKey;
+  const selectedDate = !rangeMode && value ? parseBusinessDate(value) : null;
   const selectedMonth = selectedDate?.getMonth();
   const selectedYear = selectedDate?.getFullYear();
+  const rangeWeekSpan = (() => {
+    if (!rangeStart || !rangeEnd) return 0;
+    const start = parseBusinessDate(rangeStart);
+    const end = parseBusinessDate(rangeEnd);
+    const startMonday = addDays(start, -((start.getDay() + 6) % 7));
+    const endMonday = addDays(end, -((end.getDay() + 6) % 7));
+    return Math.round((endMonday.getTime() - startMonday.getTime()) / 604_800_000) + 1;
+  })();
+  const continuousWeeks = rangeWeekSpan > 2;
   const [view, setView] = useState<CalendarView>('days');
-  const [activeKey, setActiveKey] = useState(value ?? todayKey);
+  const [activeKey, setActiveKey] = useState(focusKey);
   const [month, setMonth] = useState(() => {
-    const base = parseBusinessDate(value ?? todayKey);
+    const base = parseBusinessDate(focusKey);
     return new Date(base.getFullYear(), base.getMonth(), 1);
   });
-  const [yearStart, setYearStart] = useState(() =>
-    decadeStart(parseBusinessDate(value ?? todayKey).getFullYear()),
-  );
+  const [yearStart, setYearStart] = useState(() => decadeStart(parseBusinessDate(focusKey).getFullYear()));
   const cellRefs = useRef(new Map<string, HTMLButtonElement>());
   const monthRefs = useRef(new Map<number, HTMLButtonElement>());
   const yearRefs = useRef(new Map<number, HTMLButtonElement>());
@@ -94,7 +111,7 @@ export function Calendar({ value, onSelect, onCancel, labelledBy }: CalendarProp
   useEffect(() => {
     if (view !== 'days') return;
     cellRefs.current.get(activeKey)?.focus();
-  }, [activeKey, view]);
+  }, [activeKey, view, month]);
 
   useEffect(() => {
     if (view === 'months') {
@@ -114,9 +131,9 @@ export function Calendar({ value, onSelect, onCancel, labelledBy }: CalendarProp
   };
 
   const changeMonth = (delta: number) => {
-    const next = addMonths(activeDate, delta);
-    setActiveKey(toBusinessKey(next));
-    setMonth(new Date(next.getFullYear(), next.getMonth(), 1));
+    const nextMonth = addMonths(month, delta);
+    setActiveKey(toBusinessKey(clampToMonth(activeDate, nextMonth.getFullYear(), nextMonth.getMonth())));
+    setMonth(new Date(nextMonth.getFullYear(), nextMonth.getMonth(), 1));
   };
 
   const shift = (delta: number) => {
@@ -140,7 +157,17 @@ export function Calendar({ value, onSelect, onCancel, labelledBy }: CalendarProp
 
   const selectDay = (key: string) => {
     setActiveKey(key);
-    onSelect(key);
+    if (onRangeChange) {
+      if (!rangeStart || rangeEnd) {
+        onRangeChange({ start: key });
+      } else if (key < rangeStart) {
+        onRangeChange({ start: key, end: rangeStart });
+      } else {
+        onRangeChange({ start: rangeStart, end: key });
+      }
+      return;
+    }
+    onSelect?.(key);
   };
 
   const selectMonth = (index: number) => {
@@ -157,7 +184,11 @@ export function Calendar({ value, onSelect, onCancel, labelledBy }: CalendarProp
     setActiveKey(todayKey);
     setMonth(new Date(today.getFullYear(), today.getMonth(), 1));
     setView('days');
-    onSelect(todayKey);
+    if (onRangeChange) {
+      onRangeChange({ start: todayKey, end: todayKey });
+      return;
+    }
+    onSelect?.(todayKey);
   };
 
   const handleKeyDown = (event: ReactKeyboardEvent<HTMLDivElement>) => {
@@ -249,163 +280,200 @@ export function Calendar({ value, onSelect, onCancel, labelledBy }: CalendarProp
       </div>
 
       <div data-testid="calendar-body" className="flex min-h-80 flex-1 flex-col justify-center">
-        {view === 'days' ? (
-          <div role="grid" aria-labelledby={gridLabel} className="flex flex-col gap-1">
-            <div role="row" className="grid grid-cols-7">
-              {WEEKDAYS.map((weekday) => (
-                <div
-                  key={weekday.long}
-                  role="columnheader"
-                  aria-label={weekday.long}
-                  className="flex h-8 items-center justify-center text-ui-10 text-text-tertiary"
-                >
-                  {weekday.short}
-                </div>
-              ))}
-            </div>
-            {Array.from({ length: 6 }, (_, row) => (
-              <div key={row} role="row" className="grid grid-cols-7">
-                {days.slice(row * 7, row * 7 + 7).map((day) => {
-                  const key = toBusinessKey(day);
-                  const outside = day.getMonth() !== month.getMonth();
-                  const selected = key === value;
-                  const isActive = key === activeKey;
-                  const isToday = key === todayKey;
-                  return (
-                    <div
-                      key={key}
-                      role="gridcell"
-                      aria-selected={selected}
-                      className="flex items-center justify-center"
+      {view === 'days' ? (
+        <div role="grid" aria-labelledby={gridLabel} className="flex flex-col gap-1">
+          <div role="row" className="grid grid-cols-7">
+            {WEEKDAYS.map((weekday) => (
+              <div
+                key={weekday.long}
+                role="columnheader"
+                aria-label={weekday.long}
+                className="flex h-8 items-center justify-center text-ui-10 text-text-tertiary"
+              >
+                {weekday.short}
+              </div>
+            ))}
+          </div>
+          {Array.from({ length: 6 }, (_, row) => (
+            <div key={row} role="row" className="grid grid-cols-7">
+              {days.slice(row * 7, row * 7 + 7).map((day) => {
+                const key = toBusinessKey(day);
+                const outside = day.getMonth() !== month.getMonth();
+                const selected = rangeMode
+                  ? key === rangeStart || key === rangeEnd
+                  : key === value;
+                const inRange = Boolean(
+                  rangeMode &&
+                    rangeStart &&
+                    rangeEnd &&
+                    key > rangeStart &&
+                    key < rangeEnd,
+                );
+                const dayInRange = Boolean(
+                  rangeMode &&
+                    rangeStart &&
+                    key >= rangeStart &&
+                    (rangeEnd ? key <= rangeEnd : key === rangeStart),
+                );
+                const singleRangeDay = Boolean(
+                  rangeMode && rangeStart && !rangeEnd && key === rangeStart,
+                );
+                const continuesBefore = Boolean(
+                  continuousWeeks && rangeStart && key > rangeStart,
+                );
+                const continuesAfter = Boolean(continuousWeeks && rangeEnd && key < rangeEnd);
+                const roundLeft = Boolean(
+                  dayInRange &&
+                    (singleRangeDay ||
+                      key === rangeStart ||
+                      (day.getDay() === 1 && !continuesBefore)),
+                );
+                const roundRight = Boolean(
+                  dayInRange &&
+                    (singleRangeDay ||
+                      key === rangeEnd ||
+                      (day.getDay() === 0 && !continuesAfter)),
+                );
+                const isActive = key === activeKey;
+                const isToday = key === todayKey;
+                return (
+                  <div
+                    key={key}
+                    role="gridcell"
+                    aria-selected={selected}
+                    data-in-range={inRange ? true : undefined}
+                    data-range-start={rangeMode && key === rangeStart ? true : undefined}
+                    data-range-end={rangeMode && key === rangeEnd ? true : undefined}
+                    className="flex items-center justify-center"
+                  >
+                    <button
+                      type="button"
+                      ref={(element) => {
+                        if (element) cellRefs.current.set(key, element);
+                        else cellRefs.current.delete(key);
+                      }}
+                      data-day={key}
+                      data-autofocus={isActive ? true : undefined}
+                      tabIndex={isActive ? 0 : -1}
+                      aria-label={formatBusinessDate(key)}
+                      aria-current={isToday ? 'date' : undefined}
+                      onClick={() => selectDay(key)}
+                      className={cn(
+                        'flex h-11 w-full items-center justify-center text-ui-12 transition-colors duration-fast motion-reduce:transition-none',
+                        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring',
+                        rangeMode && dayInRange
+                          ? cn(
+                              'rounded-none',
+                              roundLeft && 'rounded-l-lg',
+                              roundRight && 'rounded-r-lg',
+                            )
+                          : 'rounded-lg',
+                        outside && !selected && !dayInRange && 'text-text-tertiary',
+                        inRange && 'bg-accent-soft text-accent-strong',
+                        !selected && !dayInRange && 'hover:bg-surface-sunken',
+                        !outside && !selected && !dayInRange && 'text-text-primary',
+                        selected && 'bg-accent-default text-accent-ink hover:brightness-95',
+                        isToday && !selected && !dayInRange && 'ring-1 ring-border-strong',
+                      )}
                     >
-                      <button
-                        type="button"
-                        ref={(element) => {
-                          if (element) cellRefs.current.set(key, element);
-                          else cellRefs.current.delete(key);
-                        }}
-                        data-day={key}
-                        data-autofocus={isActive ? true : undefined}
-                        disabled={outside}
-                        tabIndex={isActive ? 0 : -1}
-                        aria-label={formatBusinessDate(key)}
-                        aria-current={isToday ? 'date' : undefined}
-                        onClick={() => selectDay(key)}
-                        className={cn(
-                          'flex h-11 w-full min-w-11 items-center justify-center rounded-lg text-ui-12 transition-colors duration-fast motion-reduce:transition-none',
-                          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring',
-                          outside && 'cursor-default text-text-disabled',
-                          !outside && !selected && 'text-text-primary hover:bg-surface-sunken',
-                          selected && 'bg-accent-default text-accent-ink hover:brightness-95',
-                          isToday && !selected && 'ring-1 ring-border-strong',
-                        )}
-                      >
-                        {day.getDate()}
-                      </button>
-                    </div>
-                  );
-                })}
-              </div>
-            ))}
-          </div>
-        ) : null}
+                      {day.getDate()}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          ))}
+        </div>
+      ) : null}
 
-        {view === 'months' ? (
-          <div
-            role="grid"
-            aria-labelledby={gridLabel}
-            className="flex flex-1 flex-col justify-evenly gap-3"
-          >
-            {Array.from({ length: 4 }, (_, row) => (
-              <div key={row} role="row" className="grid grid-cols-3 gap-3">
-                {MONTHS.slice(row * 3, row * 3 + 3).map((name, index) => {
-                  const monthIndex = row * 3 + index;
-                  const selected =
-                    selectedYear === month.getFullYear() && selectedMonth === monthIndex;
-                  const isCurrent =
-                    today.getFullYear() === month.getFullYear() && today.getMonth() === monthIndex;
-                  return (
-                    <div key={name} role="gridcell" aria-selected={selected} className="flex">
-                      <button
-                        type="button"
-                        ref={(element) => {
-                          if (element) monthRefs.current.set(monthIndex, element);
-                          else monthRefs.current.delete(monthIndex);
-                        }}
-                        data-month={monthIndex}
-                        aria-label={`${name} de ${month.getFullYear()}`}
-                        aria-current={isCurrent ? 'true' : undefined}
-                        onClick={() => selectMonth(monthIndex)}
-                        className={cn(
-                          'h-11 w-full rounded-lg text-ui-12 transition-colors duration-fast motion-reduce:transition-none',
-                          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring',
-                          selected
-                            ? 'bg-accent-default text-accent-ink hover:brightness-95'
-                            : 'text-text-primary hover:bg-surface-sunken',
-                          isCurrent && !selected && 'ring-1 ring-border-strong',
-                        )}
-                      >
-                        {name}
-                      </button>
-                    </div>
-                  );
-                })}
-              </div>
-            ))}
-          </div>
-        ) : null}
+      {view === 'months' ? (
+        <div role="grid" aria-labelledby={gridLabel} className="flex flex-1 flex-col justify-evenly gap-3">
+          {Array.from({ length: 4 }, (_, row) => (
+            <div key={row} role="row" className="grid grid-cols-3 gap-3">
+              {MONTHS.slice(row * 3, row * 3 + 3).map((name, index) => {
+                const monthIndex = row * 3 + index;
+                const selected =
+                  selectedYear === month.getFullYear() && selectedMonth === monthIndex;
+                const isCurrent =
+                  today.getFullYear() === month.getFullYear() && today.getMonth() === monthIndex;
+                return (
+                  <div key={name} role="gridcell" aria-selected={selected} className="flex">
+                    <button
+                      type="button"
+                      ref={(element) => {
+                        if (element) monthRefs.current.set(monthIndex, element);
+                        else monthRefs.current.delete(monthIndex);
+                      }}
+                      data-month={monthIndex}
+                      aria-label={`${name} de ${month.getFullYear()}`}
+                      aria-current={isCurrent ? 'true' : undefined}
+                      onClick={() => selectMonth(monthIndex)}
+                      className={cn(
+                        'h-11 w-full rounded-lg text-ui-12 transition-colors duration-fast motion-reduce:transition-none',
+                        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring',
+                        selected
+                          ? 'bg-accent-default text-accent-ink hover:brightness-95'
+                          : 'text-text-primary hover:bg-surface-sunken',
+                        isCurrent && !selected && 'ring-1 ring-border-strong',
+                      )}
+                    >
+                      {name}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          ))}
+        </div>
+      ) : null}
 
-        {view === 'years' ? (
-          <div
-            role="grid"
-            aria-labelledby={gridLabel}
-            className="flex flex-1 flex-col justify-evenly gap-3"
-          >
-            {Array.from({ length: 4 }, (_, row) => (
-              <div key={row} role="row" className="grid grid-cols-3 gap-3">
-                {Array.from({ length: 3 }, (_, column) => {
-                  const year = yearStart + row * 3 + column;
-                  const selected = selectedYear === year;
-                  const isCurrent = today.getFullYear() === year;
-                  return (
-                    <div key={year} role="gridcell" aria-selected={selected} className="flex">
-                      <button
-                        type="button"
-                        ref={(element) => {
-                          if (element) yearRefs.current.set(year, element);
-                          else yearRefs.current.delete(year);
-                        }}
-                        data-year={year}
-                        aria-label={String(year)}
-                        aria-current={isCurrent ? 'true' : undefined}
-                        onClick={() => selectYear(year)}
-                        className={cn(
-                          'h-11 w-full rounded-lg text-ui-12 transition-colors duration-fast motion-reduce:transition-none',
-                          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring',
-                          selected
-                            ? 'bg-accent-default text-accent-ink hover:brightness-95'
-                            : 'text-text-primary hover:bg-surface-sunken',
-                          isCurrent && !selected && 'ring-1 ring-border-strong',
-                        )}
-                      >
-                        {year}
-                      </button>
-                    </div>
-                  );
-                })}
-              </div>
-            ))}
-          </div>
-        ) : null}
+      {view === 'years' ? (
+        <div role="grid" aria-labelledby={gridLabel} className="flex flex-1 flex-col justify-evenly gap-3">
+          {Array.from({ length: 4 }, (_, row) => (
+            <div key={row} role="row" className="grid grid-cols-3 gap-3">
+              {Array.from({ length: 3 }, (_, column) => {
+                const year = yearStart + row * 3 + column;
+                const selected = selectedYear === year;
+                const isCurrent = today.getFullYear() === year;
+                return (
+                  <div key={year} role="gridcell" aria-selected={selected} className="flex">
+                    <button
+                      type="button"
+                      ref={(element) => {
+                        if (element) yearRefs.current.set(year, element);
+                        else yearRefs.current.delete(year);
+                      }}
+                      data-year={year}
+                      aria-label={String(year)}
+                      aria-current={isCurrent ? 'true' : undefined}
+                      onClick={() => selectYear(year)}
+                      className={cn(
+                        'h-11 w-full rounded-lg text-ui-12 transition-colors duration-fast motion-reduce:transition-none',
+                        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring',
+                        selected
+                          ? 'bg-accent-default text-accent-ink hover:brightness-95'
+                          : 'text-text-primary hover:bg-surface-sunken',
+                        isCurrent && !selected && 'ring-1 ring-border-strong',
+                      )}
+                    >
+                      {year}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          ))}
+        </div>
+      ) : null}
       </div>
-
-      <Button variant="tertiary" className="w-full" onClick={selectToday}>
-        Hoy
-      </Button>
+      {showToday ? (
+        <Button variant="tertiary" className="w-full" onClick={selectToday}>
+          Hoy
+        </Button>
+      ) : null}
     </div>
   );
 }
-
 export type MonthDayPickerProps = {
   /** Día del mes seleccionado (1-31) o null/undefined si no hay ninguno. */
   value?: number | null;
