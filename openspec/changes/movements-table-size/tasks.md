@@ -28,7 +28,8 @@
 - [x] 4.3 Añadir una prueba unitaria del bloqueo y su liberación en `notifications-panel.test.tsx`
 - [x] 4.4 Añadir en `e2e/overlays.spec.ts` una comprobación de que la página no se desplaza con el panel abierto y se restaura al cerrar
 - [x] 4.5 Ejecutar las pruebas dirigidas del panel (20 unitarias y 24 E2E en los tres viewports) y el build
-- [x] 4.6 Desplazar la barra de scroll 8 px hacia el borde del panel con margen negativo, sin reducir el ancho del contenido
+- [x] 4.6 Desplazar la barra de scroll 8 px hacia el borde del panel con margen negativo y ensanchar el panel 8 px, conservando el ancho del contenido y dejando 4 px de aire a cada lado de la barra
+- [x] 4.7 Añadir degradados superior e inferior en la lista solo cuando hay contenido desplazado en esa dirección, para suavizar el corte de las tarjetas
 
 ## Workflow follow-up
 
