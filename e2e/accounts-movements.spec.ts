@@ -217,7 +217,7 @@ test.describe('cuentas y movimientos', () => {
     await seedDemo(page);
     await page.goto('/cuentas/demo-acc-day');
     await expect(page.getByText('Plazos').first()).toBeVisible();
-    await page.getByRole('button', { name: 'Registrar cuota' }).click();
+    await page.getByRole('button', { name: 'Registrar cuota' }).first().click();
     await expect(page.getByText('Cuota registrada')).toBeVisible();
     await expect(page.getByText(/3 de 6/).first()).toBeVisible();
   });

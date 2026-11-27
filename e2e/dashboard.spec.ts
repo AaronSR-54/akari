@@ -105,7 +105,7 @@ test.describe('dashboard hero', () => {
     await expect(recent.getByRole('link', { name: 'Preguntas rápidas' })).toHaveCount(0);
     await expect(summary).toContainText('Balance del mes');
     await expect(summary).toContainText('+2.152,01 €');
-    await expect(summary).toContainText('Saldo total estimado a fin de mes: 15.898,84 €');
+    await expect(summary).toContainText('Saldo total estimado a fin de mes: 15.778,84 €');
     await expect(summary).not.toContainText('Ingresos');
 
     expect(await balance.evaluate((element) => getComputedStyle(element).backgroundColor)).toBe(
@@ -405,9 +405,92 @@ test.describe('dashboard hero', () => {
     }
   });
 
+  test('muestra las próximas cuotas bajo Cuentas en filas', async ({ page }) => {
+    await seedDemo(page);
+
+    const accounts = page.locator('section[aria-labelledby="cuentas"]');
+    const panel = page.locator('[data-panel="installments"]');
+    await expect(panel.getByRole('heading', { name: 'Próximas cuotas' })).toBeVisible();
+    const plans = panel.locator('[data-installment-plan]');
+    await expect(plans).toHaveCount(4);
+    await expect(plans.nth(0)).toContainText('Móvil');
+    await expect(plans.nth(1)).toContainText('Portátil');
+    await expect(plans.nth(2)).toContainText('Sofá');
+    await expect(plans.nth(3)).toContainText('Viaje');
+
+    const laptop = panel.locator('[data-installment-plan="demo-plan-laptop"]');
+    await expect(laptop).toContainText('2 de 6');
+    await expect(laptop).toContainText('Quedan 4 cuotas · 600,00 €');
+    await expect(laptop).toContainText('Próxima: 150,00 € · 29 oct');
+    await expect(laptop.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '2');
+    await expect(laptop).toHaveAttribute('href', '/cuotas/demo-plan-laptop');
+    await expect(laptop).toHaveAttribute('aria-label', 'Ver detalle de Portátil');
+
+    const backgroundBefore = await laptop.evaluate(
+      (element) => getComputedStyle(element).backgroundColor,
+    );
+    await laptop.hover();
+    await expect
+      .poll(() => laptop.evaluate((element) => getComputedStyle(element).backgroundColor))
+      .not.toBe(backgroundBefore);
+
+    const accountsBox = await accounts.boundingBox();
+    const panelBox = await panel.boundingBox();
+    expect(accountsBox).not.toBeNull();
+    expect(panelBox).not.toBeNull();
+    if (accountsBox && panelBox) {
+      expect(panelBox.y).toBeGreaterThan(accountsBox.y + accountsBox.height);
+    }
+
+    await expect(page.getByText('El próximo pago vence pronto')).toBeVisible();
+    await expect(panel).not.toContainText('El próximo pago vence pronto');
+    await expect(panel.getByRole('button', { name: 'Registrar cuota' })).toHaveCount(0);
+
+    const tops: number[] = [];
+    for (const plan of await plans.all()) {
+      const box = await plan.boundingBox();
+      expect(box).not.toBeNull();
+      if (box) tops.push(box.y);
+    }
+    expect(tops).toHaveLength(4);
+    for (let index = 1; index < tops.length; index += 1) {
+      expect(tops[index]!).toBeGreaterThan(tops[index - 1]!);
+    }
+  });
+
+  test('abre el detalle del plan y registra la cuota desde allí', async ({ page }) => {
+    await seedDemo(page);
+
+    await page.locator('[data-installment-plan="demo-plan-laptop"]').click();
+    await expect(page).toHaveURL(/\/cuotas\/demo-plan-laptop$/);
+    await expect(page.getByRole('heading', { name: 'Portátil', exact: true }).first()).toBeVisible();
+    await expect(page.getByRole('progressbar', { name: 'Portátil: 2 de 6' })).toHaveAttribute(
+      'aria-valuenow',
+      '2',
+    );
+    await expect(page.getByText('Próxima cuota')).toBeVisible();
+    await expect(page.getByText('Calendario de cuotas')).toBeVisible();
+    await expect(page.getByText('Cuota 6')).toBeVisible();
+    await expect(page.getByText('Vencida').first()).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Cuenta diaria' })).toHaveAttribute(
+      'href',
+      '/cuentas/demo-acc-day',
+    );
+
+    await page.getByRole('button', { name: 'Registrar cuota' }).first().click();
+    await expect(page.getByText('Cuota registrada')).toBeVisible();
+    await expect(page.getByRole('progressbar', { name: 'Portátil: 3 de 6' })).toHaveAttribute(
+      'aria-valuenow',
+      '3',
+    );
+    await expect(page.getByText('Próxima cuota')).toBeVisible();
+    await expect(page.getByText('29 nov').first()).toBeVisible();
+  });
+
   test('el panel de cuentas escala de ninguna a muchas cuentas', async ({ page }) => {
     await startEmpty(page);
     await expect(page.locator('section[aria-labelledby="cuentas"]')).toHaveCount(0);
+    await expect(page.locator('[data-panel="installments"]')).toHaveCount(0);
 
     const addAccount = async (name: string) => {
       await page.goto('/cuentas/nueva');

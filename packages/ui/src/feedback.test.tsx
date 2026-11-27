@@ -127,10 +127,12 @@ describe('feedback', () => {
     await user.click(screen.getByRole('button', { name: 'Abrir' }));
     expect(document.body.style.overflow).toBe('hidden');
     expect(document.documentElement.style.overflow).toBe('hidden');
+    expect(document.documentElement.dataset.scrollLocked).toBe('true');
 
     await user.keyboard('{Escape}');
     expect(document.body.style.overflow).toBe('');
     expect(document.documentElement.style.overflow).toBe('');
+    expect(document.documentElement.dataset.scrollLocked).toBeUndefined();
   });
 
   it('mantiene el bloqueo de scroll mientras quede un overlay abierto', async () => {
@@ -151,6 +153,7 @@ describe('feedback', () => {
     await user.click(within(first).getByRole('button', { name: 'Cerrar' }));
     expect(document.body.style.overflow).toBe('');
     expect(document.documentElement.style.overflow).toBe('');
+    expect(document.documentElement.dataset.scrollLocked).toBeUndefined();
   });
 
   it('con modales apilados Escape cierra solo el superior', async () => {

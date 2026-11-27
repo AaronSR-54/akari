@@ -12,7 +12,7 @@ import type { Account, Group, GroupExpense, InstallmentPlan, Movement, Recurrenc
 import type { AkariRepositories } from './repositories.js';
 
 /** Subir esta versión refresca automáticamente las demos antiguas. */
-export const DEMO_SEED_VERSION = 4;
+export const DEMO_SEED_VERSION = 5;
 
 const iso = (date: Date) => format(date, 'yyyy-MM-dd');
 const isoAt = (date: Date) => date.toISOString();
@@ -363,6 +363,7 @@ export function demoRecurrences(today = new Date()): Recurrence[] {
 }
 
 export function demoInstallments(today = new Date()): InstallmentPlan[] {
+  const createdAt = isoAt(subMonths(today, 6));
   return [
     {
       id: 'demo-plan-laptop',
@@ -375,6 +376,42 @@ export function demoInstallments(today = new Date()): InstallmentPlan[] {
       firstDueDate: iso(subMonths(today, 3)),
       frequency: 'monthly',
       createdAt: isoAt(subMonths(today, 4)),
+    },
+    {
+      id: 'demo-plan-phone',
+      accountId: 'demo-acc-day',
+      concept: 'Móvil',
+      totalMinor: 96000,
+      currency: 'EUR',
+      installments: 12,
+      paidInstallments: 8,
+      firstDueDate: iso(subMonths(today, 10)),
+      frequency: 'monthly',
+      createdAt,
+    },
+    {
+      id: 'demo-plan-sofa',
+      accountId: 'demo-acc-joint',
+      concept: 'Sofá',
+      totalMinor: 72000,
+      currency: 'EUR',
+      installments: 6,
+      paidInstallments: 1,
+      firstDueDate: iso(subMonths(today, 1)),
+      frequency: 'monthly',
+      createdAt: isoAt(subMonths(today, 2)),
+    },
+    {
+      id: 'demo-plan-trip',
+      accountId: 'demo-acc-joint',
+      concept: 'Viaje',
+      totalMinor: 150000,
+      currency: 'EUR',
+      installments: 3,
+      paidInstallments: 0,
+      firstDueDate: iso(addDays(today, 12)),
+      frequency: 'monthly',
+      createdAt: isoAt(subDays(today, 5)),
     },
   ];
 }

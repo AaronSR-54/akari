@@ -30,6 +30,81 @@ test.describe('shell web', () => {
     await expect.poll(overscrollY).toBe('auto');
   });
 
+  test('la barra de desplazamiento usa los tokens y se adapta al tema', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 600 });
+    await seedDemo(page);
+    await page.goto('/movimientos');
+    await page.mouse.move(10, 10);
+
+    const readScrollbar = () =>
+      page.evaluate(() => {
+        const main = document.querySelector('main');
+        if (!main) throw new Error('Falta main');
+        const style = getComputedStyle(main);
+        const root = getComputedStyle(document.documentElement);
+        return {
+          scrollbarWidth: style.getPropertyValue('scrollbar-width'),
+          scrollbarColor: style.getPropertyValue('scrollbar-color'),
+          overflowY: style.overflowY,
+          accent: root.getPropertyValue('--color-accent-default').trim(),
+          accentRgb: root.getPropertyValue('--color-accent-default-rgb').trim(),
+          scrolls: main.scrollHeight > main.clientHeight,
+          documentScrolls:
+            document.documentElement.scrollHeight > document.documentElement.clientHeight,
+          right: main.getBoundingClientRect().right,
+          viewport: window.innerWidth,
+        };
+      });
+
+    const light = await readScrollbar();
+    expect(light.scrollbarWidth).toBe('thin');
+    expect(light.scrollbarColor).toContain('232, 163, 61');
+    expect(light.scrollbarColor).toContain('0.55');
+    expect(light.scrollbarColor).toContain('rgba(0, 0, 0, 0)');
+    expect(light.overflowY).toBe('auto');
+    expect(light.scrolls).toBe(true);
+    expect(light.documentScrolls).toBe(false);
+    expect(Math.round(light.right)).toBe(light.viewport);
+
+    await page.evaluate(() => document.documentElement.setAttribute('data-theme', 'dark'));
+    const dark = await readScrollbar();
+    expect(dark.accent).not.toBe(light.accent);
+    expect(dark.scrollbarColor).not.toBe(light.scrollbarColor);
+
+    await page.setViewportSize({ width: 900, height: 900 });
+    const tabletWidth = await page.evaluate(() =>
+      getComputedStyle(document.querySelector('main')!).getPropertyValue('scrollbar-width'),
+    );
+    expect(tabletWidth).toBe('auto');
+
+    for (const viewport of [
+      { width: 1440, height: 900 },
+      { width: 900, height: 900 },
+      { width: 390, height: 844 },
+    ]) {
+      await page.setViewportSize(viewport);
+      await expect
+        .poll(() =>
+          page.evaluate(
+            () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+          ),
+        )
+        .toBeLessThanOrEqual(1);
+    }
+
+    await page.goto('/preguntas');
+    const noScrollbar = page.locator('.no-scrollbar').first();
+    await expect(noScrollbar).toBeVisible();
+    const hidden = await noScrollbar.evaluate((element) => ({
+      scrollable: element.scrollWidth > element.clientWidth,
+      width: getComputedStyle(element).getPropertyValue('scrollbar-width'),
+      display: getComputedStyle(element, '::-webkit-scrollbar').display,
+    }));
+    expect(hidden.scrollable).toBe(true);
+    expect(hidden.width).toBe('none');
+    expect(hidden.display).toBe('none');
+  });
+
   test('la sidebar y la cabecera permanecen fijas al hacer scroll', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 600 });
     await seedDemo(page);
@@ -56,8 +131,9 @@ test.describe('shell web', () => {
     const gap = (contentBox?.y ?? 0) - ((before.header?.y ?? 0) + (before.header?.height ?? 0));
     expect(gap).toBeGreaterThanOrEqual(24);
 
-    await page.evaluate(() => window.scrollTo(0, 220));
-    await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(150);
+    const scroller = page.locator('main');
+    await scroller.evaluate((element) => element.scrollTo(0, 220));
+    await expect.poll(() => scroller.evaluate((element) => element.scrollTop)).toBeGreaterThan(150);
 
     const after = { aside: await aside.boundingBox(), header: await header.boundingBox() };
     expect(after.aside?.y).toBe(before.aside?.y);
@@ -104,8 +180,9 @@ test.describe('shell web', () => {
     await expect(page.locator('header.h-\\[72px\\]')).toHaveCount(0);
     expect((await nav.boundingBox())?.y).toBe(0);
 
-    await page.evaluate(() => window.scrollTo(0, 220));
-    await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(150);
+    const scroller = page.locator('main');
+    await scroller.evaluate((element) => element.scrollTo(0, 220));
+    await expect.poll(() => scroller.evaluate((element) => element.scrollTop)).toBeGreaterThan(150);
 
     const navBox = await nav.boundingBox();
     expect(navBox?.y).toBe(0);
@@ -177,7 +254,7 @@ test.describe('shell web', () => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await seedDemo(page);
 
-    const bell = page.getByRole('button', { name: 'Avisos, 6 pendientes' });
+    const bell = page.getByRole('button', { name: 'Avisos, 9 pendientes' });
     await expect(bell).toBeVisible();
     await bell.click();
 
@@ -192,20 +269,23 @@ test.describe('shell web', () => {
       dialog.getByRole('heading', { name: /Pagos próximos|Cuentas compartidas|Liquidaciones/ }),
     ).toHaveCount(0);
     const items = dialog.getByRole('listitem');
-    await expect(items).toHaveCount(6);
-    await expect(items.nth(0)).toContainText('Portátil · cuota');
-    await expect(items.nth(1)).toContainText('Ana gastó dinero');
-    await expect(items.nth(2)).toContainText('Debes 20,00');
-    await expect(items.nth(3)).toContainText('Debes 30,00');
-    await expect(items.nth(4)).toContainText('Alquiler');
-    await expect(items.nth(5)).toContainText('Suscripción vídeo');
+    await expect(items).toHaveCount(9);
+    await expect(items.nth(0)).toContainText('Móvil · cuota');
+    await expect(items.nth(1)).toContainText('Portátil · cuota');
+    await expect(items.nth(2)).toContainText('Ana gastó dinero');
+    await expect(items.nth(3)).toContainText('Debes 20,00');
+    await expect(items.nth(4)).toContainText('Debes 30,00');
+    await expect(items.nth(5)).toContainText('Sofá · cuota');
+    await expect(items.nth(6)).toContainText('Alquiler');
+    await expect(items.nth(7)).toContainText('Suscripción vídeo');
+    await expect(items.nth(8)).toContainText('Viaje · cuota');
     await expect(items.last()).toBeInViewport();
     const payment = dialog.getByRole('button', { name: /Portátil · cuota/ });
     await expect(payment).toHaveAttribute('data-tone', 'danger');
     await expect(payment).toHaveClass(/bg-status-danger-soft/);
     await expect(payment).toContainText('Vencida');
-    await expect(items.nth(4).getByRole('button')).toHaveClass(/bg-status-info-soft/);
-    await expect(items.nth(5).getByRole('button')).toHaveClass(/bg-status-info-soft/);
+    await expect(items.nth(6).getByRole('button')).toHaveClass(/bg-status-info-soft/);
+    await expect(items.nth(7).getByRole('button')).toHaveClass(/bg-status-info-soft/);
     await expect(payment).toContainText('Saldo');
     await expect(payment).toContainText('Cuenta diaria');
     await expect(dialog.getByText('Pagar')).toHaveCount(0);
@@ -222,7 +302,7 @@ test.describe('shell web', () => {
   test('paga una suscripción al pulsar su aviso', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await seedDemo(page);
-    await page.getByRole('button', { name: 'Avisos, 6 pendientes' }).click();
+    await page.getByRole('button', { name: 'Avisos, 9 pendientes' }).click();
 
     const dialog = page.getByRole('dialog', { name: 'Avisos' });
     const row = dialog.getByRole('button', { name: /Suscripción vídeo/ });
@@ -239,7 +319,7 @@ test.describe('shell web', () => {
   test('la actividad conjunta muestra al autor y abre la cuenta', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await seedDemo(page);
-    await page.getByRole('button', { name: 'Avisos, 6 pendientes' }).click();
+    await page.getByRole('button', { name: 'Avisos, 9 pendientes' }).click();
 
     const dialog = page.getByRole('dialog', { name: 'Avisos' });
     const activity = dialog.getByRole('link', { name: /Ana gastó dinero/ });
@@ -255,7 +335,7 @@ test.describe('shell web', () => {
   test('las liquidaciones pendientes abren el grupo', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await seedDemo(page);
-    await page.getByRole('button', { name: 'Avisos, 6 pendientes' }).click();
+    await page.getByRole('button', { name: 'Avisos, 9 pendientes' }).click();
 
     const dialog = page.getByRole('dialog', { name: 'Avisos' });
     await expect(page.getByRole('button', { name: 'Avisos' })).toBeVisible();
@@ -271,7 +351,7 @@ test.describe('shell web', () => {
   test('vuelve a avisar cuando aparece actividad nueva', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await seedDemo(page);
-    await page.getByRole('button', { name: 'Avisos, 6 pendientes' }).click();
+    await page.getByRole('button', { name: 'Avisos, 9 pendientes' }).click();
     await expect(page.getByRole('button', { name: 'Avisos' })).toBeVisible();
     await page.keyboard.press('Escape');
     await expect(page.getByRole('dialog', { name: 'Avisos' })).toBeHidden();
@@ -297,7 +377,7 @@ test.describe('shell web', () => {
     await bells.click();
     const dialog = page.getByRole('dialog', { name: 'Avisos' });
     await expect(dialog).toBeVisible();
-    await expect(dialog.getByRole('listitem')).toHaveCount(6);
+    await expect(dialog.getByRole('listitem')).toHaveCount(9);
 
     await page.keyboard.press('Escape');
     await expect(dialog).toBeHidden();

@@ -6,6 +6,8 @@ import {
   getGroupSummary,
   getOverview,
   getQuickAnswers,
+  installmentProgress,
+  nextInstallment,
   payRecurrence,
   recordMovement,
   settleTransfer,
@@ -365,6 +367,61 @@ describe('services', () => {
     });
     expect(overview.month.days[23]?.movements[0]?.concept).toBe('Café');
     expect(overview.month.estimate.estimateMinor).toBeNull();
+  });
+
+  it('expone los planes activos del resumen con vencidos primero', async () => {
+    const repositories = memoryRepositories();
+    const account = await createAccount(repositories, {
+      name: 'Cuenta',
+      type: 'personal',
+      currency: 'EUR',
+      initialBalanceMinor: 100000,
+    });
+    const basePlan = {
+      accountId: account.id,
+      currency: 'EUR',
+      frequency: 'monthly' as const,
+      createdAt: '2026-08-01T09:00:00.000Z',
+    };
+    await repositories.installments.put({
+      ...basePlan,
+      id: 'future-plan',
+      concept: 'Futuro',
+      totalMinor: 40000,
+      installments: 4,
+      paidInstallments: 1,
+      firstDueDate: '2026-11-01',
+    });
+    await repositories.installments.put({
+      ...basePlan,
+      id: 'overdue-plan',
+      concept: 'Vencido',
+      totalMinor: 60000,
+      installments: 6,
+      paidInstallments: 2,
+      firstDueDate: '2026-09-10',
+    });
+    await repositories.installments.put({
+      ...basePlan,
+      id: 'completed-plan',
+      concept: 'Completado',
+      totalMinor: 30000,
+      installments: 3,
+      paidInstallments: 3,
+      firstDueDate: '2026-08-01',
+    });
+
+    const overview = await getOverview(repositories, new Date('2026-11-24T12:00:00.000Z'));
+    expect(overview.installments.map((plan) => plan.id)).toEqual(['overdue-plan', 'future-plan']);
+    expect(nextInstallment(overview.installments[0]!)).toMatchObject({
+      dueDate: '2026-11-10',
+      number: 3,
+    });
+    expect(installmentProgress(overview.installments[1]!)).toMatchObject({
+      paid: 1,
+      total: 4,
+      percent: 25,
+    });
   });
 
   it('lleva una nómina de fin de mes a la previsión sin adelantarla al saldo real', async () => {

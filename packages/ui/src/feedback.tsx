@@ -114,20 +114,20 @@ export function Modal({
         aria-labelledby={titleId}
         tabIndex={-1}
         style={
-          bottom ? { paddingBottom: 'calc(env(safe-area-inset-bottom) + 1.5rem)' } : undefined
+          bottom ? { paddingBottom: 'env(safe-area-inset-bottom)' } : undefined
         }
         className={cn(
-          'w-full overflow-y-auto border border-border-subtle bg-surface-raised elevation-3',
+          'flex w-full flex-col overflow-hidden border border-border-subtle bg-surface-raised elevation-3',
           bottom
-            ? 'max-h-[90dvh] max-w-sheet rounded-t-xl border-x-0 border-b-0 px-6 pt-6'
+            ? 'max-h-[90dvh] max-w-sheet rounded-t-xl border-x-0 border-b-0'
             : cn(
-                'max-h-[90vh] rounded-xl p-6',
+                'max-h-[90vh] rounded-xl',
                 width === 'wide' ? 'max-w-2xl' : 'max-w-modal',
               ),
           className,
         )}
       >
-        <div className="flex items-start justify-between gap-4">
+        <div className="flex items-start justify-between gap-4 px-6 pb-4 pt-6">
           <h2 id={titleId} className="text-ui-20-bold text-text-primary">
             {title}
           </h2>
@@ -135,8 +135,10 @@ export function Modal({
             ✕
           </Button>
         </div>
-        <div className="mt-4 text-ui-13 text-text-secondary">{children}</div>
-        {footer ? <div className="mt-6 flex justify-end gap-2">{footer}</div> : null}
+        <div className="mr-1.5 min-h-0 flex-1 overflow-y-auto px-6 pb-6">
+          <div className="text-ui-13 text-text-secondary">{children}</div>
+          {footer ? <div className="mt-6 flex justify-end gap-2">{footer}</div> : null}
+        </div>
       </div>
     </div>
   );

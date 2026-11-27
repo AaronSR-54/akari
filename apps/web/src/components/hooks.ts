@@ -104,6 +104,18 @@ export function useInstallments(accountId?: string): InstallmentPlan[] | undefin
   }, [repositories, ready, accountId]);
 }
 
+export function useInstallmentDetail(id: string) {
+  const { repositories, ready } = useData();
+  return useLiveQuery(async () => {
+    if (!ready) return undefined;
+    if (!id) return null;
+    const plan = await repositories.installments.get(id);
+    if (!plan) return null;
+    const account = await repositories.accounts.get(plan.accountId);
+    return { plan, account };
+  }, [repositories, ready, id]);
+}
+
 export function useTransfers(groupId?: string): Transfer[] | undefined {
   const { repositories, ready } = useData();
   return useLiveQuery(async () => {
