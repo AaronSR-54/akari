@@ -83,6 +83,15 @@ test.describe('onboarding', () => {
 
   test('la nube aparece como opción no configurada', async ({ page }) => {
     await page.goto('/onboarding');
+    await expect(page.getByRole('heading', { name: '¿Cómo te llamas?' })).toBeVisible();
+    await page.getByRole('button', { name: 'Continuar' }).click();
+    await expect(page.getByRole('heading', { name: 'Tu divisa favorita' })).toBeVisible();
+    await page.getByRole('button', { name: 'Continuar' }).click();
+    await expect(page.getByRole('heading', { name: 'Tu ingreso mensual' })).toBeVisible();
+    await page.getByRole('button', { name: 'Continuar' }).click();
+    await expect(page.getByRole('heading', { name: 'Tu banco' })).toBeVisible();
+    await page.getByRole('button', { name: 'Continuar' }).click();
+    await expect(page.getByRole('heading', { name: 'Guarda tus datos', level: 1 })).toBeVisible();
     await expect(page.getByText('La nube no está configurada en esta instalación.')).toBeVisible();
     await expect(page.getByRole('button', { name: 'Crear cuenta o iniciar sesión' })).toHaveCount(0);
   });

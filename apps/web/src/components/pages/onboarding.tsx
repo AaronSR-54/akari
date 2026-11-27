@@ -160,6 +160,7 @@ export function OnboardingScreen() {
   const [contentHeight, setContentHeight] = useState<number>();
   const [asideHeight, setAsideHeight] = useState<number>();
   const initialised = useRef(false);
+  const nameTouched = useRef(false);
   const redirected = useRef(false);
   const contentRef = useRef<HTMLDivElement>(null);
   const asideRef = useRef<HTMLParagraphElement>(null);
@@ -167,7 +168,11 @@ export function OnboardingScreen() {
   useEffect(() => {
     if (initialised.current || !settings) return;
     initialised.current = true;
-    setNameDraft(settings.displayName ?? defaultProfile.displayName);
+    // Si la persona ya ha escrito antes de que termine de cargar IndexedDB,
+    // no pisamos su nombre con el valor guardado.
+    if (!nameTouched.current) {
+      setNameDraft(settings.displayName ?? defaultProfile.displayName);
+    }
     setCurrencyDraft(settings.primaryCurrency ?? 'EUR');
     setIncomeDayDraft(settings.primaryIncomeDay == null ? '' : String(settings.primaryIncomeDay));
   }, [settings]);
@@ -379,7 +384,10 @@ export function OnboardingScreen() {
                     <input
                       id="onboarding-name"
                       value={nameDraft}
-                      onChange={(event) => setNameDraft(event.target.value)}
+                      onChange={(event) => {
+                        nameTouched.current = true;
+                        setNameDraft(event.target.value);
+                      }}
                       maxLength={40}
                       autoComplete="name"
                       autoFocus

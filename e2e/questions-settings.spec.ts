@@ -29,14 +29,14 @@ test.describe('preguntas y ajustes', () => {
 
     const perfil = page.locator('[data-profile="panel"]');
     await perfil.getByRole('button', { name: 'Editar' }).click();
-    const modal = page.getByRole('dialog', { name: 'Editar nombre' });
+    const modal = page.getByRole('dialog', { name: 'Editar perfil' });
     await modal.getByLabel('Nombre').fill('   ');
     await modal.getByRole('button', { name: 'Guardar' }).click();
     await expect(modal.getByText(/obligatorio/)).toBeVisible();
 
     await modal.getByLabel('Nombre').fill('Ana Ruiz');
     await modal.getByRole('button', { name: 'Guardar' }).click();
-    await expect(page.getByText('Nombre actualizado')).toBeVisible();
+    await expect(page.getByText('Perfil actualizado')).toBeVisible();
     await expect(perfil).toContainText('Ana Ruiz');
 
     const enlacePerfil = page.getByRole('link', { name: 'Ajustes', exact: true });
@@ -87,6 +87,6 @@ test.describe('preguntas y ajustes', () => {
     await page.getByRole('button', { name: 'Borrar', exact: true }).click();
     await page.getByRole('dialog', { name: 'Borrar base local' }).getByRole('button', { name: 'Borrar datos' }).click();
     await expect(page).toHaveURL(/\/onboarding/);
-    await expect(page.getByRole('heading', { name: /Tus cuentas/ })).toBeVisible();
+    await expect(page.getByRole('heading', { name: '¿Cómo te llamas?' })).toBeVisible();
   });
 });
