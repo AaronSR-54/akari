@@ -1,6 +1,6 @@
 import { bankCatalog, type BankId } from '@akari/domain';
 
-type BankIconSize = 16 | 20 | 24 | 28 | 32 | 36;
+type BankIconSize = 16 | 20 | 24 | 28 | 32 | 36 | 48 | 56 | 64;
 
 /** Billetes en trazo neutro: hereda el color del texto sin colores de marca. */
 function CashIcon() {

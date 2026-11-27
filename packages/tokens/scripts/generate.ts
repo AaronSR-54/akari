@@ -209,6 +209,17 @@ function buildPreset() {
     boxShadow[kebab(name)] = `var(--${kebab(name)})`;
   }
 
+  // La paleta semántica sustituye la de Tailwind, así que conservamos las
+  // utilidades básicas que el resto del CSS espera encontrar.
+  const colors: Record<string, unknown> = {
+    transparent: 'transparent',
+    current: 'currentColor',
+    inherit: 'inherit',
+    black: '#000000',
+    white: '#ffffff',
+    ...nestedSemanticColors(),
+  };
+
   const transitionDuration: Record<string, string> = {};
   for (const [name, value] of Object.entries(motion)) {
     transitionDuration[name.replace('motion/', '')] = `${value}ms`;
@@ -216,7 +227,7 @@ function buildPreset() {
 
   const preset = {
     theme: {
-      colors: nestedSemanticColors(),
+      colors,
       borderRadius,
       transitionDuration,
       fontFamily: {

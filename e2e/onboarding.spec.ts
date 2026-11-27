@@ -5,8 +5,8 @@ test.describe('onboarding', () => {
   test('primera apertura redirige y empezar vacío no se repite', async ({ page }) => {
     await page.goto('/');
     await expect(page).toHaveURL(/\/onboarding/);
-    await expect(page.getByRole('heading', { name: /Tus cuentas/ })).toBeVisible();
-    await page.getByRole('button', { name: 'Empezar vacío' }).click();
+    await expect(page.getByRole('heading', { name: '¿Cómo te llamas?' })).toBeVisible();
+    await page.getByRole('button', { name: 'Omitir el asistente' }).click();
     await expect(page).toHaveURL(/\/$/);
     await expectGreetingForViewport(page);
     await expect(page.getByText('Tu resumen empieza con una cuenta')).toBeVisible();
@@ -69,10 +69,37 @@ test.describe('onboarding', () => {
     );
   });
 
+  test('el nombre del onboarding se guarda en el perfil', async ({ page }) => {
+    await page.goto('/onboarding');
+    await page.getByLabel('Tu nombre').fill('Lucía');
+    await page.getByRole('button', { name: 'Continuar' }).click();
+    await page.getByRole('button', { name: 'Omitir el asistente' }).click();
+    await page.waitForURL(/\/$/);
+    await page.getByRole('link', { name: 'Ajustes', exact: true }).first().click();
+    await expect(
+      page.locator('[data-profile="panel"]').getByText('Lucía', { exact: true }),
+    ).toBeVisible();
+  });
+
+  test('la nube aparece como opción no configurada', async ({ page }) => {
+    await page.goto('/onboarding');
+    await expect(page.getByRole('heading', { name: '¿Cómo te llamas?' })).toBeVisible();
+    await page.getByRole('button', { name: 'Continuar' }).click();
+    await expect(page.getByRole('heading', { name: 'Tu divisa favorita' })).toBeVisible();
+    await page.getByRole('button', { name: 'Continuar' }).click();
+    await expect(page.getByRole('heading', { name: 'Tu ingreso mensual' })).toBeVisible();
+    await page.getByRole('button', { name: 'Continuar' }).click();
+    await expect(page.getByRole('heading', { name: 'Tu banco' })).toBeVisible();
+    await page.getByRole('button', { name: 'Continuar' }).click();
+    await expect(page.getByRole('heading', { name: 'Guarda tus datos', level: 1 })).toBeVisible();
+    await expect(page.getByText('La nube no está configurada en esta instalación.')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Crear cuenta o iniciar sesión' })).toHaveCount(0);
+  });
+
   test('el aviso de almacenamiento sin cifrado es visible', async ({ page }) => {
     await startEmpty(page);
     await page.getByRole('link', { name: 'Ajustes', exact: true }).first().click();
-    await expect(page.getByText('Esta fase es local y sin cifrado')).toBeVisible();
+    await expect(page.getByText('Sin cifrado de extremo a extremo', { exact: true })).toBeVisible();
     await expect(page.getByRole('link', { name: /Ver desviaciones documentadas/ })).toHaveAttribute(
       'href',
       /desviaciones\.md/,

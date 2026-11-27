@@ -1,6 +1,6 @@
 # Arquitectura
 
-Akari es un monorepo con una aplicación web local-first y paquetes reutilizables. El código es la fuente de verdad para el comportamiento y para lo visual: la interfaz se mejora directamente en código. `design/` y `docs/diseno/` son referencia histórica y no bloquean los cambios; el contrato de comportamiento viviente está en `openspec/specs/producto/`.
+Akari es un monorepo con una aplicación web local-first, con sincronización opcional a Supabase, y paquetes reutilizables. El código es la fuente de verdad para el comportamiento y para lo visual: la interfaz se mejora directamente en código. `design/` y `docs/diseno/` son referencia histórica y no bloquean los cambios; el contrato de comportamiento viviente está en `openspec/specs/producto/`.
 
 ## Estructura
 
@@ -12,7 +12,7 @@ akari/
 │   ├── tokens/              fuente única de tokens → CSS, preset de Tailwind y tipos
 │   ├── ui/                  componentes React presentacionales
 │   ├── domain/              entidades, cálculos puros, puertos y casos de uso
-│   └── data/                adaptadores IndexedDB, migraciones, seed y copias
+│   └── data/                adaptadores IndexedDB y Supabase, sync, migraciones y copias
 ├── docs/
 │   ├── diseno/              fuente de verdad visual (Figma/FigCraft)
 │   └── desarrollo/          arquitectura, puesta en marcha y convenciones
@@ -27,7 +27,7 @@ akari/
 | --- | --- | --- |
 | `tokens` | nada de la app | React, Next, Dexie |
 | `domain` | `date-fns` | React, Next, Dexie, `data` |
-| `data` | `domain`, `dexie` | React, Next, `ui` |
+| `data` | `domain`, `dexie`, `@supabase/supabase-js` | React, Next, `ui` |
 | `ui` | `domain` (solo tipos y formato), React | `data`, Next |
 | `web` | todos los paquetes | — |
 
@@ -44,6 +44,8 @@ Componente de pantalla
 ```
 
 Las mutaciones escriben con los casos de uso; `useLiveQuery` vuelve a leer y actualiza la pantalla. No hay estado global adicional: la base local es la fuente de verdad.
+
+Con una cuenta conectada, los repositorios de `Providers` registran cada cambio en `syncState` y el `CloudProvider` empuja los pendientes a Supabase y descarga los remotos. La nube es una copia de continuidad: la lectura y la escritura siguen siendo locales. El detalle está en [Nube y sincronización](./nube-supabase.md).
 
 ## Tokens
 
@@ -68,13 +70,16 @@ Los importes se guardan como enteros en la unidad menor de su divisa (`minor`). 
 - `Group`, `GroupExpense`, `Transfer`: grupos, repartos y liquidaciones.
 - `Settings`: tema, shell, onboarding y datos de ejemplo.
 
-El esquema Dexie está versionado en `packages/data/src/db.ts`; la versión 2 añade índices compuestos y normaliza ajustes, y la versión 3 incorpora `bankId` en el índice de cuentas y el autor del movimiento sin borrar datos. Las migraciones conservan los datos.
+El esquema Dexie está versionado en `packages/data/src/db.ts`; la versión 2 añade índices compuestos y normaliza ajustes, la versión 3 incorpora `bankId` en el índice de cuentas y el autor del movimiento, y la versión 4 añade `syncState` y `syncMeta` para la nube. Las migraciones conservan los datos.
+
+Supabase replica las entidades en tablas PostgreSQL con `user_id`, `updated_at` y `deleted_at`, protegidas con RLS. Cada cambio del esquema remoto vive en `supabase/migrations/` como un archivo SQL aplicable por separado.
 
 ## Rutas
 
 | Ruta | Pantalla | Flujo |
 | --- | --- | --- |
-| `/onboarding` | `M01`–`M04` adaptadas | 0 · Onboarding local |
+| `/onboarding` | `M01`–`M04` adaptadas | 0 · Asistente de nombre, divisa, ingreso, bancos y nube |
+| `/entrar` | formulario de acceso | 0/F · Cuenta en la nube (acceso y alta) |
 | `/` | `W01` | E · Resumen |
 | `/cuentas/nueva` | `M06` en shell web | A · Alta de cuenta |
 | `/cuentas/[id]` | `W02` | E · Detalle |
@@ -114,6 +119,7 @@ El alta desde `/movimientos` y la edición de un movimiento comparten un modal q
 
 ## Documentos relacionados
 
+- [Nube y sincronización](./nube-supabase.md)
 - [Iconos de bancos](./iconos-bancos.md)
 - [Puesta en marcha](./puesta-en-marcha.md)
 - [Convenciones](./convenciones.md)

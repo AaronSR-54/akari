@@ -4,13 +4,13 @@ Instrucciones para agentes que trabajen en este repositorio.
 
 ## Núcleo de la aplicación
 
-**Qué es.** Akari es una app de finanzas personales y gastos compartidos, local-first y sin backend: los datos viven en IndexedDB del navegador. No hay autenticación, sincronización ni cifrado; no los añadas sin un change aprobado. La app móvil (React Native) reutilizará `domain`, `data` y `tokens` en un change posterior.
+**Qué es.** Akari es una app de finanzas personales y gastos compartidos, local-first: los datos viven primero en IndexedDB del navegador y, de forma opcional, se sincronizan por usuario con Supabase (PostgreSQL + Auth). No hay cifrado de extremo a extremo ni backend propio; cualquier ampliación de auth, sync o cifrado necesita un change aprobado y, si toca la base remota, un archivo SQL nuevo en `supabase/migrations/`. La app móvil (React Native) reutilizará `domain`, `data` y `tokens` en un change posterior.
 
 **Capas y dependencias.**
 
 - `packages/tokens`: única fuente de tokens → CSS, preset de Tailwind y tipos. `generated/` no se edita a mano.
 - `packages/domain`: entidades, cálculos puros, puertos y casos de uso. No importa React, Next ni Dexie.
-- `packages/data`: adaptadores Dexie, migraciones, seed, copia/restauración y ciclo de vida. No contiene JSX ni importa React/Next/`ui`.
+- `packages/data`: adaptadores Dexie y Supabase, motor de sincronización, migraciones, seed, copia/restauración y ciclo de vida. No contiene JSX ni importa React/Next/`ui`.
 - `packages/ui`: componentes presentacionales. No importa `data` ni Next.
 - `apps/web`: rutas, shell y hooks headless. Es la única capa que compone todo.
 
@@ -23,9 +23,9 @@ Instrucciones para agentes que trabajen en este repositorio.
 
 **Modelo.** Entidades en `packages/domain/src/types.ts`: `Account` (personal/joint/deposit, TAE en bps, `includeInTotal`), `Movement` (puede enlazar recurrencia, plan de cuotas o gasto grupal), `Recurrence`, `InstallmentPlan`, `Group`/`GroupExpense`/`Transfer` y `Settings`. Tablas y `SCHEMA_VERSION` en `packages/data/src/db.ts`; toda migración conserva los datos.
 
-**Flujo de datos.** Pantalla → hook headless (`apps/web/src/components/hooks.ts`) → caso de uso (`packages/domain/src/services.ts`) → puerto (`packages/domain/src/ports.ts`) → repositorio Dexie. `useLiveQuery` refresca las vistas; no hay estado global: IndexedDB es la fuente de verdad. Los casos de uso lanzan `ValidationError`/`NotFoundError` y toda mutación nueva necesita prueba.
+**Flujo de datos.** Pantalla → hook headless (`apps/web/src/components/hooks.ts`) → caso de uso (`packages/domain/src/services.ts`) → puerto (`packages/domain/src/ports.ts`) → repositorio Dexie. `useLiveQuery` refresca las vistas; no hay estado global: IndexedDB es la fuente de verdad. Con una cuenta conectada, `createTrackedRepositories` marca los cambios en `syncState` y `CloudProvider` los empuja a Supabase. Los casos de uso lanzan `ValidationError`/`NotFoundError` y toda mutación nueva necesita prueba.
 
-**Capacidades actuales.** Onboarding, cuentas (alta/edición/archivo), movimientos y recurrencias, planes de cuotas, resumen, preguntas rápidas, grupos con reparto (`equal`/`percentage`/`fixed`) y liquidación mínima, ajustes (tema y shell), seed, copia/restauración JSON sin cifrar y reset.
+**Capacidades actuales.** Onboarding guiado (nombre, divisa, día de ingreso opcional, paso informativo de bancos/CSV y nube opcional; la primera cuenta y el primer movimiento se guían dentro de la app), cuentas (alta/edición/archivo), movimientos y recurrencias, planes de cuotas, resumen, preguntas rápidas, grupos con reparto (`equal`/`percentage`/`fixed`) y liquidación mínima, ajustes (tema y shell), seed, copia/restauración JSON sin cifrar, reset y cuenta opcional con Supabase (email/contraseña y sincronización local-first). Los grupos compartidos entre usuarios siguen fuera de alcance.
 
 **Fuentes de verdad.** El **código es la fuente de verdad** tanto para el comportamiento como para lo visual; se puede mejorar la interfaz directamente en código. `docs/diseno/` y `design/` son referencia histórica, ya no son bloqueantes (ver «Código como fuente de verdad visual»). Comportamiento: `openspec/specs/producto/`. Arquitectura, convenciones, mapa diseño→código y desviaciones: `docs/desarrollo/`. Rutas y shell: `docs/desarrollo/arquitectura.md`.
 

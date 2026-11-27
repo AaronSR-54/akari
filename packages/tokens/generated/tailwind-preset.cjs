@@ -2,6 +2,11 @@
 module.exports = {
   "theme": {
     "colors": {
+      "transparent": "transparent",
+      "current": "currentColor",
+      "inherit": "inherit",
+      "black": "#000000",
+      "white": "#ffffff",
       "surface": {
         "canvas": "rgb(var(--color-surface-canvas-rgb) / <alpha-value>)",
         "default": "rgb(var(--color-surface-default-rgb) / <alpha-value>)",

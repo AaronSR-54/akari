@@ -27,7 +27,7 @@ export async function expectHeadingForViewport(page: Page, name: string) {
 
 export async function startEmpty(page: Page) {
   await page.goto('/onboarding');
-  await page.getByRole('button', { name: 'Empezar vacío' }).click();
+  await page.getByRole('button', { name: 'Omitir el asistente' }).click();
   await page.waitForURL(/\/$/);
 }
 

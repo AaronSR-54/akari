@@ -59,18 +59,57 @@ function nowIso(): string {
   return new Date().toISOString();
 }
 
+export type ProfilePreferencesInput = {
+  displayName?: string;
+  primaryCurrency?: string;
+  primaryIncomeDay?: number | null;
+};
+
+export async function updateProfilePreferences(
+  repositories: Repositories,
+  input: ProfilePreferencesInput,
+): Promise<Settings> {
+  const patch: ProfilePreferencesInput = {};
+
+  if (input.displayName !== undefined) {
+    const displayName = input.displayName.trim();
+    if (!displayName) {
+      throw new ValidationError('El nombre del perfil es obligatorio', 'displayName');
+    }
+    if (displayName.length > 40) {
+      throw new ValidationError('El nombre del perfil no puede superar 40 caracteres', 'displayName');
+    }
+    patch.displayName = displayName;
+  }
+
+  if (input.primaryCurrency !== undefined) {
+    const primaryCurrency = input.primaryCurrency.trim().toUpperCase();
+    if (!/^[A-Z]{3}$/.test(primaryCurrency)) {
+      throw new ValidationError('La divisa debe ser un código ISO de tres letras', 'primaryCurrency');
+    }
+    patch.primaryCurrency = primaryCurrency;
+  }
+
+  if (input.primaryIncomeDay !== undefined) {
+    if (input.primaryIncomeDay === null) {
+      patch.primaryIncomeDay = null;
+    } else {
+      const day = input.primaryIncomeDay;
+      if (!Number.isInteger(day) || day < 1 || day > 31) {
+        throw new ValidationError('El día de ingreso debe estar entre 1 y 31', 'primaryIncomeDay');
+      }
+      patch.primaryIncomeDay = day;
+    }
+  }
+
+  return repositories.settings.update(patch);
+}
+
 export async function updateProfileName(
   repositories: Repositories,
   value: string,
 ): Promise<Settings> {
-  const displayName = value.trim();
-  if (!displayName) {
-    throw new ValidationError('El nombre del perfil es obligatorio', 'displayName');
-  }
-  if (displayName.length > 40) {
-    throw new ValidationError('El nombre del perfil no puede superar 40 caracteres', 'displayName');
-  }
-  return repositories.settings.update({ displayName });
+  return updateProfilePreferences(repositories, { displayName: value });
 }
 
 function validateDate(value: string): void {
@@ -625,6 +664,7 @@ export type Overview = {
   upcoming: ReturnType<typeof upcomingPayments>;
   installments: InstallmentPlan[];
   recentMovements: Movement[];
+  movementCount: number;
   dailyExpenses: ReturnType<typeof dailyTotals>;
   balancesByAccount: Record<string, ReturnType<typeof calculateAccountBalance>>;
 };
@@ -692,6 +732,7 @@ export async function getOverview(
 
   return {
     accounts: activeAccounts,
+    movementCount: movements.length,
     totalBalances,
     projections: [...projectedTotals.values()],
     month: {

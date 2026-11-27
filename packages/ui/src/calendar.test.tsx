@@ -1,8 +1,8 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
-import { Calendar } from './calendar.js';
-import { formatBusinessDate, todayBusinessKey } from './dates.js';
+import { Calendar, MonthDayPicker } from './calendar.js';
+import { formatBusinessDate, parseBusinessDate, todayBusinessKey } from './dates.js';
 
 const NOVEMBER_25 = '2026-11-25';
 
@@ -31,10 +31,9 @@ describe('calendar', () => {
     const selected = screen.getByRole('button', { name: '25 nov 2026' }).parentElement;
     expect(selected).toHaveAttribute('role', 'gridcell');
     expect(selected).toHaveAttribute('aria-selected', 'true');
-    expect(screen.getByRole('button', { name: formatBusinessDate(todayBusinessKey()) })).toHaveAttribute(
-      'aria-current',
-      'date',
-    );
+    expect(
+      screen.getByRole('button', { name: formatBusinessDate(todayBusinessKey()) }),
+    ).toHaveAttribute('aria-current', 'date');
   });
 
   it('navega entre meses sin cambiar la fecha elegida', async () => {
@@ -85,7 +84,6 @@ describe('calendar', () => {
     await user.keyboard('{Escape}');
     expect(onCancel).toHaveBeenCalledTimes(1);
   });
-
 
   it('desde la cabecera muestra los meses del año y después el selector de años', async () => {
     const user = userEvent.setup();
@@ -170,5 +168,37 @@ describe('calendar', () => {
     const today = formatBusinessDate(todayBusinessKey());
     expect(screen.getByRole('button', { name: today })).toHaveFocus();
     expect(document.querySelector('[role="gridcell"][aria-selected="true"]')).toBeNull();
+  });
+});
+
+describe('month day picker', () => {
+  it('elige un día del mes y navega con el teclado', async () => {
+    const user = userEvent.setup();
+    const onSelect = vi.fn();
+    render(<MonthDayPicker value={25} onSelect={onSelect} label="Día del ingreso" />);
+
+    expect(screen.getByRole('grid', { name: 'Día del ingreso' })).toBeInTheDocument();
+    const selected = screen.getByRole('button', { name: 'Día 25 de cada mes' }).parentElement;
+    expect(selected).toHaveAttribute('aria-selected', 'true');
+
+    await user.click(screen.getByRole('button', { name: 'Día 31 de cada mes' }));
+    expect(onSelect).toHaveBeenCalledWith(31);
+
+    screen.getByRole('button', { name: 'Día 31 de cada mes' }).focus();
+    await user.keyboard('{ArrowLeft}');
+    expect(screen.getByRole('button', { name: 'Día 30 de cada mes' })).toHaveFocus();
+  });
+
+  it('coloca el día 1 según el día de la semana del mes actual', () => {
+    const today = parseBusinessDate(todayBusinessKey());
+    const offset = (new Date(today.getFullYear(), today.getMonth(), 1).getDay() + 6) % 7;
+    render(<MonthDayPicker value={null} onSelect={vi.fn()} label="Día del ingreso" />);
+
+    const cells = screen.getAllByRole('gridcell', { hidden: true });
+    const firstDayIndex = cells.findIndex((cell) => cell.textContent === '1');
+    expect(firstDayIndex).toBe(offset);
+    expect(
+      cells.slice(0, firstDayIndex).every((cell) => cell.getAttribute('aria-hidden') === 'true'),
+    ).toBe(true);
   });
 });

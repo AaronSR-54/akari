@@ -391,9 +391,37 @@ export function DashboardScreen() {
         <StatePage
           type="empty"
           title="Tu resumen empieza con una cuenta"
-          description="Crea una cuenta personal, conjunta o de depósito y registra su saldo inicial. Los datos se guardan solo en este dispositivo."
+          description="Crea una cuenta personal, conjunta o de depósito y registra su saldo inicial. Después te guiaremos para añadir tu primer movimiento."
           primaryAction={<ActionLink href="/cuentas/nueva">Añadir cuenta</ActionLink>}
         />
+        <Card padding="md" data-first-steps>
+          <SectionHeader title="Primeros pasos" />
+          <ol className="mt-3 flex flex-col gap-3">
+            <li className="flex items-center gap-3">
+              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-accent-default text-ui-11-strong text-accent-ink">
+                1
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="text-ui-12-strong text-text-primary">Crea tu primera cuenta</p>
+                <p className="text-ui-10 text-text-secondary">
+                  Indica su saldo inicial y, si quieres, su banco.
+                </p>
+              </div>
+              <ActionLink href="/cuentas/nueva" variant="secondary">
+                Crear
+              </ActionLink>
+            </li>
+            <li className="flex items-center gap-3 opacity-60">
+              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-surface-sunken text-ui-11-strong text-text-tertiary">
+                2
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="text-ui-12-strong text-text-primary">Añade tu primer movimiento</p>
+                <p className="text-ui-10 text-text-secondary">Se activa cuando tengas una cuenta.</p>
+              </div>
+            </li>
+          </ol>
+        </Card>
       </Stack>
     );
   }
@@ -404,6 +432,39 @@ export function DashboardScreen() {
       <div className="hidden md:block">
         <PageHeaderResponsive title={`${greeting()}, ${profileName}`} />
       </div>
+      {overview.movementCount === 0 ? (
+        <Card padding="md" data-first-steps>
+          <SectionHeader title="Primeros pasos" />
+          <div className="mt-3 flex flex-col gap-3">
+            <div className="flex items-center gap-3">
+              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-accent-default text-ui-11-strong text-accent-ink">
+                ✓
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="text-ui-12-strong text-text-primary">Cuenta creada</p>
+                <p className="text-ui-10 text-text-secondary">Ya puedes registrar movimientos.</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-surface-sunken text-ui-11-strong text-text-secondary">
+                2
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="text-ui-12-strong text-text-primary">Añade tu primer movimiento</p>
+                <p className="text-ui-10 text-text-secondary">
+                  Un gasto o un ingreso para empezar a ver el resumen.
+                </p>
+              </div>
+              <ActionLink
+                href={`/movimientos/nuevo?cuenta=${overview.accounts[0]?.id ?? ''}`}
+                variant="secondary"
+              >
+                Añadir
+              </ActionLink>
+            </div>
+          </div>
+        </Card>
+      ) : null}
       <OverviewBody overview={overview} />
     </Stack>
   );

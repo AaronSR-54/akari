@@ -22,7 +22,7 @@ describe('backup', () => {
     const backup = await exportBackup(db);
     expect(backup.warning.encrypted).toBe(false);
     expect(backup.warning.message).toMatch(/NO está cifrada/);
-    expect(backup.schemaVersion).toBe(3);
+    expect(backup.schemaVersion).toBe(4);
 
     await db.accounts.clear();
     const result = await importBackup(db, JSON.parse(backupToJson(backup)));

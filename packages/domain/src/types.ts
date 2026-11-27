@@ -136,6 +136,10 @@ export type Settings = {
   demoLoaded: boolean;
   /** Nombre editable del perfil; se resuelve con el valor por defecto si falta. */
   displayName?: string;
+  /** Divisa principal para nuevas cuentas y formato por defecto. */
+  primaryCurrency?: string;
+  /** Día del mes del ingreso principal (1-31); se ajusta al último día si el mes es corto. */
+  primaryIncomeDay?: number | null;
   /** Versión del seed de ejemplo; permite refrescar demos antiguas. */
   demoSeedVersion?: number;
   /** Identificadores de avisos ya vistos; se recorta a los más recientes. */
@@ -149,6 +153,8 @@ export const defaultSettings: Settings = {
   onboardingCompleted: false,
   demoLoaded: false,
   displayName: 'Marta',
+  primaryCurrency: 'EUR',
+  primaryIncomeDay: null,
 };
 
 export type AccountInput = {

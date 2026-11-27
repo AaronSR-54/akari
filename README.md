@@ -1,6 +1,6 @@
 # akari
 
-Aplicación de finanzas personales y gastos compartidos, local-first, construida a partir de un diseño aprobado en Figma/FigCraft y especificada con [OpenSpec](https://github.com/Fission-AI/OpenSpec).
+Aplicación de finanzas personales y gastos compartidos, local-first, con sincronización opcional a Supabase, construida a partir de un diseño aprobado en Figma/FigCraft y especificada con [OpenSpec](https://github.com/Fission-AI/OpenSpec).
 
 El repositorio reúne diseño, documentación, specs y código:
 
@@ -11,7 +11,7 @@ akari/
 │   ├── tokens/              tokens de diseño → CSS, preset de Tailwind y tipos
 │   ├── ui/                  componentes React del design system
 │   ├── domain/              entidades, cálculos financieros, puertos y casos de uso
-│   └── data/                IndexedDB (Dexie), migraciones, seed y copias
+│   └── data/                IndexedDB (Dexie), sync con Supabase, migraciones y copias
 ├── docs/
 │   ├── diseno/              fuente de verdad visual (fundamentos, componentes, flujos)
 │   └── desarrollo/          arquitectura, puesta en marcha, convenciones y mapa
@@ -29,7 +29,7 @@ npm install
 npm run dev
 ```
 
-Abre `http://localhost:3000`. La primera vez te llevará a `/onboarding`, donde puedes empezar vacío o cargar datos de ejemplo.
+Abre `http://localhost:3000`. La primera vez te llevará a `/onboarding`, un asistente para configurar tu nombre, divisa, día de ingreso y banco; después te guía dentro de la app para crear tu primera cuenta y tu primer movimiento. Puedes omitir los pasos opcionales o cargar datos de ejemplo. La cuenta en la nube es opcional; si la quieres, aplica las migraciones de `supabase/migrations/` y define `NEXT_PUBLIC_SUPABASE_URL` y `NEXT_PUBLIC_SUPABASE_ANON_KEY` en `apps/web/.env.local` (ver [Nube y sincronización](docs/desarrollo/nube-supabase.md)).
 
 ## Comandos
 
@@ -56,6 +56,7 @@ Abre `http://localhost:3000`. La primera vez te llevará a `/onboarding`, donde 
 ## Documentación
 
 - [Arquitectura](docs/desarrollo/arquitectura.md)
+- [Nube y sincronización](docs/desarrollo/nube-supabase.md)
 - [Puesta en marcha](docs/desarrollo/puesta-en-marcha.md)
 - [Convenciones](docs/desarrollo/convenciones.md)
 - [Mapa diseño → código](docs/desarrollo/mapa-diseno-codigo.md)

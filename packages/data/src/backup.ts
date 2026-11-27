@@ -114,6 +114,10 @@ export async function importBackup(db: AkariDB, input: unknown): Promise<{ impor
   if (!settings) {
     await db.settings.put(defaultSettings);
   }
+  // La copia sustituye el contenido local: el estado de sincronización anterior
+  // ya no describe estas filas y se reconstruye al conectar una cuenta.
+  await db.syncState.clear();
+  await db.syncMeta.delete('lastSyncedAt');
   return { imported };
 }
 
@@ -122,6 +126,7 @@ export async function clearDatabase(db: AkariDB): Promise<void> {
     for (const name of TABLE_NAMES) {
       await db.table(name).clear();
     }
+    await db.syncState.clear();
   });
 }
 

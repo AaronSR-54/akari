@@ -1,0 +1,16 @@
+{
+  "changeId": "supabase-sync",
+  "branch": "supabase-sync",
+  "cards": [
+    {
+      "publicId": "4meqc4n99j2g",
+      "title": "feat: guardar los datos en la nube"
+    },
+    {
+      "publicId": "6x8444lhgadh",
+      "title": "feat: creación de onbording para indicar datos de usuario y perfil"
+    }
+  ],
+  "prUrl": "https://github.com/AaronSR-54/akari/pull/25",
+  "claimedAt": "2026-11-26T16:00:41.220Z"
+}

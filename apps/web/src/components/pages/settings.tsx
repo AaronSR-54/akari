@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { updateProfileName } from '@akari/domain';
+import { updateProfilePreferences } from '@akari/domain';
 import {
   backupToJson,
   exportBackup,
@@ -23,6 +23,7 @@ import {
   Inline,
   Modal,
   SectionHeader,
+  SelectField,
   SelectPill,
   SettingRow,
   Stack,
@@ -35,8 +36,11 @@ import { PageTitle } from '../../components/page-title';
 import { PageHeaderResponsive } from '../../components/page-header-responsive';
 import { HeadingMeta } from '../../components/heading-meta';
 import { defaultProfile, initialsFromName } from '../../lib/profile';
+import { currencyOptions } from '../../lib/options';
 import { useData } from '../../components/providers';
 import { PageSkeleton } from '../../components/page-skeleton';
+import { useCloud } from '../../components/cloud-provider';
+import { CloudAccountCard } from '../../components/account-panel';
 
 const DOCS_URL = 'https://github.com/AaronSR-54/akari/blob/main/docs/desarrollo/desviaciones.md';
 
@@ -50,6 +54,8 @@ function formatBytes(value: number | null): string {
 export function SettingsScreen() {
   const settings = useSettings();
   const { db, repositories } = useData();
+  const cloud = useCloud();
+  const connected = Boolean(cloud.user);
   const { toast } = useToast();
   const { preference, setPreference } = useTheme();
   const router = useRouter();
@@ -57,6 +63,8 @@ export function SettingsScreen() {
   const [confirm, setConfirm] = useState<'reset' | 'demo' | 'import' | null>(null);
   const [editingName, setEditingName] = useState(false);
   const [nameDraft, setNameDraft] = useState('');
+  const [currencyDraft, setCurrencyDraft] = useState('EUR');
+  const [incomeDayDraft, setIncomeDayDraft] = useState('');
   const [nameError, setNameError] = useState<string | undefined>();
   const [busy, setBusy] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -76,19 +84,27 @@ export function SettingsScreen() {
       await repositories.settings.update(patch);
       toast({ title: 'Ajustes guardados', tone: 'success' });
     } catch (error) {
-      toast({ title: 'No se han podido guardar', description: storageErrorMessage(error), tone: 'error' });
+      toast({
+        title: 'No se han podido guardar',
+        description: storageErrorMessage(error),
+        tone: 'error',
+      });
     }
   };
 
-  const saveName = async () => {
+  const saveProfile = async () => {
     setBusy(true);
     setNameError(undefined);
     try {
-      await updateProfileName(repositories, nameDraft);
+      await updateProfilePreferences(repositories, {
+        displayName: nameDraft,
+        primaryCurrency: currencyDraft,
+        primaryIncomeDay: incomeDayDraft.trim() === '' ? null : Number(incomeDayDraft),
+      });
       setEditingName(false);
-      toast({ title: 'Nombre actualizado', tone: 'success' });
+      toast({ title: 'Perfil actualizado', tone: 'success' });
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'No se ha podido guardar el nombre.';
+      const message = error instanceof Error ? error.message : 'No se ha podido guardar el perfil.';
       setNameError(message);
       toast({ title: 'No se ha podido guardar', description: message, tone: 'error' });
     } finally {
@@ -106,21 +122,37 @@ export function SettingsScreen() {
       anchor.download = `akari-copia-${new Date().toISOString().slice(0, 10)}.json`;
       anchor.click();
       URL.revokeObjectURL(url);
-      toast({ title: 'Copia exportada', description: 'Recuerda que no está cifrada.', tone: 'success' });
+      toast({
+        title: 'Copia exportada',
+        description: 'Recuerda que no está cifrada.',
+        tone: 'success',
+      });
     } catch (error) {
-      toast({ title: 'No se ha podido exportar', description: storageErrorMessage(error), tone: 'error' });
+      toast({
+        title: 'No se ha podido exportar',
+        description: storageErrorMessage(error),
+        tone: 'error',
+      });
     }
   };
 
   const importData = async (file: File | null) => {
     if (!file) return;
+    if (connected) {
+      toast({ title: 'Desconecta la cuenta para importar', tone: 'info' });
+      return;
+    }
     setBusy(true);
     try {
       const text = await file.text();
       const parsed = JSON.parse(text) as unknown;
       const result = await importBackup(db, parsed);
       setConfirm(null);
-      toast({ title: 'Copia importada', description: `${result.imported} registros restaurados.`, tone: 'success' });
+      toast({
+        title: 'Copia importada',
+        description: `${result.imported} registros restaurados.`,
+        tone: 'success',
+      });
     } catch (error) {
       toast({
         title: 'No se ha podido importar',
@@ -134,6 +166,10 @@ export function SettingsScreen() {
   };
 
   const loadDemo = async () => {
+    if (connected) {
+      toast({ title: 'Desconecta la cuenta para cargar ejemplos', tone: 'info' });
+      return;
+    }
     setBusy(true);
     try {
       await loadDemoDatabase(db, appNow());
@@ -141,12 +177,20 @@ export function SettingsScreen() {
       toast({ title: 'Datos de ejemplo cargados', tone: 'success' });
       router.replace('/');
     } catch (error) {
-      toast({ title: 'No se han podido cargar los datos', description: storageErrorMessage(error), tone: 'error' });
+      toast({
+        title: 'No se han podido cargar los datos',
+        description: storageErrorMessage(error),
+        tone: 'error',
+      });
       setBusy(false);
     }
   };
 
   const reset = async () => {
+    if (connected) {
+      toast({ title: 'Desconecta la cuenta para borrar la base local', tone: 'info' });
+      return;
+    }
     setBusy(true);
     try {
       await resetDatabase(db);
@@ -154,13 +198,19 @@ export function SettingsScreen() {
       toast({ title: 'Datos eliminados', tone: 'success' });
       router.replace('/onboarding');
     } catch (error) {
-      toast({ title: 'No se han podido eliminar', description: storageErrorMessage(error), tone: 'error' });
+      toast({
+        title: 'No se han podido eliminar',
+        description: storageErrorMessage(error),
+        tone: 'error',
+      });
       setBusy(false);
     }
   };
 
   const usagePercent =
-    storage?.usage && storage.quota ? Math.min(100, Math.round((storage.usage / storage.quota) * 100)) : 0;
+    storage?.usage && storage.quota
+      ? Math.min(100, Math.round((storage.usage / storage.quota) * 100))
+      : 0;
 
   return (
     <div>
@@ -174,12 +224,17 @@ export function SettingsScreen() {
             </Button>
           }
         />
-        <HeadingMeta detail="Tu perfil y los datos guardados en este dispositivo. La nube es opcional y aún no está activa." />
+        <HeadingMeta detail="Tu perfil y los datos guardados en este dispositivo, con una copia opcional en la nube." />
 
-        <Banner tone="info" title="Esta fase es local y sin cifrado">
-          Los datos se guardan en este navegador. La sincronización, el cifrado y la contraseña local
-          llegarán en un cambio posterior. No uses datos reales sensibles.{' '}
-          <a href={DOCS_URL} className="underline underline-offset-4" target="_blank" rel="noreferrer">
+        <Banner tone="info" title="Sin cifrado de extremo a extremo">
+          Los datos se guardan en este navegador y, si conectas una cuenta, en Supabase. No hay
+          cifrado de extremo a extremo ni contraseña local. No uses datos reales sensibles.{' '}
+          <a
+            href={DOCS_URL}
+            className="underline underline-offset-4"
+            target="_blank"
+            rel="noreferrer"
+          >
             Ver desviaciones documentadas
           </a>
           .
@@ -194,6 +249,10 @@ export function SettingsScreen() {
                 size="sm"
                 onClick={() => {
                   setNameDraft(profileName);
+                  setCurrencyDraft(settings.primaryCurrency ?? 'EUR');
+                  setIncomeDayDraft(
+                    settings.primaryIncomeDay == null ? '' : String(settings.primaryIncomeDay),
+                  );
                   setNameError(undefined);
                   setEditingName(true);
                 }}
@@ -210,18 +269,32 @@ export function SettingsScreen() {
             </div>
           </div>
           <p className="text-ui-10 text-text-secondary">
-            El nombre se guarda solo en este dispositivo. La foto se representa con iniciales y no se
-            almacenan imágenes.
+            Divisa principal: {settings.primaryCurrency ?? 'EUR'} · Ingreso principal:{' '}
+            {settings.primaryIncomeDay == null
+              ? 'sin definir'
+              : `el día ${settings.primaryIncomeDay} de cada mes`}
+            . Se sincroniza con tu perfil si hay una cuenta conectada. La foto se representa con
+            iniciales y no se almacenan imágenes.
           </p>
         </Card>
+
+        <CloudAccountCard variant="settings" />
 
         <div className="grid gap-4 lg:grid-cols-[1.06fr_1fr]">
           <Card padding="none" className="px-5 py-2">
             <div className="flex flex-col divide-y divide-border-subtle">
               <SettingRow
                 title="Ubicación de los datos"
-                description="Base local en este dispositivo · IndexedDB, sin cifrar"
-                action={<Badge tone="neutral">Local</Badge>}
+                description={
+                  connected
+                    ? 'IndexedDB en este dispositivo + copia en Supabase'
+                    : 'Base local en este dispositivo · IndexedDB, sin cifrar'
+                }
+                action={
+                  <Badge tone={connected ? 'positive' : 'neutral'}>
+                    {connected ? 'Local + nube' : 'Local'}
+                  </Badge>
+                }
               />
               <SettingRow
                 title="Apariencia"
@@ -245,7 +318,9 @@ export function SettingsScreen() {
                     <SelectPill
                       ariaLabel="Navegación de escritorio"
                       value={settings.shellMode}
-                      onChange={(value) => void update({ shellMode: value as 'sidebar' | 'header' })}
+                      onChange={(value) =>
+                        void update({ shellMode: value as 'sidebar' | 'header' })
+                      }
                       options={[
                         { value: 'sidebar', label: 'Sidebar' },
                         { value: 'header', label: 'Header' },
@@ -256,13 +331,48 @@ export function SettingsScreen() {
               />
               <SettingRow
                 title="Sincronización en la nube"
-                description="Desactivada · no hay servidor ni conflictos remotos"
-                action={<Badge tone="neutral">No disponible</Badge>}
+                description={
+                  connected
+                    ? `Conectada como ${cloud.user?.email ?? 'tu cuenta'}`
+                    : 'Opcional · conecta una cuenta para continuar en otro dispositivo'
+                }
+                action={
+                  <Badge tone={connected ? 'positive' : 'neutral'}>
+                    {connected ? 'Activa' : 'Sin conectar'}
+                  </Badge>
+                }
               />
+              {connected ? (
+                <SettingRow
+                  title="Sesión"
+                  description="Cierra la sesión en este dispositivo. Los datos locales se conservan."
+                  action={
+                    <Button
+                      variant="tertiary"
+                      size="sm"
+                      onClick={() => {
+                        void cloud.signOut().then(() => {
+                          toast({ title: 'Sesión cerrada', tone: 'success' });
+                        });
+                      }}
+                    >
+                      Cerrar sesión
+                    </Button>
+                  }
+                />
+              ) : null}
               <SettingRow
                 title="Contraseña"
-                description="No configurada · llegará con el cifrado local"
-                action={<Badge tone="warning">Pendiente</Badge>}
+                description={
+                  connected
+                    ? 'La gestiona Supabase; Akari no guarda tu contraseña'
+                    : 'Sin contraseña local · el cifrado de la base local sigue pendiente'
+                }
+                action={
+                  <Badge tone={connected ? 'info' : 'warning'}>
+                    {connected ? 'Supabase' : 'Pendiente'}
+                  </Badge>
+                }
               />
               <SettingRow
                 title="Exportar copia"
@@ -275,9 +385,19 @@ export function SettingsScreen() {
               />
               <SettingRow
                 title="Importar copia"
-                description="Restaura una copia exportada desde este u otro navegador"
+                description={
+                  connected
+                    ? 'Desconecta la cuenta para importar: una copia local no debe sustituir la nube'
+                    : 'Restaura una copia exportada desde este u otro navegador'
+                }
                 action={
-                  <Button variant="secondary" size="sm" onClick={() => fileRef.current?.click()} loading={busy}>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => fileRef.current?.click()}
+                    loading={busy}
+                    disabled={connected}
+                  >
                     Importar
                   </Button>
                 }
@@ -292,19 +412,37 @@ export function SettingsScreen() {
               />
               <SettingRow
                 title="Datos de ejemplo"
-                description="Sustituye los datos actuales por cuentas, movimientos y grupos de ejemplo"
+                description={
+                  connected
+                    ? 'Desconecta la cuenta para sustituir los datos locales por ejemplos'
+                    : 'Sustituye los datos actuales por cuentas, movimientos y grupos de ejemplo'
+                }
                 action={
-                  <Button variant="secondary" size="sm" onClick={() => setConfirm('demo')}>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => setConfirm('demo')}
+                    disabled={connected}
+                  >
                     Cargar
                   </Button>
                 }
               />
               <SettingRow
                 title="Borrar base local"
-                description="Elimina los datos de este dispositivo. No se puede deshacer"
+                description={
+                  connected
+                    ? 'Desconecta la cuenta para borrar la base local sin afectar a la nube'
+                    : 'Elimina los datos de este dispositivo. No se puede deshacer'
+                }
                 danger
                 action={
-                  <Button variant="tertiary" size="sm" onClick={() => setConfirm('reset')}>
+                  <Button
+                    variant="tertiary"
+                    size="sm"
+                    onClick={() => setConfirm('reset')}
+                    disabled={connected}
+                  >
                     Borrar
                   </Button>
                 }
@@ -333,7 +471,10 @@ export function SettingsScreen() {
                     : 'persistencia no concedida'}
               </p>
               <div className="mt-2 h-2 overflow-hidden rounded-full bg-surface-sunken">
-                <div className="h-full rounded-full bg-accent-default" style={{ width: `${Math.max(4, usagePercent)}%` }} />
+                <div
+                  className="h-full rounded-full bg-accent-default"
+                  style={{ width: `${Math.max(4, usagePercent)}%` }}
+                />
               </div>
               <p className="mt-2 text-ui-10 text-text-secondary">
                 {storage?.message ?? 'Comprobando almacenamiento…'}
@@ -344,16 +485,17 @@ export function SettingsScreen() {
               <p className="text-ui-11 text-text-secondary">Copia de seguridad</p>
               <p className="text-ui-24-bold text-text-primary">Sin cifrar</p>
               <p className="text-ui-10 text-text-secondary">
-                El archivo se puede leer con cualquier editor. Guárdalo en un lugar seguro o espera al
-                cambio de cifrado.
+                El archivo se puede leer con cualquier editor. Guárdalo en un lugar seguro o espera
+                al cambio de cifrado.
               </p>
             </Card>
 
             <Card padding="md" className="flex flex-col gap-1.5">
               <SectionHeader title="Límites de esta fase" />
               <p className="text-ui-10 text-text-secondary">
-                Sin nube, sin contraseña y sin app móvil. Todo se guarda en IndexedDB y se puede
-                exportar o borrar desde esta pantalla.
+                Sin cifrado de extremo a extremo ni app móvil. Los datos viven en IndexedDB y, si
+                conectas una cuenta, se sincronizan con Supabase. Los grupos compartidos entre
+                usuarios llegarán en un cambio posterior.
               </p>
               <Inline className="pt-1">
                 <a
@@ -399,27 +541,46 @@ export function SettingsScreen() {
       <Modal
         open={editingName}
         onClose={() => setEditingName(false)}
-        title="Editar nombre"
+        title="Editar perfil"
         footer={
           <>
             <Button variant="tertiary" onClick={() => setEditingName(false)}>
               Cancelar
             </Button>
-            <Button onClick={() => void saveName()} loading={busy}>
+            <Button onClick={() => void saveProfile()} loading={busy}>
               Guardar
             </Button>
           </>
         }
       >
-        <TextField
-          label="Nombre"
-          value={nameDraft}
-          onChange={(event) => setNameDraft(event.target.value)}
-          error={nameError}
-          help="Se muestra en tu perfil y en el acceso de usuario. Máximo 40 caracteres."
-          maxLength={40}
-          data-autofocus
-        />
+        <Stack gap={3}>
+          <TextField
+            label="Nombre"
+            value={nameDraft}
+            onChange={(event) => setNameDraft(event.target.value)}
+            error={nameError}
+            help="Se muestra en tu perfil y en el acceso de usuario. Máximo 40 caracteres."
+            maxLength={40}
+            data-autofocus
+          />
+          <SelectField
+            label="Divisa principal"
+            value={currencyDraft}
+            onValueChange={setCurrencyDraft}
+            options={currencyOptions}
+            help="Se usará como divisa por defecto al crear nuevas cuentas."
+          />
+          <TextField
+            label="Día del ingreso principal"
+            type="number"
+            min={1}
+            max={31}
+            value={incomeDayDraft}
+            onChange={(event) => setIncomeDayDraft(event.target.value)}
+            placeholder="Sin definir"
+            help="Opcional. Entre 1 y 31; si el mes es más corto, se ajusta al último día."
+          />
+        </Stack>
       </Modal>
     </div>
   );

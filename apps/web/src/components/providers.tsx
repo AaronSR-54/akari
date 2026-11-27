@@ -1,30 +1,53 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
 import { ThemeProvider, ToastProvider } from '@akari/ui';
 import {
   DEMO_SEED_VERSION,
+  createRepositories,
+  createTrackedRepositories,
   loadDemoDatabase,
   openDatabase,
-  createRepositories,
   storageErrorMessage,
   type AkariDB,
   type AkariRepositories,
+  type LocalChangeListener,
 } from '@akari/data';
 import { appNow } from '../lib/clock';
+import { CloudProvider } from './cloud-provider';
 
 type DataContextValue = {
   db: AkariDB;
   repositories: AkariRepositories;
   ready: boolean;
   error: string | null;
+  subscribeLocalChanges: (listener: LocalChangeListener) => () => void;
 };
 
 const DataContext = createContext<DataContextValue | null>(null);
 
 export function Providers({ children }: { children: ReactNode }) {
   const [db] = useState(() => openDatabase());
-  const [repositories] = useState(() => createRepositories(db));
+  const listeners = useRef(new Set<LocalChangeListener>());
+  const [repositories] = useState(() =>
+    createTrackedRepositories(createRepositories(db), db, (table) => {
+      for (const listener of listeners.current) listener(table);
+    }),
+  );
+  const subscribeLocalChanges = useCallback((listener: LocalChangeListener) => {
+    listeners.current.add(listener);
+    return () => {
+      listeners.current.delete(listener);
+    };
+  }, []);
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
@@ -69,11 +92,19 @@ export function Providers({ children }: { children: ReactNode }) {
             repositories,
             ready,
             error,
+            subscribeLocalChanges,
           }}
         >
-          <div data-retry={attempt} className="contents">
-            <RetryBridge onRetry={() => setAttempt((value) => value + 1)}>{children}</RetryBridge>
-          </div>
+          <CloudProvider
+            db={db}
+            repositories={repositories}
+            ready={ready}
+            subscribeLocalChanges={subscribeLocalChanges}
+          >
+            <div data-retry={attempt} className="contents">
+              <RetryBridge onRetry={() => setAttempt((value) => value + 1)}>{children}</RetryBridge>
+            </div>
+          </CloudProvider>
         </DataContext.Provider>
       </ToastProvider>
     </ThemeProvider>

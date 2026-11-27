@@ -9,8 +9,9 @@ import type {
   Settings,
   Transfer,
 } from '@akari/domain';
+import type { SyncMetaRow, SyncStateRow } from './sync/types.js';
 
-export const SCHEMA_VERSION = 3;
+export const SCHEMA_VERSION = 4;
 
 export class AkariDB extends Dexie {
   accounts!: Table<Account, string>;
@@ -21,6 +22,8 @@ export class AkariDB extends Dexie {
   groupExpenses!: Table<GroupExpense, string>;
   transfers!: Table<Transfer, string>;
   settings!: Table<Settings, string>;
+  syncState!: Table<SyncStateRow, string>;
+  syncMeta!: Table<SyncMetaRow, string>;
 
   constructor(name = 'akari') {
     super(name);
@@ -80,6 +83,20 @@ export class AkariDB extends Dexie {
             if (movement.memberId === undefined) movement.memberId = null;
           });
       });
+
+    // v4 añade el estado de sincronización con la nube; no toca los datos.
+    this.version(4).stores({
+      accounts: 'id, type, bankId, includeInTotal, archivedAt',
+      movements: 'id, accountId, date, type, category, recurrenceId, installmentPlanId, [accountId+date]',
+      recurrences: 'id, accountId, nextDate',
+      installments: 'id, accountId',
+      groups: 'id',
+      groupExpenses: 'id, groupId, date, [groupId+date]',
+      transfers: 'id, groupId, status',
+      settings: 'id',
+      syncState: 'key, table, dirty, updatedAt',
+      syncMeta: 'key',
+    });
   }
 }
 
