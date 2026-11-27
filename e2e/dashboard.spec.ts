@@ -105,7 +105,7 @@ test.describe('dashboard hero', () => {
     await expect(recent.getByRole('link', { name: 'Preguntas rápidas' })).toHaveCount(0);
     await expect(summary).toContainText('Balance del mes');
     await expect(summary).toContainText('+2.152,01 €');
-    await expect(summary).toContainText('Saldo total estimado a fin de mes: 15.898,84 €');
+    await expect(summary).toContainText('Saldo total estimado a fin de mes: 15.778,84 €');
     await expect(summary).not.toContainText('Ingresos');
 
     expect(await balance.evaluate((element) => getComputedStyle(element).backgroundColor)).toBe(
@@ -477,7 +477,7 @@ test.describe('dashboard hero', () => {
       '/cuentas/demo-acc-day',
     );
 
-    await page.getByRole('button', { name: 'Registrar cuota' }).click();
+    await page.getByRole('button', { name: 'Registrar cuota' }).first().click();
     await expect(page.getByText('Cuota registrada')).toBeVisible();
     await expect(page.getByRole('progressbar', { name: 'Portátil: 3 de 6' })).toHaveAttribute(
       'aria-valuenow',

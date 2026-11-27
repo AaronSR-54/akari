@@ -177,7 +177,7 @@ test.describe('shell web', () => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await seedDemo(page);
 
-    const bell = page.getByRole('button', { name: 'Avisos, 6 pendientes' });
+    const bell = page.getByRole('button', { name: 'Avisos, 9 pendientes' });
     await expect(bell).toBeVisible();
     await bell.click();
 
@@ -192,20 +192,23 @@ test.describe('shell web', () => {
       dialog.getByRole('heading', { name: /Pagos próximos|Cuentas compartidas|Liquidaciones/ }),
     ).toHaveCount(0);
     const items = dialog.getByRole('listitem');
-    await expect(items).toHaveCount(6);
-    await expect(items.nth(0)).toContainText('Portátil · cuota');
-    await expect(items.nth(1)).toContainText('Ana gastó dinero');
-    await expect(items.nth(2)).toContainText('Debes 20,00');
-    await expect(items.nth(3)).toContainText('Debes 30,00');
-    await expect(items.nth(4)).toContainText('Alquiler');
-    await expect(items.nth(5)).toContainText('Suscripción vídeo');
+    await expect(items).toHaveCount(9);
+    await expect(items.nth(0)).toContainText('Móvil · cuota');
+    await expect(items.nth(1)).toContainText('Portátil · cuota');
+    await expect(items.nth(2)).toContainText('Ana gastó dinero');
+    await expect(items.nth(3)).toContainText('Debes 20,00');
+    await expect(items.nth(4)).toContainText('Debes 30,00');
+    await expect(items.nth(5)).toContainText('Sofá · cuota');
+    await expect(items.nth(6)).toContainText('Alquiler');
+    await expect(items.nth(7)).toContainText('Suscripción vídeo');
+    await expect(items.nth(8)).toContainText('Viaje · cuota');
     await expect(items.last()).toBeInViewport();
     const payment = dialog.getByRole('button', { name: /Portátil · cuota/ });
     await expect(payment).toHaveAttribute('data-tone', 'danger');
     await expect(payment).toHaveClass(/bg-status-danger-soft/);
     await expect(payment).toContainText('Vencida');
-    await expect(items.nth(4).getByRole('button')).toHaveClass(/bg-status-info-soft/);
-    await expect(items.nth(5).getByRole('button')).toHaveClass(/bg-status-info-soft/);
+    await expect(items.nth(6).getByRole('button')).toHaveClass(/bg-status-info-soft/);
+    await expect(items.nth(7).getByRole('button')).toHaveClass(/bg-status-info-soft/);
     await expect(payment).toContainText('Saldo');
     await expect(payment).toContainText('Cuenta diaria');
     await expect(dialog.getByText('Pagar')).toHaveCount(0);
@@ -222,7 +225,7 @@ test.describe('shell web', () => {
   test('paga una suscripción al pulsar su aviso', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await seedDemo(page);
-    await page.getByRole('button', { name: 'Avisos, 6 pendientes' }).click();
+    await page.getByRole('button', { name: 'Avisos, 9 pendientes' }).click();
 
     const dialog = page.getByRole('dialog', { name: 'Avisos' });
     const row = dialog.getByRole('button', { name: /Suscripción vídeo/ });
@@ -239,7 +242,7 @@ test.describe('shell web', () => {
   test('la actividad conjunta muestra al autor y abre la cuenta', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await seedDemo(page);
-    await page.getByRole('button', { name: 'Avisos, 6 pendientes' }).click();
+    await page.getByRole('button', { name: 'Avisos, 9 pendientes' }).click();
 
     const dialog = page.getByRole('dialog', { name: 'Avisos' });
     const activity = dialog.getByRole('link', { name: /Ana gastó dinero/ });
@@ -255,7 +258,7 @@ test.describe('shell web', () => {
   test('las liquidaciones pendientes abren el grupo', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await seedDemo(page);
-    await page.getByRole('button', { name: 'Avisos, 6 pendientes' }).click();
+    await page.getByRole('button', { name: 'Avisos, 9 pendientes' }).click();
 
     const dialog = page.getByRole('dialog', { name: 'Avisos' });
     await expect(page.getByRole('button', { name: 'Avisos' })).toBeVisible();
@@ -271,7 +274,7 @@ test.describe('shell web', () => {
   test('vuelve a avisar cuando aparece actividad nueva', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await seedDemo(page);
-    await page.getByRole('button', { name: 'Avisos, 6 pendientes' }).click();
+    await page.getByRole('button', { name: 'Avisos, 9 pendientes' }).click();
     await expect(page.getByRole('button', { name: 'Avisos' })).toBeVisible();
     await page.keyboard.press('Escape');
     await expect(page.getByRole('dialog', { name: 'Avisos' })).toBeHidden();
@@ -297,7 +300,7 @@ test.describe('shell web', () => {
     await bells.click();
     const dialog = page.getByRole('dialog', { name: 'Avisos' });
     await expect(dialog).toBeVisible();
-    await expect(dialog.getByRole('listitem')).toHaveCount(6);
+    await expect(dialog.getByRole('listitem')).toHaveCount(9);
 
     await page.keyboard.press('Escape');
     await expect(dialog).toBeHidden();
