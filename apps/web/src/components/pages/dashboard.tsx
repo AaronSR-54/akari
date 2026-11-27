@@ -22,6 +22,7 @@ import { PageHeaderResponsive } from '../page-header-responsive';
 import { ActionLink } from '../action-link';
 import { PageSkeleton } from '../page-skeleton';
 import { MovementDetailDialog } from '../movement-detail-dialog';
+import { UpcomingInstallments } from '../upcoming-installments';
 import { appNow } from '../../lib/clock';
 import { defaultProfile } from '../../lib/profile';
 import {
@@ -87,7 +88,7 @@ function OverviewBody({ overview }: { overview: Overview }) {
   const currency = overview.accounts[0]?.currency ?? 'EUR';
   const month = overview.month;
   const projected = overview.projections.find((entry) => entry.currency === currency);
-  const upcoming = overview.upcoming[0];
+  const nextRecurrence = overview.upcoming.find((payment) => payment.kind === 'recurrence');
   const plural = (count: number, one: string, many: string) =>
     `${count} ${count === 1 ? one : many}`;
   const monthDays = month.days.map((day) => ({
@@ -333,21 +334,25 @@ function OverviewBody({ overview }: { overview: Overview }) {
         </Card>
       </section>
 
-      {upcoming ? (
+      <UpcomingInstallments plans={overview.installments} />
+
+      {nextRecurrence ? (
         <Banner
-          tone={upcoming.overdue ? 'error' : 'warning'}
-          title={upcoming.overdue ? 'La cuota está vencida' : 'La cuota vence pronto'}
+          tone={nextRecurrence.overdue ? 'error' : 'warning'}
+          title={
+            nextRecurrence.overdue ? 'El pago está vencido' : 'El próximo pago vence pronto'
+          }
           action={
             <Link
-              href={`/movimientos/nuevo?cuenta=${upcoming.accountId}`}
+              href={`/movimientos/nuevo?cuenta=${nextRecurrence.accountId}`}
               className="text-ui-12-strong underline underline-offset-4"
             >
               Pagar ahora
             </Link>
           }
         >
-          {formatMinor(upcoming.amountMinor, upcoming.currency)} de {upcoming.label} ·{' '}
-          {formatDayMonth(upcoming.date)}.
+          {formatMinor(nextRecurrence.amountMinor, nextRecurrence.currency)} de{' '}
+          {nextRecurrence.label} · {formatDayMonth(nextRecurrence.date)}.
         </Banner>
       ) : null}
       <MovementDetailDialog

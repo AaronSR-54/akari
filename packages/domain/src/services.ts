@@ -20,7 +20,7 @@ import {
 } from './accounts.js';
 import { isBankId, normalizeBankId } from './banks.js';
 import { NotFoundError, ValidationError } from './errors.js';
-import { addFrequency, nextInstallment } from './recurrence.js';
+import { addFrequency, installmentStatus, nextInstallment } from './recurrence.js';
 import {
   computeSettlement,
   convertMinor,
@@ -38,6 +38,7 @@ import type {
   Group,
   GroupExpense,
   GroupExpenseInput,
+  InstallmentPlan,
   Member,
   MemberRole,
   Movement,
@@ -622,10 +623,29 @@ export type Overview = {
     estimate: ReturnType<typeof monthExpenseEstimate>;
   };
   upcoming: ReturnType<typeof upcomingPayments>;
+  installments: InstallmentPlan[];
   recentMovements: Movement[];
   dailyExpenses: ReturnType<typeof dailyTotals>;
   balancesByAccount: Record<string, ReturnType<typeof calculateAccountBalance>>;
 };
+
+function activeInstallments(
+  plans: InstallmentPlan[],
+  accounts: Account[],
+  today: Date,
+): InstallmentPlan[] {
+  const accountIds = new Set(accounts.map((account) => account.id));
+  return plans
+    .filter((plan) => accountIds.has(plan.accountId) && plan.paidInstallments < plan.installments)
+    .sort((a, b) => {
+      const aOverdue = installmentStatus(a, today) === 'overdue';
+      const bOverdue = installmentStatus(b, today) === 'overdue';
+      if (aOverdue !== bOverdue) return aOverdue ? -1 : 1;
+      const aDue = nextInstallment(a)?.dueDate ?? '';
+      const bDue = nextInstallment(b)?.dueDate ?? '';
+      return aDue.localeCompare(bDue) || a.id.localeCompare(b.id);
+    });
+}
 
 export async function getOverview(
   repositories: Repositories,
@@ -679,6 +699,7 @@ export async function getOverview(
       estimate: monthExpenseEstimate(movements, currency, today),
     },
     upcoming: upcomingPayments(recurrences, installments, activeAccounts, today),
+    installments: activeInstallments(installments, activeAccounts, today),
     recentMovements: movements
       .filter((movement) => activeAccounts.some((account) => account.id === movement.accountId))
       .sort((a, b) => b.date.localeCompare(a.date) || b.createdAt.localeCompare(a.createdAt))

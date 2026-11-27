@@ -79,6 +79,7 @@ El esquema Dexie está versionado en `packages/data/src/db.ts`; la versión 2 a�
 | `/cuentas/nueva` | `M06` en shell web | A · Alta de cuenta |
 | `/cuentas/[id]` | `W02` | E · Detalle |
 | `/cuentas/[id]/editar` | `M06` edición | A · Edición |
+| `/cuotas/[id]` | Detalle de pago a plazos | E · Progreso y registro |
 | `/movimientos` | `W03` + modal de alta y edición | B/E · Movimientos |
 | `/movimientos/nuevo` | `M09` en shell web (enlace directo) | B · Registro |
 | `/grupos` | índice de grupos | C/F · Grupos |
@@ -86,7 +87,7 @@ El esquema Dexie está versionado en `packages/data/src/db.ts`; la versión 2 a�
 | `/preguntas` | `W05` | D · Preguntas |
 | `/ajustes` | `W06` | F · Datos |
 
-El alta desde `/movimientos` y la edición de un movimiento comparten un modal que reutiliza el formulario de `M09`; la ruta `/movimientos/nuevo` sigue disponible como enlace directo.
+El alta desde `/movimientos` y la edición de un movimiento comparten un modal que reutiliza el formulario de `M09`; la ruta `/movimientos/nuevo` sigue disponible como enlace directo. El detalle de `/cuotas/[id]` y el bloque de plazos del detalle de cuenta comparten los cálculos de `installmentProgress`, `installmentStatus` y `nextInstallment`, y registran con `registerInstallment`.
 
 `W07` se verifica como comportamiento responsive y `W08` con el modo `header` del mismo shell.
 

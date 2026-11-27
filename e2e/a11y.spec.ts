@@ -54,7 +54,7 @@ test.describe('accesibilidad', () => {
   test('el panel de avisos no tiene violaciones graves', async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'desktop', 'El panel de avisos solo existe en escritorio');
     await seedDemo(page);
-    await page.getByRole('button', { name: 'Avisos, 6 pendientes' }).click();
+    await page.getByRole('button', { name: 'Avisos, 9 pendientes' }).click();
     await expect(page.getByRole('dialog', { name: 'Avisos' })).toBeVisible();
     const results = await new AxeBuilder({ page })
       .withTags(['wcag2a', 'wcag2aa'])
