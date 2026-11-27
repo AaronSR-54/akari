@@ -1,0 +1,16 @@
+{
+  "changeId": "movements-table-size",
+  "branch": "movements-table-size",
+  "cards": [
+    {
+      "publicId": "zl08kjqnd1t4",
+      "title": "feat: aumentar el tamaño del texto y las filas de la tabla de movimientos"
+    },
+    {
+      "publicId": "ijv6n5p7dzub",
+      "title": "fix. añadir padding / margin inferior a la tabla de movimientos"
+    }
+  ],
+  "prUrl": null,
+  "claimedAt": "2026-11-27T11:06:04.983Z"
+}
