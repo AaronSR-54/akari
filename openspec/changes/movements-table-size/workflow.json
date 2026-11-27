@@ -9,6 +9,10 @@
     {
       "publicId": "ijv6n5p7dzub",
       "title": "fix. añadir padding / margin inferior a la tabla de movimientos"
+    },
+    {
+      "publicId": "5mj2ny5qsbw3",
+      "title": "fix: bloquear el scroll de la página con el panel de avisos abierto"
     }
   ],
   "prUrl": null,
