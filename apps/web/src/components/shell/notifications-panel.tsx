@@ -188,7 +188,7 @@ export function NotificationsPanel({
           ✕
         </Button>
       </div>
-      <div className="overflow-y-auto">
+      <div className="overflow-y-auto pr-2">
         {notifications === undefined ? (
           <p role="status" className="px-1 text-ui-12 text-text-secondary">
             Cargando avisos…

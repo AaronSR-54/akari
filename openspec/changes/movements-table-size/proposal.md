@@ -15,6 +15,7 @@ La tabla de movimientos de escritorio se lee pequeña: la cabecera está a 9 px 
 - Sin cambios en la lista móvil (`MovementRow` ya usa concepto a 13 px e importe a 14 px), en las columnas, en la paginación ni en el comportamiento de la pantalla.
 - El objetivo de densidad se mantiene: 10 filas de 64 px, cabecera de 44 px y pie de 56 px dejan la tarjeta en ~742 px de alto, de modo que en un portátil de 1440×900 el pie queda al borde y no obliga a hacer scroll.
 - El panel de avisos adquiere el mismo bloqueo de scroll que las modales: con el panel abierto la página de fondo no se desplaza y, al cerrarlo por botón, Escape o clic fuera, el scroll se restaura. Reutiliza `acquireScrollLock` de `@akari/ui`, que ya usan los diálogos, en lugar de duplicar la lógica.
+- La lista del panel reserva 8 px a la derecha (`pr-2`) para que las tarjetas y sus importes no pasen por debajo de la barra de scroll interna.
 - No se tocan `docs/diseno/`, `design/` ni `openspec/specs/diseno/*`; la apariencia se decide en código.
 
 ## Capabilities
