@@ -14,7 +14,7 @@
 - [x] 2.1 Añadir en `e2e/accounts-movements.spec.ts` una comprobación de cabecera 11 px, celdas secundarias 13 px, concepto 14 px y filas de 64 px en escritorio y tablet, y ausencia de tabla en móvil
 - [x] 2.2 Añadir al mismo test que el botón «Siguiente» deja al menos 8 px hasta el borde inferior de la tarjeta
 - [x] 2.3 Ejecutar `npm run typecheck`, `npm run lint`, `npm test` y `npm run build`
-- [x] 2.4 Ejecutar `npm run e2e:worktree` (213 en verde; el único fallo es el título intermitente ya registrado en la tarjeta `qc3mdwfjlcwa`)
+- [x] 2.4 Ejecutar `npm run e2e:worktree`: 216 en verde, 8 omitidos y 1 fallo intermitente del título (`shell.spec.ts`, tarjeta `qc3mdwfjlcwa`), que pasa 9/9 al repetirlo aislado
 
 ## 3. Revisión visual
 
