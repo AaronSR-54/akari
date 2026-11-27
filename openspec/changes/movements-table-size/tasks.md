@@ -14,12 +14,20 @@
 - [x] 2.1 Añadir en `e2e/accounts-movements.spec.ts` una comprobación de cabecera 11 px, celdas secundarias 13 px, concepto 14 px y filas de 64 px en escritorio y tablet, y ausencia de tabla en móvil
 - [x] 2.2 Añadir al mismo test que el botón «Siguiente» deja al menos 8 px hasta el borde inferior de la tarjeta
 - [x] 2.3 Ejecutar `npm run typecheck`, `npm run lint`, `npm test` y `npm run build`
-- [ ] 2.4 Ejecutar `npm run e2e:worktree` cuando se pida (el E2E se deja para el final)
+- [x] 2.4 Ejecutar `npm run e2e:worktree` (213 en verde; el único fallo es el título intermitente ya registrado en la tarjeta `qc3mdwfjlcwa`)
 
 ## 3. Revisión visual
 
 - [ ] 3.1 Revisar la pantalla con `npm run preview:worktree` en 1440, 900 y 390 px y confirmar la densidad (10 filas visibles en 1440×900) y la coherencia con la lista móvil
 - [ ] 3.2 Detener el frontal con `npm run preview:worktree:stop` antes de archivar
+
+## 4. Panel de avisos sin scroll de fondo
+
+- [x] 4.1 Reexportar `acquireScrollLock` desde `@akari/ui` para reutilizar el bloqueo de scroll de las modales
+- [x] 4.2 Adquirir el bloqueo al montar `NotificationsPanel` y liberarlo al desmontar
+- [x] 4.3 Añadir una prueba unitaria del bloqueo y su liberación en `notifications-panel.test.tsx`
+- [x] 4.4 Añadir en `e2e/overlays.spec.ts` una comprobación de que la página no se desplaza con el panel abierto y se restaura al cerrar
+- [x] 4.5 Ejecutar las pruebas dirigidas del panel (20 unitarias y 24 E2E en los tres viewports) y el build
 
 ## Workflow follow-up
 

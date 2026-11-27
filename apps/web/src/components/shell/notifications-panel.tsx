@@ -8,6 +8,7 @@ import {
   Button,
   Icon,
   IconChevronLeft,
+  acquireScrollLock,
   cn,
   type BadgeTone,
   type IconName,
@@ -133,6 +134,11 @@ export function NotificationsPanel({
   const panelRef = useRef<HTMLDivElement>(null);
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
+
+  useEffect(() => {
+    const releaseScroll = acquireScrollLock();
+    return releaseScroll;
+  }, []);
 
   useEffect(() => {
     const panel = panelRef.current;

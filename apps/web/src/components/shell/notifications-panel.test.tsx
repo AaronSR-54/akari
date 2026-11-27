@@ -151,6 +151,17 @@ describe('NotificationsPanel', () => {
     expect(onClose).toHaveBeenCalledTimes(3);
   });
 
+  it('bloquea el scroll del documento mientras está abierto y lo libera al cerrar', () => {
+    const { view } = renderPanel();
+    expect(document.body.style.overflow).toBe('hidden');
+    expect(document.documentElement.style.overflow).toBe('hidden');
+
+    view.unmount();
+
+    expect(document.body.style.overflow).toBe('');
+    expect(document.documentElement.style.overflow).toBe('');
+  });
+
   it('no tiene violaciones de accesibilidad graves', async () => {
     const { view } = renderPanel();
     const results = await axe(view.container);

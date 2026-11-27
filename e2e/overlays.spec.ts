@@ -42,4 +42,33 @@ test.describe('overlays', () => {
     await scroller.evaluate((element) => element.scrollTo(0, 0));
     await expect.poll(() => scroller.evaluate((element) => element.scrollTop)).toBe(0);
   });
+
+  test('el panel de avisos también bloquea el scroll de la página', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 420 });
+    await seedDemo(page);
+    const scroller = page.locator('main');
+    await scroller.evaluate((element) => element.scrollTo(0, 240));
+    await expect.poll(() => scroller.evaluate((element) => element.scrollTop)).toBeGreaterThan(0);
+    const scrollBefore = await scroller.evaluate((element) => element.scrollTop);
+
+    await page.getByRole('button', { name: /^Avisos/ }).click();
+    const dialog = page.getByRole('dialog', { name: 'Avisos' });
+    await expect(dialog).toBeVisible();
+
+    expect(await page.evaluate(() => document.body.style.overflow)).toBe('hidden');
+    expect(await page.evaluate(() => document.documentElement.style.overflow)).toBe('hidden');
+    expect(await page.evaluate(() => document.documentElement.dataset.scrollLocked)).toBe('true');
+
+    await page.mouse.move(700, 350);
+    await page.mouse.wheel(0, 600);
+    await page.mouse.wheel(0, -600);
+    await page.waitForTimeout(200);
+    expect(await scroller.evaluate((element) => element.scrollTop)).toBe(scrollBefore);
+
+    await page.keyboard.press('Escape');
+    await expect(dialog).toBeHidden();
+    expect(await page.evaluate(() => document.body.style.overflow)).toBe('');
+    expect(await page.evaluate(() => document.documentElement.style.overflow)).toBe('');
+    expect(await page.evaluate(() => document.documentElement.dataset.scrollLocked)).toBeUndefined();
+  });
 });
