@@ -163,6 +163,17 @@ export function NotificationsPanel({
     };
   }, [notifications]);
 
+  const edgeFade = 20;
+  const fadeMask =
+    fadeEdges.top && fadeEdges.bottom
+      ? `linear-gradient(to bottom, transparent 0, #000 ${edgeFade}px, #000 calc(100% - ${edgeFade}px), transparent 100%)`
+      : fadeEdges.top
+        ? `linear-gradient(to bottom, transparent 0, #000 ${edgeFade}px)`
+        : fadeEdges.bottom
+          ? `linear-gradient(to bottom, #000 calc(100% - ${edgeFade}px), transparent 100%)`
+          : undefined;
+  const fadeState = fadeEdges.top ? (fadeEdges.bottom ? 'both' : 'top') : fadeEdges.bottom ? 'bottom' : 'none';
+
   useEffect(() => {
     const panel = panelRef.current;
     panel?.focus();
@@ -211,15 +222,14 @@ export function NotificationsPanel({
           ✕
         </Button>
       </div>
-      <div className="relative flex min-h-0 flex-col">
-        {fadeEdges.top ? (
-          <div
-            aria-hidden="true"
-            data-notifications-fade="top"
-            className="pointer-events-none absolute inset-x-0 top-0 z-10 h-4 rounded-t-lg bg-gradient-to-b from-surface-raised/95 to-transparent"
-          />
-        ) : null}
-        <div ref={scrollRef} data-notifications-scroll className="-mr-2 min-h-0 overflow-y-auto pr-3">
+      <div className="flex min-h-0 flex-col">
+        <div
+          ref={scrollRef}
+          data-notifications-scroll
+          data-notifications-fade={fadeState}
+          style={{ maskImage: fadeMask, WebkitMaskImage: fadeMask }}
+          className="-mr-2 min-h-0 overflow-y-auto pr-3"
+        >
           {notifications === undefined ? (
             <p role="status" className="px-1 text-ui-12 text-text-secondary">
               Cargando avisos…
@@ -246,13 +256,6 @@ export function NotificationsPanel({
             </ul>
           )}
         </div>
-        {fadeEdges.bottom ? (
-          <div
-            aria-hidden="true"
-            data-notifications-fade="bottom"
-            className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-4 rounded-b-lg bg-gradient-to-t from-surface-raised/95 to-transparent"
-          />
-        ) : null}
       </div>
     </div>
     </>

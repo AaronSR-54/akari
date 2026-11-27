@@ -65,11 +65,13 @@ test.describe('overlays', () => {
     await page.waitForTimeout(200);
     expect(await scroller.evaluate((element) => element.scrollTop)).toBe(scrollBefore);
 
-    await expect(page.locator('[data-notifications-fade="top"]')).toHaveCount(0);
     const list = page.locator('[data-notifications-scroll]');
+    await expect(list).toHaveAttribute('data-notifications-fade', 'bottom');
     await list.evaluate((element) => element.scrollTo(0, 240));
-    await expect(page.locator('[data-notifications-fade="top"]')).toBeVisible();
-    await expect(page.locator('[data-notifications-fade="bottom"]')).toBeVisible();
+    await expect(list).toHaveAttribute('data-notifications-fade', 'both');
+    expect(await list.evaluate((element) => getComputedStyle(element).maskImage)).toContain(
+      'linear-gradient',
+    );
 
     await page.keyboard.press('Escape');
     await expect(dialog).toBeHidden();
