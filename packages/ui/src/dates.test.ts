@@ -7,6 +7,7 @@ import {
   addDays,
   addMonths,
   formatBusinessDate,
+  formatBusinessRangeLabel,
   monthLabel,
   parseBusinessDate,
   startOfMonthGrid,
@@ -39,6 +40,24 @@ describe('dates', () => {
     expect(formatBusinessDate('2026-11-25')).toBe('25 nov 2026');
     expect(formatBusinessDate('2026-01-01')).toBe('01 ene 2026');
     expect(monthLabel(parseBusinessDate('2026-11-25'))).toBe('Noviembre 2026');
+  });
+
+  it('etiqueta un rango de fechas con extremos incluidos', () => {
+    expect(formatBusinessRangeLabel({})).toBe('Cualquier fecha');
+    expect(formatBusinessRangeLabel({ start: '2026-11-01', end: '2026-11-30' })).toBe(
+      '1–30 nov 2026',
+    );
+    expect(formatBusinessRangeLabel({ start: '2026-11-01', end: '2026-11-02' })).toBe(
+      '1–2 nov 2026',
+    );
+    expect(formatBusinessRangeLabel({ start: '2026-11-25', end: '2026-11-25' })).toBe(
+      '25 nov 2026',
+    );
+    expect(formatBusinessRangeLabel({ start: '2026-10-30', end: '2026-11-02' })).toBe(
+      '30 oct 2026 – 02 nov 2026',
+    );
+    expect(formatBusinessRangeLabel({ start: '2026-11-25' })).toBe('Desde 25 nov 2026');
+    expect(formatBusinessRangeLabel({ end: '2026-11-25' })).toBe('Hasta 25 nov 2026');
   });
 
   it('suma días y meses con ajuste de fin de mes y cambio de año', () => {

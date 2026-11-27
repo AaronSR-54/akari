@@ -46,6 +46,25 @@ export function formatBusinessDate(value: string): string {
   return DATE_FORMATTER.format(parseBusinessDate(value)).toLowerCase();
 }
 
+export type BusinessDateRange = { start?: string; end?: string };
+
+/** Etiqueta legible de un rango de fechas de negocio, con extremos incluidos. */
+export function formatBusinessRangeLabel(range: BusinessDateRange): string {
+  if (!range.start && !range.end) return 'Cualquier fecha';
+  if (!range.start) return `Hasta ${formatBusinessDate(range.end!)}`;
+  if (!range.end) return `Desde ${formatBusinessDate(range.start)}`;
+
+  const start = parseBusinessDate(range.start);
+  const end = parseBusinessDate(range.end);
+  const sameMonth = start.getMonth() === end.getMonth() && start.getFullYear() === end.getFullYear();
+  if (start.getTime() === end.getTime()) return formatBusinessDate(range.start);
+  if (sameMonth) {
+    const suffix = formatBusinessDate(range.end).replace(/^\d{2}\s/, '');
+    return `${start.getDate()}–${end.getDate()} ${suffix}`;
+  }
+  return `${formatBusinessDate(range.start)} – ${formatBusinessDate(range.end)}`;
+}
+
 /** Suma o resta días manteniendo la fecha local. */
 export function addDays(date: Date, days: number): Date {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate() + days);

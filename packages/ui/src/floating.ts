@@ -36,9 +36,11 @@ const clamp = (value: number, min: number, max: number) => Math.min(Math.max(val
  * Coloca un panel flotante junto a su disparador, lo voltea hacia arriba cuando
  * no cabe debajo, lo ajusta al viewport y lo cierra al pulsar fuera.
  *
- * La altura máxima siempre queda dentro del viewport, con un margen de 8 px por
- * lado, para que el panel nunca se recorte contra la pantalla: si no cabe
- * entero, el contenido hace scroll dentro del panel.
+ * La posición se calcula al abrir y se mantiene anclada al documento: al hacer
+ * scroll, el panel se desplaza con la página en lugar de quedarse fijo en el
+ * viewport. La altura máxima siempre queda dentro del viewport, con un margen
+ * de 8 px por lado, para que el panel nunca se recorte contra la pantalla: si
+ * no cabe entero, el contenido hace scroll dentro del panel.
  */
 export function useFloatingPanel({
   open,
@@ -51,9 +53,19 @@ export function useFloatingPanel({
   onDismiss,
 }: FloatingPanelOptions): FloatingPanelPosition | null {
   const [position, setPosition] = useState<FloatingPanelPosition | null>(null);
+  const basePositionRef = useRef<FloatingPanelPosition | null>(null);
+  const baseScrollRef = useRef({ x: 0, y: 0 });
 
   useIsomorphicLayoutEffect(() => {
-    if (!open) return;
+    if (!open) {
+      basePositionRef.current = null;
+      return;
+    }
+    const commit = (next: FloatingPanelPosition) => {
+      basePositionRef.current = next;
+      baseScrollRef.current = { x: window.scrollX, y: window.scrollY };
+      setPosition(next);
+    };
     const update = () => {
       const anchor = anchorRef.current;
       if (!anchor || typeof window === 'undefined') return;
@@ -78,7 +90,7 @@ export function useFloatingPanel({
       if (fitsBelow || fitsAbove) {
         const sideSpace = Math.max(0, placeAbove ? spaceAbove : spaceBelow);
         const availableHeight = Math.max(1, Math.min(maxHeight, sideSpace, maxViewportHeight));
-        setPosition(
+        commit(
           placeAbove
             ? {
                 left,
@@ -97,7 +109,7 @@ export function useFloatingPanel({
       }
       // No cabe entero ni arriba ni abajo: se centra sobre el viewport para no recortarse.
       const centeredHeight = Math.max(1, Math.min(maxHeight, maxViewportHeight));
-      setPosition({
+      commit({
         left,
         width,
         top: Math.max(PANEL_VIEWPORT_MARGIN, (viewportHeight - centeredHeight) / 2),
@@ -105,12 +117,28 @@ export function useFloatingPanel({
       });
     };
 
+    const handleScroll = (event: Event) => {
+      const target = event.target;
+      if (target instanceof Node && panelRef.current?.contains(target)) return;
+      const base = basePositionRef.current;
+      if (!base) return;
+      const deltaX = window.scrollX - baseScrollRef.current.x;
+      const deltaY = window.scrollY - baseScrollRef.current.y;
+      if (deltaX === 0 && deltaY === 0) return;
+      setPosition({
+        ...base,
+        left: base.left - deltaX,
+        top: base.top === undefined ? undefined : base.top - deltaY,
+        bottom: base.bottom === undefined ? undefined : base.bottom + deltaY,
+      });
+    };
+
     update();
     window.addEventListener('resize', update);
-    window.addEventListener('scroll', update, true);
+    window.addEventListener('scroll', handleScroll, true);
     return () => {
       window.removeEventListener('resize', update);
-      window.removeEventListener('scroll', update, true);
+      window.removeEventListener('scroll', handleScroll, true);
     };
   }, [open, anchorRef, panelRef, minWidth, maxHeight, minHeight, preferredHeight]);
 

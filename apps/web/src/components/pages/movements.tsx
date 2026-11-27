@@ -2,18 +2,22 @@
 
 import { useSearchParams } from 'next/navigation';
 import { useMemo, useState } from 'react';
+import { endOfMonth, startOfMonth, subDays, subMonths } from 'date-fns';
 import {
   Amount,
   Button,
   Card,
+  DateRangeField,
   Inline,
   MovementRow,
   SearchField,
   SelectPill,
-  SegmentedControl,
   Stack,
   StatePage,
   cn,
+  toBusinessKey,
+  type BusinessDateRange,
+  type DateRangePreset,
 } from '@akari/ui';
 import { useAccounts, useMovements } from '../../components/hooks';
 import { PageTitle } from '../../components/page-title';
@@ -23,8 +27,9 @@ import { MovementDetailDialog } from '../../components/movement-detail-dialog';
 import { BankIcon } from '../../components/bank-icon';
 import { MovementDialog } from '../../components/movement-dialog';
 import { PageSkeleton } from '../../components/page-skeleton';
+import { appNow } from '../../lib/clock';
 import { downloadCsv, movementsToCsv } from '../../lib/csv';
-import { formatMonthYear, formatShortDate } from '../../lib/format';
+import { formatShortDate } from '../../lib/format';
 import { movementCategoryOptions } from '../../lib/options';
 
 type TypeFilter = 'all' | 'expense' | 'income' | 'subscriptions';
@@ -36,6 +41,13 @@ const typeOptions = [
   { value: 'subscriptions' as const, label: 'Suscripciones' },
 ];
 
+const sortOptions = [
+  { value: 'date-desc', label: 'Fecha ↓' },
+  { value: 'date-asc', label: 'Fecha ↑' },
+  { value: 'amount-desc', label: 'Importe ↓' },
+  { value: 'amount-asc', label: 'Importe ↑' },
+];
+
 export function MovementsScreen() {
   const searchParams = useSearchParams();
   const initialAccount = searchParams.get('cuenta') ?? '';
@@ -43,6 +55,7 @@ export function MovementsScreen() {
   const movements = useMovements();
   const [query, setQuery] = useState('');
   const [type, setType] = useState<TypeFilter>('all');
+  const [period, setPeriod] = useState<BusinessDateRange>({});
   const [category, setCategory] = useState('all');
   const [accountId, setAccountId] = useState(initialAccount);
   const [sort, setSort] = useState('date-desc');
@@ -50,6 +63,38 @@ export function MovementsScreen() {
   const [visible, setVisible] = useState(10);
   const [detailId, setDetailId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
+
+  const periodPresets = useMemo<DateRangePreset[]>(() => {
+    const today = appNow();
+    const previousMonth = subMonths(today, 1);
+    return [
+      { value: 'all', label: 'Cualquier fecha', range: {} },
+      {
+        value: 'current-month',
+        label: 'Este mes',
+        range: {
+          start: toBusinessKey(startOfMonth(today)),
+          end: toBusinessKey(endOfMonth(today)),
+        },
+      },
+      {
+        value: 'previous-month',
+        label: 'Mes anterior',
+        range: {
+          start: toBusinessKey(startOfMonth(previousMonth)),
+          end: toBusinessKey(endOfMonth(previousMonth)),
+        },
+      },
+      {
+        value: 'last-30-days',
+        label: 'Últimos 30 días',
+        range: {
+          start: toBusinessKey(subDays(today, 29)),
+          end: toBusinessKey(today),
+        },
+      },
+    ];
+  }, []);
 
   const filtered = useMemo(() => {
     if (!movements) return [];
@@ -60,6 +105,8 @@ export function MovementsScreen() {
         if (type === 'expense' && movement.type !== 'expense') return false;
         if (type === 'income' && movement.type !== 'income') return false;
         if (type === 'subscriptions' && movement.category !== 'Suscripciones') return false;
+        if (period.start && movement.date < period.start) return false;
+        if (period.end && movement.date > period.end) return false;
         if (category !== 'all' && movement.category !== category) return false;
         if (accountId && movement.accountId !== accountId) return false;
         return true;
@@ -70,7 +117,7 @@ export function MovementsScreen() {
         if (sort === 'date-asc') return a.date.localeCompare(b.date);
         return b.date.localeCompare(a.date);
       });
-  }, [movements, query, type, category, accountId, sort]);
+  }, [movements, query, type, period, category, accountId, sort]);
 
   if (!movements || !accounts) {
     return <PageSkeleton />;
@@ -85,11 +132,16 @@ export function MovementsScreen() {
   const accountName = (id: string) => accounts.find((account) => account.id === id)?.name ?? '—';
   const bankIdFor = (id: string) => accounts.find((account) => account.id === id)?.bankId;
   const accountFilterActive = Boolean(accountId);
-  const hasFilters = Boolean(query || type !== 'all' || category !== 'all' || accountId);
+  const periodActive = Boolean(period.start || period.end);
+
+  const hasFilters = Boolean(
+    query || type !== 'all' || periodActive || category !== 'all' || accountId,
+  );
 
   const clearFilters = () => {
     setQuery('');
     setType('all');
+    setPeriod({});
     setCategory('all');
     setAccountId('');
     setPage(1);
@@ -123,9 +175,25 @@ export function MovementsScreen() {
           </Button>
           <Button onClick={() => setCreating(true)}>Añadir movimiento</Button>
         </div>
-        <HeadingMeta label={`${filtered.length} movimientos`} detail={formatMonthYear()} />
+        <div className="flex w-full items-center justify-between gap-2 md:w-72">
+          <HeadingMeta label={`${filtered.length} movimientos`} />
+          <DateRangeField
+            label="Periodo"
+            className="min-w-0"
+            value={period}
+            onValueChange={(value) => {
+              setPeriod(value);
+              setPage(1);
+              setVisible(10);
+            }}
+            presets={periodPresets}
+            variant="pill"
+            showToday={false}
+            showHint={false}
+          />
+        </div>
 
-        <div className="flex flex-wrap items-center gap-2.5">
+        <div className="flex flex-col gap-2.5 md:flex-row md:flex-wrap md:items-center">
           <SearchField
             aria-label="Buscar movimientos"
             placeholder="Buscar por concepto o cuenta"
@@ -135,21 +203,18 @@ export function MovementsScreen() {
               setPage(1);
               setVisible(10);
             }}
-            className="w-72"
+            className="w-full md:w-72"
           />
-          <SegmentedControl
-            ariaLabel="Tipo de movimiento"
-            options={typeOptions}
-            value={type}
-            onChange={(value) => {
-              setType(value);
-              setPage(1);
-            }}
-          />
-          <span className="inline-flex h-[34px] items-center rounded-full border border-border-subtle bg-surface-default px-3.5 text-ui-11-strong text-text-primary">
-            {formatMonthYear()}
-          </span>
-          <div className="ml-auto flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2 md:ml-auto">
+            <SelectPill
+              ariaLabel="Tipo"
+              value={type}
+              onChange={(value) => {
+                setType(value as TypeFilter);
+                setPage(1);
+              }}
+              options={typeOptions}
+            />
             <SelectPill
               ariaLabel="Categoría"
               value={category}
@@ -179,18 +244,8 @@ export function MovementsScreen() {
               ariaLabel="Orden"
               value={sort}
               onChange={setSort}
-              options={[
-                { value: 'date-desc', label: 'Fecha ↓' },
-                { value: 'date-asc', label: 'Fecha ↑' },
-                { value: 'amount-desc', label: 'Importe ↓' },
-                { value: 'amount-asc', label: 'Importe ↑' },
-              ]}
+              options={sortOptions}
             />
-            {hasFilters ? (
-              <Button variant="tertiary" size="sm" onClick={clearFilters}>
-                Limpiar filtros
-              </Button>
-            ) : null}
           </div>
         </div>
 

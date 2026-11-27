@@ -1,8 +1,9 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { useState } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { Calendar, MonthDayPicker } from './calendar.js';
-import { formatBusinessDate, parseBusinessDate, todayBusinessKey } from './dates.js';
+import { formatBusinessDate, parseBusinessDate, todayBusinessKey, type BusinessDateRange } from './dates.js';
 
 const NOVEMBER_25 = '2026-11-25';
 
@@ -13,17 +14,41 @@ function renderCalendar(props: Partial<Parameters<typeof Calendar>[0]> = {}) {
   return { onSelect, onCancel };
 }
 
+function renderRangeCalendar(props: Partial<Parameters<typeof Calendar>[0]> = {}) {
+  const onRangeChange = vi.fn();
+  const onCancel = vi.fn();
+  render(
+    <Calendar
+      range={{ start: '2026-11-10' }}
+      onRangeChange={onRangeChange}
+      onCancel={onCancel}
+      {...props}
+    />,
+  );
+  return { onRangeChange, onCancel };
+}
+
+function StatefulRangeCalendar({ initial }: { initial: BusinessDateRange }) {
+  const [range, setRange] = useState<BusinessDateRange>(initial);
+  return <Calendar range={range} onRangeChange={setRange} onCancel={() => {}} />;
+}
+
 describe('calendar', () => {
-  it('dibuja 42 días desde el lunes y deshabilita los meses contiguos', () => {
-    renderCalendar();
+  it('dibuja 42 días desde el lunes y permite elegir los meses contiguos', async () => {
+    const user = userEvent.setup();
+    const { onSelect } = renderCalendar();
     expect(screen.getByRole('grid', { name: 'Noviembre 2026' })).toBeInTheDocument();
     expect(screen.getAllByRole('gridcell')).toHaveLength(42);
     expect(screen.getByRole('columnheader', { name: 'lunes' })).toBeInTheDocument();
 
     const previousMonth = screen.getByRole('button', { name: '26 oct 2026' });
     const nextMonth = screen.getByRole('button', { name: '06 dic 2026' });
-    expect(previousMonth).toBeDisabled();
-    expect(nextMonth).toBeDisabled();
+    expect(previousMonth).toBeEnabled();
+    expect(nextMonth).toBeEnabled();
+    expect(previousMonth.className).toContain('text-text-tertiary');
+
+    await user.click(previousMonth);
+    expect(onSelect).toHaveBeenCalledWith('2026-10-26');
   });
 
   it('marca la fecha elegida y el día de hoy', () => {
@@ -168,6 +193,145 @@ describe('calendar', () => {
     const today = formatBusinessDate(todayBusinessKey());
     expect(screen.getByRole('button', { name: today })).toHaveFocus();
     expect(document.querySelector('[role="gridcell"][aria-selected="true"]')).toBeNull();
+  });
+
+  it('completa un rango con el segundo clic y destaca los días intermedios', async () => {
+    const user = userEvent.setup();
+    const { onRangeChange } = renderRangeCalendar();
+
+    await user.click(screen.getByRole('button', { name: '20 nov 2026' }));
+    expect(onRangeChange).toHaveBeenCalledWith({ start: '2026-11-10', end: '2026-11-20' });
+  });
+
+  it('reordena los extremos cuando la segunda fecha es anterior', async () => {
+    const user = userEvent.setup();
+    const { onRangeChange } = renderRangeCalendar({ range: { start: '2026-11-20' } });
+
+    await user.click(screen.getByRole('button', { name: '10 nov 2026' }));
+    expect(onRangeChange).toHaveBeenCalledWith({ start: '2026-11-10', end: '2026-11-20' });
+  });
+
+  it('permite cerrar el rango en un día del mes contiguo', async () => {
+    const user = userEvent.setup();
+    const { onRangeChange } = renderRangeCalendar();
+
+    await user.click(screen.getByRole('button', { name: '03 dic 2026' }));
+    expect(onRangeChange).toHaveBeenCalledWith({ start: '2026-11-10', end: '2026-12-03' });
+  });
+
+  it('mantiene correcta la selección al volver a un mes anterior', async () => {
+    const user = userEvent.setup();
+    const { onRangeChange } = renderRangeCalendar();
+
+    await user.click(screen.getByRole('button', { name: 'Mes anterior' }));
+    expect(screen.getByRole('grid', { name: 'Octubre 2026' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: '05 oct 2026' }));
+    expect(onRangeChange).toHaveBeenCalledWith({ start: '2026-10-05', end: '2026-11-10' });
+  });
+
+  it('muestra marcado el día contiguo al navegar a su mes', async () => {
+    const user = userEvent.setup();
+    render(<StatefulRangeCalendar initial={{ start: '2026-11-10' }} />);
+
+    await user.click(screen.getByRole('button', { name: '26 oct 2026' }));
+    await user.click(screen.getByRole('button', { name: 'Mes anterior' }));
+
+    expect(screen.getByRole('grid', { name: 'Octubre 2026' })).toBeInTheDocument();
+    const start = screen.getByRole('button', { name: '26 oct 2026' });
+    expect(start.parentElement).toHaveAttribute('aria-selected', 'true');
+    expect(start).toHaveFocus();
+  });
+
+  it('usa el color de selección en un extremo del mes contiguo', () => {
+    renderRangeCalendar({ range: { start: '2026-10-26', end: '2026-11-05' } });
+
+    const start = screen.getByRole('button', { name: '26 oct 2026' });
+    expect(start).toHaveClass('bg-accent-default');
+    expect(start).toHaveClass('text-accent-ink');
+    expect(start).not.toHaveClass('text-text-tertiary');
+  });
+
+  it('marca los extremos y los días incluidos de un rango completo', () => {
+    renderRangeCalendar({ range: { start: '2026-11-10', end: '2026-11-20' } });
+
+    expect(screen.getByRole('button', { name: '10 nov 2026' }).parentElement).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+    expect(screen.getByRole('button', { name: '20 nov 2026' }).parentElement).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+    const middle = screen.getByRole('button', { name: '15 nov 2026' });
+    expect(middle.parentElement).toHaveAttribute('data-in-range', 'true');
+    expect(middle.className).toContain('bg-accent-soft');
+  });
+
+  it('dibuja la banda continua y redondea solo los bordes exteriores y de semana', () => {
+    renderRangeCalendar({ range: { start: '2026-11-07', end: '2026-11-10' } });
+
+    const start = screen.getByRole('button', { name: '07 nov 2026' });
+    expect(start).toHaveClass('rounded-l-lg');
+    expect(start).not.toHaveClass('rounded-r-lg');
+
+    const sunday = screen.getByRole('button', { name: '08 nov 2026' });
+    expect(sunday).toHaveClass('rounded-r-lg');
+    expect(sunday).not.toHaveClass('rounded-l-lg');
+
+    const monday = screen.getByRole('button', { name: '09 nov 2026' });
+    expect(monday).toHaveClass('rounded-l-lg');
+    expect(monday).not.toHaveClass('rounded-r-lg');
+
+    const end = screen.getByRole('button', { name: '10 nov 2026' });
+    expect(end).toHaveClass('rounded-r-lg');
+    expect(end).not.toHaveClass('rounded-l-lg');
+  });
+
+  it('mantiene rectos los cortes de semana en rangos de más de dos semanas', () => {
+    renderRangeCalendar({ range: { start: '2026-11-04', end: '2026-11-24' } });
+
+    const start = screen.getByRole('button', { name: '04 nov 2026' });
+    expect(start).toHaveClass('rounded-l-lg');
+    expect(start).not.toHaveClass('rounded-r-lg');
+
+    for (const day of ['08 nov 2026', '15 nov 2026', '22 nov 2026']) {
+      expect(screen.getByRole('button', { name: day })).not.toHaveClass('rounded-r-lg');
+    }
+    for (const day of ['09 nov 2026', '16 nov 2026', '23 nov 2026']) {
+      expect(screen.getByRole('button', { name: day })).not.toHaveClass('rounded-l-lg');
+    }
+
+    const end = screen.getByRole('button', { name: '24 nov 2026' });
+    expect(end).toHaveClass('rounded-r-lg');
+    expect(end).not.toHaveClass('rounded-l-lg');
+  });
+
+  it('redondea ambos lados cuando solo hay un día de inicio', () => {
+    renderRangeCalendar({ range: { start: '2026-11-10' } });
+    const start = screen.getByRole('button', { name: '10 nov 2026' });
+    expect(start).toHaveClass('rounded-l-lg');
+    expect(start).toHaveClass('rounded-r-lg');
+  });
+
+  it('inicia un rango nuevo al pulsar con el rango completo', async () => {
+    const user = userEvent.setup();
+    const { onRangeChange } = renderRangeCalendar({
+      range: { start: '2026-11-10', end: '2026-11-20' },
+    });
+
+    await user.click(screen.getByRole('button', { name: '15 nov 2026' }));
+    expect(onRangeChange).toHaveBeenCalledWith({ start: '2026-11-15' });
+  });
+
+  it('Hoy fija ambos extremos en el rango', async () => {
+    const user = userEvent.setup();
+    const { onRangeChange } = renderRangeCalendar();
+
+    await user.click(screen.getByRole('button', { name: 'Hoy' }));
+    expect(onRangeChange).toHaveBeenCalledWith({
+      start: todayBusinessKey(),
+      end: todayBusinessKey(),
+    });
   });
 });
 

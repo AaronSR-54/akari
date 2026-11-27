@@ -11,9 +11,14 @@ import {
   type ReactNode,
   type TextareaHTMLAttributes,
 } from 'react';
+import { Button } from './buttons.js';
 import { cn } from './cn.js';
 import { Calendar } from './calendar.js';
-import { formatBusinessDate } from './dates.js';
+import {
+  formatBusinessDate,
+  formatBusinessRangeLabel,
+  type BusinessDateRange,
+} from './dates.js';
 import { BottomSheet } from './feedback.js';
 import { useFloatingPanel } from './floating.js';
 import { IconCalendar, IconChevronDown, IconSearch } from './icons.js';
@@ -264,6 +269,218 @@ export function DateField({
   );
 }
 
+export type DateRangePreset = {
+  value: string;
+  label: string;
+  range: BusinessDateRange;
+};
+
+export type DateRangeFieldProps = {
+  label: string;
+  value: BusinessDateRange;
+  onValueChange: (value: BusinessDateRange) => void;
+  presets?: DateRangePreset[];
+  variant?: 'field' | 'pill';
+  id?: string;
+  disabled?: boolean;
+  className?: string;
+  /** Muestra el botón «Hoy» dentro del calendario. */
+  showToday?: boolean;
+  /** Muestra la pista del rango pendiente bajo el calendario. */
+  showHint?: boolean;
+};
+
+function sameRange(a: BusinessDateRange, b: BusinessDateRange): boolean {
+  return a.start === b.start && a.end === b.end;
+}
+
+export function DateRangeField({
+  label,
+  value,
+  onValueChange,
+  presets,
+  variant = 'field',
+  id,
+  disabled,
+  className,
+  showToday = true,
+  showHint = true,
+}: DateRangeFieldProps) {
+  const generated = useId();
+  const fieldId = id ?? generated;
+  const panelId = `${fieldId}-panel`;
+  const [open, setOpen] = useState(false);
+  const [pending, setPending] = useState<BusinessDateRange>(value);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const isMobile = useMediaQuery(MOBILE_MEDIA_QUERY);
+  const showPanel = open && !isMobile;
+
+  const close = useCallback((focusTrigger = true) => {
+    setOpen(false);
+    if (focusTrigger) triggerRef.current?.focus();
+  }, []);
+
+  const position = useFloatingPanel({
+    open: showPanel,
+    anchorRef: triggerRef,
+    panelRef,
+    minWidth: 320,
+    minHeight: 360,
+    maxHeight: 560,
+    preferredHeight: 520,
+    onDismiss: () => close(false),
+  });
+
+  const openPanel = () => {
+    if (disabled) return;
+    setPending(value);
+    setOpen(true);
+  };
+
+  const activePreset = presets?.find((preset) => sameRange(preset.range, value));
+  const displayValue = activePreset?.label ?? formatBusinessRangeLabel(value);
+  const canApply = Boolean(pending.start && pending.end);
+
+  const apply = () => {
+    if (!pending.start || !pending.end) return;
+    onValueChange({ start: pending.start, end: pending.end });
+    close();
+  };
+
+  const choosePreset = (preset: DateRangePreset) => {
+    onValueChange(preset.range);
+    close();
+  };
+
+  const clear = () => {
+    onValueChange({});
+    close();
+  };
+
+  const pendingLabel = canApply
+    ? formatBusinessRangeLabel(pending)
+    : !pending.start && !pending.end
+      ? 'Elige la fecha inicial y la final'
+      : !pending.start
+        ? 'Elige la fecha inicial'
+        : 'Elige la fecha final';
+
+  const panelContent = (
+    <>
+      {presets && presets.length > 0 ? (
+        <div className="flex flex-wrap justify-center gap-2">
+          {presets.map((preset) => (
+            <Button
+              key={preset.value}
+              variant={sameRange(preset.range, value) ? 'secondary' : 'tertiary'}
+              size="sm"
+              onClick={() => choosePreset(preset)}
+            >
+              {preset.label}
+            </Button>
+          ))}
+        </div>
+      ) : null}
+      <Calendar
+        range={pending}
+        onRangeChange={setPending}
+        onCancel={() => close()}
+        labelledBy={variant === 'field' ? `${fieldId}-label` : undefined}
+        showToday={showToday}
+      />
+      {showHint ? (
+        <p aria-live="polite" className="text-ui-11 text-text-secondary">
+          {pendingLabel}
+        </p>
+      ) : null}
+    </>
+  );
+
+  const footer = (
+    <>
+      <Button variant="tertiary" size="sm" onClick={clear}>
+        Limpiar
+      </Button>
+      <Button size="sm" onClick={apply} disabled={!canApply}>
+        Aplicar
+      </Button>
+    </>
+  );
+
+  const trigger = (
+    <button
+      ref={triggerRef}
+      id={variant === 'field' ? fieldId : undefined}
+      type="button"
+      aria-haspopup="dialog"
+      aria-expanded={open}
+      aria-controls={showPanel ? panelId : undefined}
+      aria-label={variant === 'pill' ? label : undefined}
+      disabled={disabled}
+      onClick={() => (open ? close() : openPanel())}
+      className={cn(
+        variant === 'field'
+          ? cn(controlClass, 'flex h-12 items-center justify-between gap-2 pr-3.5 text-left')
+          : 'flex h-8 items-center gap-2 rounded-full border border-border-subtle bg-surface-default px-3 text-left text-ui-10-strong text-text-primary transition-colors duration-fast focus-visible:border-accent-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring disabled:bg-surface-sunken disabled:text-text-disabled',
+        variant === 'pill' && className,
+      )}
+    >
+      <span className={cn('truncate', !value.start && !value.end && 'text-text-secondary')}>
+        {displayValue}
+      </span>
+      <IconCalendar size={16} className="shrink-0 text-text-secondary" />
+    </button>
+  );
+
+  const overlays = (
+    <>
+      {showPanel ? (
+        <div
+          id={panelId}
+          ref={panelRef}
+          role="dialog"
+          aria-modal="false"
+          aria-labelledby={variant === 'field' ? `${fieldId}-label` : undefined}
+          aria-label={variant === 'pill' ? label : undefined}
+          style={{
+            position: 'fixed',
+            left: position?.left,
+            width: position?.width,
+            top: position?.top,
+            bottom: position?.bottom,
+            maxHeight: position?.maxHeight,
+            visibility: position ? 'visible' : 'hidden',
+          }}
+          className="z-50 flex flex-col overflow-hidden rounded-lg border border-border-subtle bg-surface-raised p-3 elevation-2"
+        >
+          <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto overscroll-contain">
+            {panelContent}
+          </div>
+          <div className="mt-3 flex justify-end gap-2">{footer}</div>
+        </div>
+      ) : null}
+      {open && isMobile ? (
+        <BottomSheet open onClose={() => close()} title={label} footer={footer}>
+          <div className="flex flex-col gap-3 text-text-primary">{panelContent}</div>
+        </BottomSheet>
+      ) : null}
+    </>
+  );
+
+  return variant === 'field' ? (
+    <FieldShell id={fieldId} label={label} className={className}>
+      {trigger}
+      {overlays}
+    </FieldShell>
+  ) : (
+    <>
+      {trigger}
+      {overlays}
+    </>
+  );
+}
+
 export type SelectOption = { value: string; label: string; icon?: ReactNode };
 
 const SELECT_TYPEAHEAD_TIMEOUT = 500;
@@ -305,6 +522,8 @@ function SelectControl({
   const panelRef = useRef<HTMLDivElement>(null);
   const optionRefs = useRef<Array<HTMLDivElement | null>>([]);
   const typeahead = useRef({ text: '', at: 0 });
+  const isMobile = useMediaQuery(MOBILE_MEDIA_QUERY);
+  const showPanel = open && !isMobile;
   const listboxId = `${id}-listbox`;
   const selectedIndex = options.findIndex((option) => option.value === value);
   const selected = selectedIndex >= 0 ? options[selectedIndex] : undefined;
@@ -324,7 +543,7 @@ function SelectControl({
   }, [options.length, selectedIndex]);
 
   const position = useFloatingPanel({
-    open,
+    open: showPanel,
     anchorRef: triggerRef,
     panelRef,
     minWidth: variant === 'pill' ? 192 : undefined,
@@ -332,14 +551,22 @@ function SelectControl({
   });
 
   useEffect(() => {
-    if (!open || activeIndex < 0) return;
-    optionRefs.current[activeIndex]?.scrollIntoView?.({ block: 'nearest' });
-  }, [open, activeIndex]);
+    if (!showPanel || activeIndex < 0) return;
+    const panel = panelRef.current;
+    const option = optionRefs.current[activeIndex];
+    if (!panel || !option) return;
+    const top = option.offsetTop;
+    const bottom = top + option.offsetHeight;
+    if (top < panel.scrollTop) panel.scrollTop = top;
+    else if (bottom > panel.scrollTop + panel.clientHeight) {
+      panel.scrollTop = bottom - panel.clientHeight;
+    }
+  }, [showPanel, activeIndex]);
 
   const commit = (index: number) => {
     const option = options[index];
     if (!option) return;
-    closePanel();
+    closePanel(true);
     if (option.value !== value) onValueChange(option.value);
   };
 
@@ -412,6 +639,54 @@ function SelectControl({
     }
   };
 
+  const handleOptionKeyDown = (event: ReactKeyboardEvent<HTMLDivElement>, index: number) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      commit(index);
+      return;
+    }
+    if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+      event.preventDefault();
+      const delta = event.key === 'ArrowDown' ? 1 : -1;
+      const next = (index + delta + options.length) % options.length;
+      setActiveIndex(next);
+      optionRefs.current[next]?.focus();
+    }
+  };
+
+  const autofocusIndex = selectedIndex >= 0 ? selectedIndex : 0;
+  const renderOptions = (mobile: boolean) =>
+    options.map((option, index) => (
+      <div
+        key={option.value}
+        ref={(element) => {
+          optionRefs.current[index] = element;
+        }}
+        id={optionId(index)}
+        role="option"
+        aria-selected={index === selectedIndex}
+        data-autofocus={mobile && index === autofocusIndex ? true : undefined}
+        tabIndex={mobile ? 0 : undefined}
+        onKeyDown={mobile ? (event) => handleOptionKeyDown(event, index) : undefined}
+        onMouseDown={(event) => event.preventDefault()}
+        onMouseEnter={() => setActiveIndex(index)}
+        onClick={() => commit(index)}
+        className={cn(
+          'flex cursor-pointer items-center gap-2 rounded-md px-3 text-ui-13 text-text-primary',
+          mobile ? 'min-h-11 py-3' : 'py-2',
+          index === activeIndex && 'bg-surface-sunken',
+          index === selectedIndex && 'text-ui-13-strong',
+        )}
+      >
+        {option.icon ? (
+          <span aria-hidden="true" className="inline-flex h-5 w-5 shrink-0 items-center justify-center">
+            {option.icon}
+          </span>
+        ) : null}
+        <span className="truncate">{option.label}</span>
+      </div>
+    ));
+
   return (
     <>
       <button
@@ -421,9 +696,11 @@ function SelectControl({
         ref={triggerRef}
         disabled={disabled}
         aria-expanded={open}
-        aria-controls={listboxId}
+        aria-controls={open ? listboxId : undefined}
         aria-haspopup="listbox"
-        aria-activedescendant={open && activeIndex >= 0 ? optionId(activeIndex) : undefined}
+        aria-activedescendant={
+          open && !isMobile && activeIndex >= 0 ? optionId(activeIndex) : undefined
+        }
         aria-required={required ? true : undefined}
         aria-invalid={invalid ? true : undefined}
         aria-describedby={describedBy}
@@ -462,7 +739,7 @@ function SelectControl({
         />
       </button>
       {name ? <input type="hidden" name={name} value={value} /> : null}
-      {open ? (
+      {showPanel ? (
         <div
           id={listboxId}
           ref={panelRef}
@@ -479,33 +756,20 @@ function SelectControl({
           }}
           className="z-50 overflow-y-auto rounded-lg border border-border-subtle bg-surface-raised p-1 elevation-2"
         >
-          {options.map((option, index) => (
-            <div
-              key={option.value}
-              ref={(element) => {
-                optionRefs.current[index] = element;
-              }}
-              id={optionId(index)}
-              role="option"
-              aria-selected={index === selectedIndex}
-              onMouseDown={(event) => event.preventDefault()}
-              onMouseEnter={() => setActiveIndex(index)}
-              onClick={() => commit(index)}
-              className={cn(
-                'flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-ui-13 text-text-primary',
-                index === activeIndex && 'bg-surface-sunken',
-                index === selectedIndex && 'text-ui-13-strong',
-              )}
-            >
-              {option.icon ? (
-                <span aria-hidden="true" className="inline-flex h-5 w-5 shrink-0 items-center justify-center">
-                  {option.icon}
-                </span>
-              ) : null}
-              <span className="truncate">{option.label}</span>
-            </div>
-          ))}
+          {renderOptions(false)}
         </div>
+      ) : null}
+      {open && isMobile ? (
+        <BottomSheet open onClose={() => closePanel(true)} title={ariaLabel ?? listboxLabel}>
+          <div
+            id={listboxId}
+            role="listbox"
+            aria-label={listboxLabel}
+            className="flex flex-col gap-1"
+          >
+            {renderOptions(true)}
+          </div>
+        </BottomSheet>
       ) : null}
     </>
   );

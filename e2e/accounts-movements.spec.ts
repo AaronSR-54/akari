@@ -122,11 +122,11 @@ test.describe('cuentas y movimientos', () => {
     await page.getByRole('button', { name: 'Limpiar filtros' }).first().click();
     await expect(visible(page, 'Cena con amigos')).toBeVisible();
 
-    await page.getByRole('group', { name: 'Tipo de movimiento' }).getByRole('button', { name: 'Ingresos' }).click();
+    await chooseOption(page, 'Tipo', 'Ingresos');
     await expect(visible(page, 'Nómina')).toBeVisible();
     await expect(page.getByText('Alquiler')).toHaveCount(0);
 
-    await page.getByRole('group', { name: 'Tipo de movimiento' }).getByRole('button', { name: 'Todos' }).click();
+    await chooseOption(page, 'Tipo', 'Todos');
     await expect(page.getByRole('button', { name: 'Editar' })).toHaveCount(0);
     await visible(page, 'Cena con amigos').click();
     const detail = page.getByRole('dialog', { name: 'Cena con amigos' });
@@ -180,6 +180,91 @@ test.describe('cuentas y movimientos', () => {
         return Math.round(cardBox.y + cardBox.height - (nextBox.y + nextBox.height));
       })
       .toBeGreaterThanOrEqual(8);
+  });
+
+  test('ordena desde la cápsula y filtra por periodo desde el control del resumen', async ({ page }) => {
+    await seedDemo(page);
+    await page.goto('/movimientos');
+    await expect(page.getByText('22 movimientos', { exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Periodo' })).toHaveText(/Cualquier fecha/);
+
+    await page.getByRole('combobox', { name: 'Orden' }).click();
+    await expect(page.getByRole('listbox', { name: 'Orden' })).toBeVisible();
+    await expect(page.getByRole('dialog', { name: 'Periodo' })).toHaveCount(0);
+    await page.getByRole('option', { name: 'Importe ↓' }).click();
+    await expect(page.getByRole('combobox', { name: 'Orden' })).toHaveText(/Importe ↓/);
+
+    await page.getByRole('button', { name: 'Periodo' }).click();
+    await page.getByRole('dialog', { name: 'Periodo' }).getByRole('button', { name: 'Este mes' }).click();
+    await expect(page.getByRole('button', { name: 'Periodo' })).toHaveText(/Este mes/);
+    await expect(visible(page, 'Cena con amigos')).toBeVisible();
+    await expect(page.getByText('Cena', { exact: true })).toHaveCount(0);
+
+    await page.getByRole('button', { name: 'Periodo' }).click();
+    // El primero es el atajo «Mes anterior»; el segundo, la flecha del calendario.
+    await page.getByRole('dialog', { name: 'Periodo' }).getByRole('button', { name: 'Mes anterior' }).first().click();
+    await expect(page.getByRole('button', { name: 'Periodo' })).toHaveText(/Mes anterior/);
+    await expect(page.getByText('Cena con amigos')).toHaveCount(0);
+    await expect(page.getByText('Cena', { exact: true }).filter({ visible: true }).first()).toBeVisible();
+
+    await page.getByRole('button', { name: 'Periodo' }).click();
+    await page.getByRole('dialog', { name: 'Periodo' }).getByRole('button', { name: 'Cualquier fecha' }).click();
+    await page.getByRole('button', { name: 'Periodo' }).click();
+    const rangePanel = page.getByRole('dialog', { name: 'Periodo' });
+    await rangePanel.getByRole('button', { name: '01 nov 2026' }).click();
+    await rangePanel.getByRole('button', { name: '02 nov 2026' }).click();
+    await rangePanel.getByRole('button', { name: 'Aplicar' }).click();
+    await expect(page.getByRole('button', { name: 'Periodo' })).toHaveText(/1–2 nov 2026/);
+    await expect(visible(page, 'Nómina')).toBeVisible();
+    await expect(page.getByText('Cena con amigos')).toHaveCount(0);
+
+    await page.getByRole('button', { name: 'Periodo' }).click();
+    await page.getByRole('dialog', { name: 'Periodo' }).getByRole('button', { name: '10 nov 2026' }).click();
+    await page.getByRole('dialog', { name: 'Periodo' }).getByRole('button', { name: '12 nov 2026' }).click();
+    await page.getByRole('dialog', { name: 'Periodo' }).getByRole('button', { name: 'Aplicar' }).click();
+    await expect(visible(page, 'Ningún movimiento coincide')).toBeVisible();
+
+    await page.getByRole('button', { name: 'Limpiar filtros' }).first().click();
+    await expect(page.getByText('22 movimientos', { exact: true })).toBeVisible();
+    await chooseOption(page, 'Orden', 'Fecha ↓');
+    await expect(visible(page, 'Cena con amigos')).toBeVisible();
+  });
+
+  test('en móvil los selectores abren una hoja inferior', async ({ page }) => {
+    test.skip(test.info().project.name !== 'mobile-web', 'Cobertura específica de la hoja inferior móvil');
+    await seedDemo(page);
+    await page.goto('/movimientos');
+
+    await page.getByRole('combobox', { name: 'Categoría' }).click();
+    const sheet = page.getByRole('dialog', { name: 'Categoría' });
+    await expect(sheet).toBeVisible();
+    await expect(sheet).toHaveAttribute('aria-modal', 'true');
+    await sheet.getByRole('option', { name: 'Ocio' }).click();
+    await expect(page.getByRole('combobox', { name: 'Categoría' })).toHaveText(/Ocio/);
+    await expect(page.getByRole('dialog', { name: 'Categoría' })).toHaveCount(0);
+  });
+
+  test('el desplegable se desplaza con la página y no se queda sticky', async ({ page }) => {
+    test.skip((page.viewportSize()?.width ?? 0) < 768, 'Cobertura de escritorio');
+    await seedDemo(page);
+    await page.goto('/movimientos');
+
+    const trigger = page.getByRole('combobox', { name: 'Tipo' });
+    await trigger.click();
+    const listbox = page.getByRole('listbox', { name: 'Tipo' });
+    await expect(listbox).toBeVisible();
+    const panelBox = await listbox.boundingBox();
+
+    const beforeScroll = await page.evaluate(() => window.scrollY);
+    await page.evaluate(() => window.scrollBy(0, 120));
+    const afterScroll = await page.evaluate(() => window.scrollY);
+    test.skip(afterScroll === beforeScroll, 'La página no tiene scroll suficiente');
+
+    const delta = afterScroll - beforeScroll;
+    await expect.poll(async () => {
+      const nextPanel = await listbox.boundingBox();
+      return Math.abs(panelBox!.y - nextPanel!.y - delta);
+    }).toBeLessThan(2);
   });
 
   test('muestra saldo estimado negativo y registra una recurrencia', async ({ page }) => {

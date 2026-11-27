@@ -1,0 +1,16 @@
+{
+  "changeId": "movements-filters",
+  "branch": "movements-filters",
+  "cards": [
+    {
+      "publicId": "v5j5cn69syia",
+      "title": "fix: unificar  filtros de movimientos"
+    },
+    {
+      "publicId": "9klnsc7iu4pc",
+      "title": "feat: crear modal en mobile para los selectores"
+    }
+  ],
+  "prUrl": "https://github.com/AaronSR-54/akari/pull/27",
+  "claimedAt": "2026-11-27T10:50:37.117Z"
+}
