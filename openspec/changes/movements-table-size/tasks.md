@@ -18,8 +18,8 @@
 
 ## 3. Revisión visual
 
-- [ ] 3.1 Revisar la pantalla con `npm run preview:worktree` en 1440, 900 y 390 px y confirmar la densidad (10 filas visibles en 1440×900) y la coherencia con la lista móvil
-- [ ] 3.2 Detener el frontal con `npm run preview:worktree:stop` antes de archivar
+- [x] 3.1 Revisar la pantalla con `npm run preview:worktree` en 1440, 900 y 390 px y confirmar la densidad (10 filas visibles en 1440×900) y la coherencia con la lista móvil
+- [x] 3.2 Detener el frontal con `npm run preview:worktree:stop` antes de archivar
 
 ## 4. Panel de avisos sin scroll de fondo
 
