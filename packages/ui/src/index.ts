@@ -15,3 +15,4 @@ export * from './feedback.js';
 export * from './states.js';
 export * from './theme.js';
 export * from './theme-script.js';
+export { acquireScrollLock } from './overlay-stack.js';

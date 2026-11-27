@@ -153,6 +153,35 @@ test.describe('cuentas y movimientos', () => {
     }
   });
 
+  test('mantiene la tabla de movimientos legible en escritorio', async ({ page }) => {
+    await seedDemo(page);
+    await page.goto('/movimientos');
+
+    const row = page.getByRole('row').filter({ hasText: 'Cena con amigos' }).first();
+    if ((page.viewportSize()?.width ?? 0) < 768) {
+      await expect(row).toHaveCount(0);
+      return;
+    }
+
+    await expect(page.getByRole('columnheader', { name: 'Concepto' })).toHaveCSS('font-size', '11px');
+    await expect(row.getByRole('cell').first()).toHaveCSS('font-size', '13px');
+    await expect(row.getByRole('cell').nth(1)).toHaveCSS('font-size', '14px');
+    await expect
+      .poll(async () => Math.round((await row.boundingBox())?.height ?? 0))
+      .toBe(64);
+
+    const card = page.getByRole('table').locator('xpath=..');
+    const next = page.getByRole('button', { name: 'Siguiente' });
+    await expect
+      .poll(async () => {
+        const cardBox = await card.boundingBox();
+        const nextBox = await next.boundingBox();
+        if (!cardBox || !nextBox) return -1;
+        return Math.round(cardBox.y + cardBox.height - (nextBox.y + nextBox.height));
+      })
+      .toBeGreaterThanOrEqual(8);
+  });
+
   test('muestra saldo estimado negativo y registra una recurrencia', async ({ page }) => {
     await startEmpty(page);
     await page.goto('/cuentas/nueva');

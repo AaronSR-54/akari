@@ -1,13 +1,14 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   Amount,
   Badge,
   Button,
   Icon,
   IconChevronLeft,
+  acquireScrollLock,
   cn,
   type BadgeTone,
   type IconName,
@@ -131,8 +132,47 @@ export function NotificationsPanel({
   onClose: () => void;
 }) {
   const panelRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
+  const [fadeEdges, setFadeEdges] = useState({ top: false, bottom: false });
+
+  useEffect(() => {
+    const releaseScroll = acquireScrollLock();
+    return releaseScroll;
+  }, []);
+
+  useEffect(() => {
+    const scroller = scrollRef.current;
+    if (!scroller) return;
+    const update = () => {
+      const { scrollTop, scrollHeight, clientHeight } = scroller;
+      setFadeEdges({
+        top: scrollTop > 2,
+        bottom: scrollTop + clientHeight < scrollHeight - 2,
+      });
+    };
+    update();
+    scroller.addEventListener('scroll', update, { passive: true });
+    const observer =
+      typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(update);
+    observer?.observe(scroller);
+    return () => {
+      scroller.removeEventListener('scroll', update);
+      observer?.disconnect();
+    };
+  }, [notifications]);
+
+  const edgeFade = 20;
+  const fadeMask =
+    fadeEdges.top && fadeEdges.bottom
+      ? `linear-gradient(to bottom, transparent 0, #000 ${edgeFade}px, #000 calc(100% - ${edgeFade}px), transparent 100%)`
+      : fadeEdges.top
+        ? `linear-gradient(to bottom, transparent 0, #000 ${edgeFade}px)`
+        : fadeEdges.bottom
+          ? `linear-gradient(to bottom, #000 calc(100% - ${edgeFade}px), transparent 100%)`
+          : undefined;
+  const fadeState = fadeEdges.top ? (fadeEdges.bottom ? 'both' : 'top') : fadeEdges.bottom ? 'bottom' : 'none';
 
   useEffect(() => {
     const panel = panelRef.current;
@@ -174,7 +214,7 @@ export function NotificationsPanel({
         role="dialog"
         aria-label="Avisos"
         tabIndex={-1}
-        className="absolute right-0 top-[calc(100%+8px)] z-50 flex max-h-[calc(100vh-6rem)] w-[min(28rem,calc(100vw-2rem))] flex-col overflow-hidden rounded-xl border border-border-subtle bg-surface-raised/90 p-3 backdrop-blur-sm elevation-3 outline-none"
+        className="absolute right-0 top-[calc(100%+8px)] z-50 flex max-h-[calc(100vh-6rem)] w-[min(28.5rem,calc(100vw-2rem))] flex-col overflow-hidden rounded-xl border border-border-subtle bg-surface-raised/90 p-3 backdrop-blur-sm elevation-3 outline-none"
       >
       <div className="mb-2 flex items-center justify-between gap-2 px-1">
         <h2 className="text-ui-13-strong text-text-primary">Avisos</h2>
@@ -182,32 +222,40 @@ export function NotificationsPanel({
           ✕
         </Button>
       </div>
-      <div className="overflow-y-auto">
-        {notifications === undefined ? (
-          <p role="status" className="px-1 text-ui-12 text-text-secondary">
-            Cargando avisos…
-          </p>
-        ) : notifications.length === 0 ? (
-          <div className="flex flex-col gap-1 rounded-lg border border-border-subtle bg-surface-default p-4">
-            <p className="text-ui-13-strong text-text-primary">No hay avisos</p>
-            <p className="text-ui-12 text-text-secondary">
-              Aquí aparecerán los pagos próximos, la actividad de tus cuentas compartidas y las
-              liquidaciones.
+      <div className="flex min-h-0 flex-col">
+        <div
+          ref={scrollRef}
+          data-notifications-scroll
+          data-notifications-fade={fadeState}
+          style={{ maskImage: fadeMask, WebkitMaskImage: fadeMask }}
+          className="-mr-2 min-h-0 overflow-y-auto pr-3"
+        >
+          {notifications === undefined ? (
+            <p role="status" className="px-1 text-ui-12 text-text-secondary">
+              Cargando avisos…
             </p>
-          </div>
-        ) : (
-          <ul className="flex flex-col gap-2">
-            {notifications.map((notification) => (
-              <NotificationRow
-                key={notification.id}
-                notification={notification}
-                busy={busyId === notification.id}
-                onPay={onPay}
-                onClose={onClose}
-              />
-            ))}
-          </ul>
-        )}
+          ) : notifications.length === 0 ? (
+            <div className="flex flex-col gap-1 rounded-lg border border-border-subtle bg-surface-default p-4">
+              <p className="text-ui-13-strong text-text-primary">No hay avisos</p>
+              <p className="text-ui-12 text-text-secondary">
+                Aquí aparecerán los pagos próximos, la actividad de tus cuentas compartidas y las
+                liquidaciones.
+              </p>
+            </div>
+          ) : (
+            <ul className="flex flex-col gap-2">
+              {notifications.map((notification) => (
+                <NotificationRow
+                  key={notification.id}
+                  notification={notification}
+                  busy={busyId === notification.id}
+                  onPay={onPay}
+                  onClose={onClose}
+                />
+              ))}
+            </ul>
+          )}
+        </div>
       </div>
     </div>
     </>

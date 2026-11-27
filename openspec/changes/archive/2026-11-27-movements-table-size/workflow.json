@@ -1,0 +1,20 @@
+{
+  "changeId": "movements-table-size",
+  "branch": "movements-table-size",
+  "cards": [
+    {
+      "publicId": "zl08kjqnd1t4",
+      "title": "feat: aumentar el tamaño del texto y las filas de la tabla de movimientos"
+    },
+    {
+      "publicId": "ijv6n5p7dzub",
+      "title": "fix. añadir padding / margin inferior a la tabla de movimientos"
+    },
+    {
+      "publicId": "5mj2ny5qsbw3",
+      "title": "fix: bloquear el scroll de la página con el panel de avisos abierto"
+    }
+  ],
+  "prUrl": "https://github.com/AaronSR-54/akari/pull/26",
+  "claimedAt": "2026-11-27T11:06:04.983Z"
+}

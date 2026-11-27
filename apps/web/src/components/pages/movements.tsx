@@ -216,7 +216,7 @@ export function MovementsScreen() {
             <Card padding="none" className="hidden overflow-hidden md:block">
               <table className="w-full border-collapse text-left">
                 <thead>
-                  <tr className="h-10 border-b border-border-subtle text-ui-9-strong text-text-secondary">
+                  <tr className="h-11 border-b border-border-subtle text-ui-11-strong text-text-secondary">
                     <th className="w-[90px] px-3 font-semibold">Fecha</th>
                     <th className="px-3 font-semibold">Concepto</th>
                     <th className="w-[170px] px-3 font-semibold">Categoría</th>
@@ -232,10 +232,10 @@ export function MovementsScreen() {
                         if ((event.target as Element).closest('button, a')) return;
                         setDetailId(movement.id);
                       }}
-                      className="h-14 cursor-pointer border-b border-border-subtle transition-colors last:border-0 hover:bg-surface-sunken"
+                      className="h-16 cursor-pointer border-b border-border-subtle transition-colors last:border-0 hover:bg-surface-sunken"
                     >
-                      <td className="px-3 text-ui-10 text-text-secondary">{formatShortDate(movement.date)}</td>
-                      <td className="px-3 text-ui-11-strong text-text-primary">
+                      <td className="px-3 text-ui-13 text-text-secondary">{formatShortDate(movement.date)}</td>
+                      <td className="px-3 text-ui-14-strong text-text-primary">
                         <button
                           type="button"
                           onClick={() => setDetailId(movement.id)}
@@ -249,23 +249,23 @@ export function MovementsScreen() {
                           </span>
                         </button>
                       </td>
-                      <td className="px-3 text-ui-10 text-text-secondary">{movement.category}</td>
-                      <td className="px-3 text-ui-10 text-text-secondary">{accountName(movement.accountId)}</td>
+                      <td className="px-3 text-ui-13 text-text-secondary">{movement.category}</td>
+                      <td className="px-3 text-ui-13 text-text-secondary">{accountName(movement.accountId)}</td>
                       <td className="px-3 text-right">
                         <Amount
                           minor={movement.amountMinor}
                           currency={movement.currency}
                           type={movement.type}
                           signed
-                          className="text-ui-11-strong"
+                          className="text-ui-14-strong"
                         />
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
-              <div className="flex h-10 items-center justify-between gap-3 px-3">
-                <p className="text-ui-10 text-text-secondary">
+              <div className="flex items-center justify-between gap-3 px-3 py-2">
+                <p className="text-ui-11 text-text-secondary">
                   {filtered.length === 0 ? 0 : start + 1}–{Math.min(start + pageSize, filtered.length)} de{' '}
                   {filtered.length} movimientos
                 </p>
@@ -288,7 +288,7 @@ export function MovementsScreen() {
                         aria-current={number === safePage ? 'page' : undefined}
                         onClick={() => setPage(number)}
                         className={cn(
-                          'inline-flex h-7 w-7 items-center justify-center rounded-full text-ui-10-strong',
+                          'inline-flex h-7 w-7 items-center justify-center rounded-full text-ui-11-strong',
                           number === safePage
                             ? 'bg-text-primary text-text-inverse'
                             : 'text-text-secondary hover:bg-surface-sunken',
