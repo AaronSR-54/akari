@@ -7,7 +7,7 @@ El panel desplegable de avisos reúne los pagos próximos, la actividad de las c
 
 ### Requirement: Apertura y cierre del panel de avisos
 
-El shell SHALL abrir un panel desplegable anclado al botón de avisos de la cabecera, tanto con la navegación lateral como con la cabecera superior, y SHALL difuminar el fondo de la página con el mismo desenfoque ligero que las modales. Mientras el panel está abierto, SHALL bloquear el scroll del documento y MUST restaurarlo al cerrarlo. MUST cerrarlo con Escape, con la ✕ o al pulsar fuera del panel.
+El shell SHALL abrir un panel de avisos anclado a la campana de la cabecera, con navegación lateral o superior, y SHALL difuminar el fondo como en las modales. En móvil SHALL abrir el mismo panel como modal inferior anclado al borde del viewport, con el mismo contenido y las mismas vías de cierre. Mientras está abierto, SHALL bloquear el scroll del documento y MUST restaurarlo al cerrarlo. MUST cerrarlo con Escape, con la ✕ o al pulsar fuera del panel.
 
 #### Scenario: Apertura con navegación lateral
 
@@ -18,6 +18,11 @@ El shell SHALL abrir un panel desplegable anclado al botón de avisos de la cabe
 
 - **WHEN** la persona pulsa «Avisos» en la variante header
 - **THEN** se despliega el mismo panel de avisos sin una segunda instancia ni una segunda navegación
+
+#### Scenario: Apertura en móvil
+
+- **WHEN** la persona pulsa «Avisos» en la cabecera móvil
+- **THEN** se abre el mismo panel de avisos como modal inferior anclado al borde inferior, con el foco dentro y el fondo difuminado, sin una segunda instancia
 
 #### Scenario: Fondo difuminado
 

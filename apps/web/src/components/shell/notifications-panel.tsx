@@ -214,7 +214,11 @@ export function NotificationsPanel({
         role="dialog"
         aria-label="Avisos"
         tabIndex={-1}
-        className="absolute right-0 top-[calc(100%+8px)] z-50 flex max-h-[calc(100vh-6rem)] w-[min(28.5rem,calc(100vw-2rem))] flex-col overflow-hidden rounded-xl border border-border-subtle bg-surface-raised/90 p-3 backdrop-blur-sm elevation-3 outline-none"
+        className={cn(
+          'z-50 flex max-h-[calc(100vh-6rem)] w-[min(28.5rem,calc(100vw-2rem))] flex-col overflow-hidden rounded-xl border border-border-subtle bg-surface-raised/90 p-3 backdrop-blur-sm elevation-3 outline-none',
+          'absolute right-0 top-[calc(100%+8px)]',
+          'max-md:fixed max-md:inset-x-0 max-md:bottom-0 max-md:top-auto max-md:right-auto max-md:w-full max-md:max-h-[85dvh] max-md:rounded-b-none max-md:border-b-0',
+        )}
       >
       <div className="mb-2 flex items-center justify-between gap-2 px-1">
         <h2 className="text-ui-13-strong text-text-primary">Avisos</h2>

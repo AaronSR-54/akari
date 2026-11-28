@@ -353,6 +353,7 @@ test.describe('shell web', () => {
     await seedDemo(page);
     await page.getByRole('button', { name: 'Avisos, 9 pendientes' }).click();
     await expect(page.getByRole('button', { name: 'Avisos' })).toBeVisible();
+    await expect(page.locator('[data-notification-kind]:visible').first()).toBeVisible();
     await page.keyboard.press('Escape');
     await expect(page.getByRole('dialog', { name: 'Avisos' })).toBeHidden();
 
@@ -441,7 +442,7 @@ test.describe('shell web', () => {
     expect(Math.round((await tabletAvatar.boundingBox())?.width ?? 0)).toBe(40);
 
     await page.setViewportSize({ width: 390, height: 844 });
-    const mobileAvatar = page.locator('header [role="img"][aria-label="Marta"]:visible');
+    const mobileAvatar = page.locator('[role="img"][aria-label="Marta"]:visible').last();
     expect(Math.round((await mobileAvatar.boundingBox())?.width ?? 0)).toBe(40);
     const tabHeight = await page
       .locator('nav.fixed a')
@@ -561,5 +562,221 @@ test.describe('shell web', () => {
     await expect(page.getByText('No se puede abrir el almacenamiento local')).toBeVisible();
     await expect(page.getByRole('navigation', { name: 'Navegación principal' }).first()).toBeVisible();
     await expect(page.getByRole('link', { name: 'Ajustes', exact: true }).first()).toBeVisible();
+  });
+
+  test('la navegación inferior flota separada de los bordes en móvil', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await seedDemo(page);
+    const nav = page.locator('nav.fixed[aria-label="Navegación principal"]:visible');
+    const box = await nav.boundingBox();
+    const content = await page.locator('main').evaluate((el) => {
+      const style = getComputedStyle(el);
+      const rect = el.getBoundingClientRect();
+      return {
+        left: rect.left + parseFloat(style.paddingLeft),
+        right: rect.right - parseFloat(style.paddingRight),
+      };
+    });
+    expect(Math.round(box?.x ?? 0)).toBe(Math.round(content.left));
+    expect(Math.round((box?.x ?? 0) + (box?.width ?? 0))).toBe(Math.round(content.right));
+    expect(Math.round((box?.y ?? 0) + (box?.height ?? 0))).toBe(832);
+
+    const surface = await nav.locator('ul').evaluate((el) => ({
+      radius: getComputedStyle(el).borderRadius,
+      shadow: getComputedStyle(el).boxShadow,
+      blur: getComputedStyle(el).backdropFilter,
+    }));
+    expect(surface.radius).toBe('999px');
+    expect(surface.shadow).not.toBe('none');
+    expect(surface.blur).toContain('blur');
+
+    const heights = await nav
+      .locator('a')
+      .evaluateAll((elements) => elements.map((el) => Math.round(el.getBoundingClientRect().height)));
+    expect(heights).toHaveLength(4);
+    for (const height of heights) expect(height).toBeGreaterThanOrEqual(44);
+
+    const active = nav.locator('a[aria-current="page"]');
+    expect(await active.evaluate((el) => getComputedStyle(el).transitionDuration)).toContain('0.18s');
+    const elevacionIcono = await active.evaluate((el) => {
+      const icono = el.querySelector('svg').getBoundingClientRect();
+      const enlace = el.getBoundingClientRect();
+      return enlace.top + enlace.height / 2 - (icono.top + icono.height / 2);
+    });
+    expect(elevacionIcono).toBeGreaterThanOrEqual(4);
+    expect(elevacionIcono).toBeLessThanOrEqual(8);
+    const textoArriba = await active.evaluate((el) => {
+      const etiqueta = [...el.querySelectorAll('span')].at(-1).getBoundingClientRect();
+      return etiqueta.top - el.getBoundingClientRect().top;
+    });
+    expect(textoArriba).toBeLessThanOrEqual(40);
+    expect(
+      await active.locator('span').first().evaluate((el) => getComputedStyle(el).transitionDuration),
+    ).toContain('0.18s');
+
+    const indicador = nav.locator('[data-active-indicator]');
+    expect(await indicador.evaluate((el) => getComputedStyle(el).backgroundColor)).not.toBe(
+      'rgba(0, 0, 0, 0)',
+    );
+    expect(await indicador.evaluate((el) => getComputedStyle(el).borderRadius)).toBe('999px');
+    const [indicadorBox, activoBox] = await Promise.all([
+      indicador.boundingBox(),
+      active.boundingBox(),
+    ]);
+    // El activo occupa dos tercios de su columna, mucho más que un hueco fijo.
+    expect(indicadorBox?.width ?? 0).toBeGreaterThanOrEqual(80);
+    expect(Math.abs((indicadorBox?.width ?? 0) - (activoBox?.width ?? 0))).toBeLessThanOrEqual(1);
+    const leftInicial = await indicador.evaluate((el) => getComputedStyle(el).left);
+    expect(await indicador.evaluate((el) => getComputedStyle(el).transitionDuration)).toContain(
+      '0.18s',
+    );
+    expect(
+      await indicador.evaluate((el) => getComputedStyle(el).transitionTimingFunction),
+    ).toBe('cubic-bezier(0.77, 0, 0.175, 1)');
+    await nav.getByRole('link', { name: 'Movimientos' }).click();
+    await expect(nav.getByRole('link', { name: 'Movimientos' })).toHaveAttribute(
+      'aria-current',
+      'page',
+    );
+    await expect
+      .poll(() => indicador.evaluate((el) => getComputedStyle(el).left))
+      .not.toBe(leftInicial);
+
+    const overflow = await page.evaluate(
+      () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+    );
+    expect(overflow).toBeLessThanOrEqual(1);
+
+    const yBefore = (await nav.boundingBox())?.y;
+    await page.locator('main').evaluate((el) => el.scrollTo(0, 240));
+    await expect.poll(() => page.locator('main').evaluate((el) => el.scrollTop)).toBeGreaterThan(150);
+    expect((await nav.boundingBox())?.y).toBe(yBefore);
+  });
+
+  test('solo la pestaña activa muestra su etiqueta y se expande en su columna', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await seedDemo(page);
+    const nav = page.locator('nav.fixed[aria-label="Navegación principal"]:visible');
+
+    const leer = () =>
+      page.evaluate(() => {
+        const barra = document.querySelector('nav[data-floating-nav]');
+        return [...barra.querySelectorAll('a')].map((a) => {
+          const icono = a.querySelector('svg')?.getBoundingClientRect();
+          const etiquetas = a.querySelectorAll('span');
+          const etiqueta = etiquetas[etiquetas.length - 1];
+          return {
+            iconoX: icono ? Math.round(icono.left + icono.width / 2) : null,
+            opacidad: etiqueta ? getComputedStyle(etiqueta).opacity : null,
+            activo: a.getAttribute('aria-current') === 'page',
+          };
+        });
+      });
+
+    const inicio = await leer();
+    expect(inicio).toHaveLength(4);
+    expect(inicio.filter((p) => p.opacidad === '1')).toHaveLength(1);
+    expect(inicio.find((p) => p.activo)?.opacidad).toBe('1');
+
+    await nav.getByRole('link', { name: 'Movimientos' }).click();
+    await expect(nav.getByRole('link', { name: 'Movimientos' })).toHaveAttribute('aria-current', 'page');
+    await expect.poll(async () => (await leer()).find((p) => p.activo)?.opacidad).toBe('1');
+    await expect.poll(async () => (await leer()).filter((p) => p.opacidad === '0').length).toBe(2);
+    const despues = await leer();
+    // El botón central y la columna derecha no se mueven; en la izquierda, el activo
+    // crece y desplaza a su hermano dentro de la columna.
+    for (const indice of [2, 3]) expect(despues[indice].iconoX).toBe(inicio[indice].iconoX);
+    expect(despues[1].iconoX).not.toBe(inicio[1].iconoX);
+    expect(despues.find((p) => p.activo)?.opacidad).toBe('1');
+
+    const indicador = nav.locator('[data-active-indicator]');
+    const [indicadorBox, activoBox] = await Promise.all([
+      indicador.boundingBox(),
+      nav.locator('a[aria-current="page"]').boundingBox(),
+    ]);
+    expect(Math.abs((indicadorBox?.x ?? 0) - (activoBox?.x ?? 0))).toBeLessThanOrEqual(2);
+
+    await page.setViewportSize({ width: 320, height: 720 });
+    const desbordes = await nav
+      .locator('a')
+      .evaluateAll((elements) =>
+        elements
+          .filter((el) => el.scrollWidth > el.clientWidth + 1)
+          .map((el) => el.getAttribute('href')),
+      );
+    expect(desbordes).toEqual([]);
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+      ),
+    ).toBeLessThanOrEqual(1);
+  });
+
+  test('la cabecera móvil es transparente y reacciona al scroll', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await seedDemo(page);
+    const header = page.locator('header.sticky.top-0:visible');
+    const styles = await header.evaluate((el) => ({
+      background: getComputedStyle(el).backgroundColor,
+      border: getComputedStyle(el).borderBottomWidth,
+    }));
+    expect(styles.background).toBe('rgba(0, 0, 0, 0)');
+    expect(styles.border).toBe('0px');
+
+    const logo = header.locator('a[aria-label="akari, ir al resumen"]');
+    const pill = page.getByRole('button', { name: 'Buscar' }).locator('..');
+    const headerHeight = (await header.boundingBox())?.height;
+    await expect(pill).toHaveCSS('position', 'fixed');
+    const separaciones = await pill.evaluate((el) => {
+      const icono = (selector: string) => el.querySelector(selector)!.getBoundingClientRect();
+      const buscar = icono('button[aria-label="Buscar"] svg');
+      const avisos = icono('button[aria-label^="Avisos"] svg');
+      const perfil = icono('a[aria-label="Ajustes"] [role="img"]');
+      return { iconos: avisos.left - buscar.right, perfil: perfil.left - avisos.right };
+    });
+    expect(separaciones.iconos).toBeGreaterThanOrEqual(22);
+    expect(separaciones.iconos).toBeLessThanOrEqual(26);
+    expect(separaciones.perfil).toBeGreaterThanOrEqual(separaciones.iconos);
+    expect(separaciones.perfil).toBeLessThanOrEqual(separaciones.iconos + 2);
+    const pillBefore = await pill.boundingBox();
+    await expect(logo).toHaveCSS('opacity', '1');
+    await expect(pill).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+    const mask = await page.locator('main').evaluate((el) => getComputedStyle(el).maskImage);
+    expect(mask).toContain('linear-gradient');
+    expect(mask).toContain('56px');
+    expect(mask).toContain('200px');
+    expect(Math.round((await page.locator('main').boundingBox())?.y ?? 0)).toBe(0);
+
+    await page.locator('main').evaluate((el) => el.scrollTo(0, 240));
+    await expect(logo).toHaveCSS('opacity', '0');
+    await expect(pill).toHaveCSS('background-color', 'rgba(255, 253, 248, 0.9)');
+    expect((await header.boundingBox())?.height).toBe(headerHeight);
+    const pillAfter = await pill.boundingBox();
+    expect(pillAfter?.x).toBe(pillBefore?.x);
+    expect(pillAfter?.y).toBe(pillBefore?.y);
+
+    await page.locator('main').evaluate((el) => el.scrollTo(0, 0));
+    await expect(logo).toHaveCSS('opacity', '1');
+
+    await pill.getByRole('button', { name: /Avisos/ }).click();
+    const dialog = page.getByRole('dialog', { name: 'Avisos' });
+    await expect(dialog).toBeVisible();
+    const dialogStyle = await dialog.evaluate((el) => ({
+      position: getComputedStyle(el).position,
+      radius: getComputedStyle(el).borderRadius,
+      box: el.getBoundingClientRect().toJSON(),
+    }));
+    expect(dialogStyle.position).toBe('fixed');
+    expect(dialogStyle.box.left).toBe(0);
+    expect(Math.round(dialogStyle.box.bottom)).toBe(844);
+    expect(dialogStyle.radius).toBe('20px 20px 0px 0px');
+    for (const name of ['Buscar', /Avisos/]) {
+      const button = pill.getByRole('button', { name });
+      expect(Math.round((await button.boundingBox())?.height ?? 0)).toBe(48);
+    }
+    await page.keyboard.press('Escape');
+    await expect(dialog).toBeHidden();
   });
 });

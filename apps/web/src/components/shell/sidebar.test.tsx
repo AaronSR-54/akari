@@ -1,11 +1,16 @@
 'use client';
 
-import { fireEvent, render, screen } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { fireEvent, render, screen, within } from '@testing-library/react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('next/navigation', () => ({ usePathname: () => '/' }));
+const ruta = vi.hoisted(() => ({ actual: '/' }));
+vi.mock('next/navigation', () => ({ usePathname: () => ruta.actual }));
 
-import { DesktopHeader, HeaderNav, MobileTopBar, Sidebar, TabletHeader } from './sidebar';
+afterEach(() => {
+  ruta.actual = '/';
+});
+
+import { DesktopHeader, HeaderNav, MobileNav, MobileTopBar, Sidebar, TabletHeader } from './sidebar';
 
 describe('DesktopHeader', () => {
   it('muestra título y subtítulo con buscador y avisos', () => {
@@ -100,11 +105,50 @@ describe('acceso a ajustes desde la identidad', () => {
   });
 
   it('la barra móvil expone el avatar como enlace a ajustes', () => {
-    render(<MobileTopBar onOpenSearch={vi.fn()} />);
+    render(
+      <MobileTopBar
+        onOpenSearch={vi.fn()}
+        onToggleNotifications={vi.fn()}
+        notificationCount={0}
+        notificationsOpen={false}
+      />,
+    );
     expect(screen.getByRole('img', { name: 'Marta' })).not.toBeNull();
     const enlace = screen.getByRole('link', { name: 'Ajustes' });
     expect(enlace.getAttribute('href')).toBe('/ajustes');
     expect(enlace.getAttribute('title')).toBe('Ajustes');
+  });
+});
+
+describe('acciones de la cabecera móvil', () => {
+  it('muestra buscador, avisos y avatar con el contador de pendientes', () => {
+    const onToggleNotifications = vi.fn();
+    render(
+      <MobileTopBar
+        onOpenSearch={vi.fn()}
+        onToggleNotifications={onToggleNotifications}
+        notificationCount={2}
+        notificationsOpen={false}
+      />,
+    );
+
+    const buscar = screen.getByRole('button', { name: 'Buscar' });
+    expect(buscar).not.toBeNull();
+    const pill = buscar.parentElement;
+    expect(pill?.className).toContain('fixed');
+    expect(pill?.className).toContain('right-5');
+    expect(pill?.className).toContain('top-3');
+    expect(pill?.className).toContain('gap-0');
+    expect(buscar.className).toContain('!h-12');
+    const avisos = screen.getByRole('button', { name: 'Avisos, 2 pendientes' });
+    expect(avisos.className).toContain('!h-12');
+    expect(avisos.getAttribute('aria-haspopup')).toBe('dialog');
+    expect(avisos.querySelector('[data-notification-count="2"]')?.textContent).toBe('2');
+    fireEvent.click(avisos);
+    expect(onToggleNotifications).toHaveBeenCalledTimes(1);
+    const perfil = screen.getByRole('link', { name: 'Ajustes' });
+    expect(perfil.getAttribute('href')).toBe('/ajustes');
+    expect(perfil.className).toContain('ml-2');
   });
 });
 
@@ -158,9 +202,81 @@ describe('tamaños unificados de la navegación', () => {
   });
 
   it('MobileTopBar usa logotipo M y avatar md', () => {
-    render(<MobileTopBar onOpenSearch={vi.fn()} />);
+    render(
+      <MobileTopBar
+        onOpenSearch={vi.fn()}
+        onToggleNotifications={vi.fn()}
+        notificationCount={0}
+        notificationsOpen={false}
+      />,
+    );
 
     expect(screen.getByRole('img', { name: 'akari' }).parentElement?.className).toContain('scale-[0.8]');
     expect(screen.getByRole('img', { name: 'Marta' }).className).toContain('h-10 w-10');
+  });
+});
+
+describe('barra inferior flotante en móvil', () => {
+  it('conserva los destinos, la acción central y el destino activo sin Ajustes', () => {
+    render(<MobileNav />);
+    const nav = screen.getByRole('navigation', { name: 'Navegación principal' });
+    const enlaces = within(nav).getAllByRole('link');
+
+    expect(enlaces.map((enlace) => enlace.getAttribute('href'))).toEqual([
+      '/',
+      '/movimientos',
+      '/movimientos/nuevo',
+      '/grupos',
+    ]);
+    expect(within(nav).getByRole('link', { name: 'Añadir movimiento' })).not.toBeNull();
+    const activo = within(nav).getByRole('link', { name: 'Resumen' });
+    expect(activo).toHaveAttribute('aria-current', 'page');
+    expect(activo.className).toContain('transition-[flex-grow,color]');
+    expect(activo.className).toContain('items-center');
+    const icono = activo.querySelector('span');
+    expect(icono?.className).toContain('-translate-y-1.5');
+    expect(icono?.className).toContain('transition-transform');
+    const etiqueta = activo.querySelector('span:last-of-type');
+    expect(etiqueta?.className).toContain('absolute');
+    expect(etiqueta?.className).toContain('bottom-1.5');
+    const indicador = nav.querySelector('[data-active-indicator]');
+    expect(indicador?.className).toContain('bg-surface-sunken');
+    expect(indicador?.className).toContain('rounded-full');
+    expect(indicador?.getAttribute('style')).toContain('left: 0.5rem');
+    expect(indicador?.getAttribute('style')).toContain('opacity: 1');
+    expect(within(nav).queryByRole('link', { name: 'Ajustes' })).toBeNull();
+    for (const pestana of enlaces.filter((enlace) => enlace.getAttribute('aria-label') !== 'Añadir movimiento')) {
+      expect(pestana.className).toContain('h-14');
+      expect(pestana.className).toContain('basis-0');
+    }
+  });
+
+  it('muestra la etiqueta solo del activo sin perder el nombre accesible del resto', () => {
+    render(<MobileNav />);
+    const nav = screen.getByRole('navigation', { name: 'Navegación principal' });
+
+    expect(within(nav).getByRole('link', { name: 'Movimientos' })).not.toBeNull();
+    expect(within(nav).getByRole('link', { name: 'Grupos' })).not.toBeNull();
+    for (const enlace of within(nav).getAllByRole('link')) {
+      const etiqueta = enlace.querySelectorAll('span')[1];
+      if (!etiqueta) continue; // la acción central solo tiene icono
+      expect(etiqueta.textContent).toBeTruthy();
+      expect(etiqueta.className).toContain(
+        enlace.getAttribute('aria-current') === 'page' ? 'opacity-100' : 'opacity-0',
+      );
+    }
+  });
+
+  it('usa una superficie elevada y separada de los bordes', () => {
+    render(<MobileNav />);
+    const nav = screen.getByRole('navigation', { name: 'Navegación principal' });
+
+    expect(nav.className).toContain('fixed');
+    expect(nav.className).toContain('inset-x-5');
+    expect(nav.className).toContain('bottom-3');
+    const superficie = nav.querySelector('ul');
+    expect(superficie?.className).toContain('rounded-full');
+    expect(superficie?.className).toContain('elevation-3');
+    expect(superficie?.className).toContain('backdrop-blur-sm');
   });
 });

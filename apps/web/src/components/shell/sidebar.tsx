@@ -12,6 +12,7 @@ export function NotificationsMenu({
   onToggle,
   count,
   iconSize = 18,
+  size = 'lg',
   className,
   children,
 }: {
@@ -19,6 +20,7 @@ export function NotificationsMenu({
   onToggle: () => void;
   count: number;
   iconSize?: IconSize;
+  size?: 'sm' | 'md' | 'lg';
   className?: string;
   children?: ReactNode;
 }) {
@@ -30,7 +32,7 @@ export function NotificationsMenu({
         }
         aria-haspopup="dialog"
         aria-expanded={open}
-        size="lg"
+        size={size}
         onClick={onToggle}
         icon={
           <span className="relative inline-flex">
@@ -368,80 +370,161 @@ export function TabletHeader({ displayName = defaultProfile.displayName }: { dis
 export function MobileTopBar({
   onOpenSearch,
   displayName = defaultProfile.displayName,
+  onToggleNotifications,
+  notificationCount,
+  notificationsOpen,
+  notificationsPanel,
+  scrolled = false,
 }: {
   onOpenSearch: () => void;
   displayName?: string;
+  onToggleNotifications: () => void;
+  notificationCount: number;
+  notificationsOpen: boolean;
+  notificationsPanel?: ReactNode;
+  scrolled?: boolean;
 }) {
   return (
-    <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-border-subtle bg-surface-default px-5 md:hidden">
-      <Link
-        href="/"
-        aria-label="akari, ir al resumen"
-        className="rounded-lg focus-visible:ring-2 focus-visible:ring-focus-ring"
+    <>
+      <header
+        className={cn(
+          'sticky top-0 -mb-14 flex h-14 items-center px-5 md:hidden',
+          notificationsOpen ? 'z-50' : 'z-30',
+        )}
       >
-        <NavLogo format="expanded" />
-      </Link>
-      <div className="flex items-center gap-2">
-        <IconButton aria-label="Buscar" icon={<IconSearch size={20} />} onClick={onOpenSearch} />
+        <Link
+          href="/"
+          aria-label="akari, ir al resumen"
+          aria-hidden={scrolled}
+          tabIndex={scrolled ? -1 : undefined}
+          className={cn(
+            'rounded-lg transition-opacity duration-fast focus-visible:ring-2 focus-visible:ring-focus-ring',
+            scrolled ? 'pointer-events-none opacity-0' : 'opacity-100',
+          )}
+        >
+          <NavLogo format="expanded" />
+        </Link>
+      </header>
+      <div
+        className={cn(
+          'fixed right-5 top-3 z-30 flex items-center gap-0 rounded-full px-1 py-0.5 transition-colors duration-fast md:hidden',
+          scrolled && 'bg-surface-raised/90 elevation-2 backdrop-blur-sm',
+          notificationsOpen && 'z-50',
+        )}
+      >
+        <IconButton
+          aria-label="Buscar"
+          icon={<IconSearch size={24} />}
+          onClick={onOpenSearch}
+          className="!h-12 !w-12"
+        />
+        <NotificationsMenu
+          open={notificationsOpen}
+          onToggle={onToggleNotifications}
+          count={notificationCount}
+          iconSize={24}
+          size="md"
+          className="!h-12 !w-12"
+        >
+          {notificationsPanel}
+        </NotificationsMenu>
         <Link
           href="/ajustes"
           aria-label="Ajustes"
           title="Ajustes"
-          className="inline-flex rounded-full p-1 transition-colors duration-fast hover:bg-surface-sunken focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2"
+          className="ml-2 inline-flex rounded-full p-1 transition-colors duration-fast hover:bg-surface-sunken focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2"
         >
           <Avatar size="md" initials={initialsFromName(displayName)} tone="strong" label={displayName} />
         </Link>
       </div>
-    </header>
+    </>
   );
 }
 
 export function MobileNav() {
   const pathname = usePathname();
+  const addActive = isActivePath(pathname, '/movimientos/nuevo');
+  const activeIndex = navItems.findIndex((item) => isActivePath(pathname, item.href));
+  const oculto = addActive || activeIndex < 0;
+
+  // Tres columnas: los dos destinos de la izquierda, el botón central y los dos de la
+  // derecha. Cada columna reparte 1:2, así que el activo se expande y el inactivo se
+  // encoge sin tocar el botón central. La geometría es CSS puro: 88 px = padding (16)
+  // + botón central (56) + sus márgenes (16), y el ancho útil se divide entre columnas.
+  const columna = '(100% - 5.5rem)';
+  const izquierda =
+    activeIndex === 0
+      ? '0.5rem'
+      : activeIndex === 1
+        ? `calc(0.5rem + ${columna} / 6)`
+        : activeIndex === 2
+          ? `calc(0.5rem + ${columna} / 2 + 4.5rem)`
+          : `calc(0.5rem + ${columna} / 2 + 4.5rem + ${columna} / 6)`;
+
   const renderTab = (item: NavItem) => {
     const active = isActivePath(pathname, item.href);
     return (
-      <li key={item.href} className="flex-1">
-        <Link
-          href={item.href}
-          aria-current={active ? 'page' : undefined}
+      <Link
+        key={item.href}
+        href={item.href}
+        aria-current={active ? 'page' : undefined}
+        className={cn(
+          'relative z-10 flex h-14 basis-0 min-w-0 items-center justify-center rounded-full text-ui-9-strong transition-[flex-grow,color] duration-base ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring',
+          active ? 'grow-[2] text-text-primary' : 'grow text-text-tertiary',
+        )}
+      >
+        <span
           className={cn(
-            'flex min-h-11 flex-col items-center justify-center gap-1 rounded-lg px-1 py-1 text-ui-9-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring',
-            active ? 'text-text-primary' : 'text-text-tertiary',
+            'inline-flex h-7 w-7 items-center justify-center rounded-full transition-transform duration-base ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none',
+            active ? '-translate-y-1.5' : 'translate-y-0',
           )}
         >
-          <span
-            className={cn(
-              'inline-flex h-7 w-12 items-center justify-center rounded-full',
-              active && 'bg-text-primary text-text-inverse',
-            )}
-          >
-            <Icon name={item.icon} size={20} />
-          </span>
+          <Icon name={item.icon} size={20} />
+        </span>
+        <span
+          className={cn(
+            'absolute inset-x-0 bottom-1.5 truncate text-center transition-opacity duration-base motion-reduce:transition-none',
+            active ? 'opacity-100' : 'opacity-0',
+          )}
+        >
           {item.label}
-        </Link>
-      </li>
+        </span>
+      </Link>
     );
   };
-  const addActive = isActivePath(pathname, '/movimientos/nuevo');
   return (
     <nav
       aria-label="Navegación principal"
-      className="safe-bottom fixed inset-x-0 bottom-0 z-40 border-t border-border-subtle bg-surface-default md:hidden"
+      data-floating-nav="true"
+      className="safe-bottom fixed inset-x-5 bottom-3 z-40 md:hidden"
     >
-      <ul className="mx-auto flex max-w-md items-center justify-around px-2 py-1.5">
-        {navItems.slice(0, 2).map(renderTab)}
-        <li className="flex flex-1 justify-center">
+      <ul className="relative mx-auto flex items-center rounded-full border border-border-subtle bg-surface-raised/90 px-2 py-1.5 elevation-3 backdrop-blur-sm">
+        <span
+          data-active-indicator
+          aria-hidden="true"
+          className="pointer-events-none absolute bottom-1.5 top-1.5 rounded-full bg-surface-sunken transition-[left,width,opacity] duration-base ease-[cubic-bezier(0.77,0,0.175,1)] motion-reduce:transition-none"
+          style={{
+            left: activeIndex < 0 ? '0.5rem' : izquierda,
+            width: `calc(${columna} / 3)`,
+            opacity: oculto ? 0 : 1,
+          }}
+        />
+        <li className="flex min-w-0 flex-1 items-center">
+          {navItems.slice(0, 2).map(renderTab)}
+        </li>
+        <li className="mx-2 flex w-14 shrink-0 justify-center">
           <Link
             href="/movimientos/nuevo"
             aria-label="Añadir movimiento"
             aria-current={addActive ? 'page' : undefined}
-            className="bg-accent-default text-accent-ink flex h-14 w-14 -translate-y-3 items-center justify-center rounded-full elevation-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+            className="bg-accent-default text-accent-ink relative z-10 flex h-14 w-14 -translate-y-3 items-center justify-center rounded-full elevation-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
           >
             <Icon name="add" size={24} />
           </Link>
         </li>
-        {navItems.slice(2).map(renderTab)}
+        <li className="flex min-w-0 flex-1 items-center">
+          {navItems.slice(2).map(renderTab)}
+        </li>
       </ul>
     </nav>
   );
