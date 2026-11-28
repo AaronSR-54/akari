@@ -24,12 +24,20 @@ export function AccountForm({
   defaultCurrency,
   submitLabel,
   showCancel = true,
+  showActions = true,
+  framed = true,
+  formId = 'account-form',
+  onCancel,
   onSaved,
 }: {
   account?: Account;
   defaultCurrency?: string;
   submitLabel?: string;
   showCancel?: boolean;
+  showActions?: boolean;
+  framed?: boolean;
+  formId?: string;
+  onCancel?: () => void;
   onSaved?: (account: Account) => void;
 }) {
   const router = useRouter();
@@ -96,73 +104,73 @@ export function AccountForm({
     }
   };
 
-  return (
-    <Card padding="lg">
-      <form onSubmit={submit} noValidate>
-        <Stack gap={4}>
-          <TextField
-            label="Nombre de la cuenta"
-            value={name}
-            onChange={(event) => setName(event.target.value)}
-            error={errors.name}
-            required
-            autoComplete="off"
-          />
-          <div className="grid gap-4 md:grid-cols-2">
-            <SelectField
-              label="Tipo"
-              value={type}
-              onValueChange={(value) => setType(value as AccountType)}
-              options={accountTypeOptions}
-              help="La cuenta conjunta podrá compartirse en una fase posterior."
-            />
-            <SelectField
-              label="Divisa"
-              value={currency}
-              onValueChange={setCurrency}
-              options={currencyOptions}
-            />
-          </div>
+  const form = (
+    <form id={formId} onSubmit={submit} noValidate>
+      <Stack gap={4}>
+        <TextField
+          label="Nombre de la cuenta"
+          value={name}
+          onChange={(event) => setName(event.target.value)}
+          error={errors.name}
+          required
+          autoComplete="off"
+        />
+        <div className="grid gap-4 md:grid-cols-2">
           <SelectField
-            label="Banco"
-            value={bankId}
-            onValueChange={(value) => setBankId(value as BankId)}
-            options={bankOptions.map((option) => ({
-              ...option,
-              icon: <BankIcon bankId={option.value as BankId} size={20} />,
-            }))}
-            help="El icono del banco aparecerá en los movimientos de esta cuenta."
+            label="Tipo"
+            value={type}
+            onValueChange={(value) => setType(value as AccountType)}
+            options={accountTypeOptions}
+            help="La cuenta conjunta podrá compartirse en una fase posterior."
           />
-          <AmountField
-            label="Saldo inicial"
-            value={balance}
-            currency={currency}
-            onChange={(event) => setBalance(event.target.value)}
-            placeholder="0,00"
-            error={errors.balance}
-            help="Obligatorio y mayor que cero. Se usa como punto de partida del saldo."
-            required
+          <SelectField
+            label="Divisa"
+            value={currency}
+            onValueChange={setCurrency}
+            options={currencyOptions}
           />
-          {type === 'deposit' ? (
-            <TextField
-              label="TAE anual"
-              value={tae}
-              onChange={(event) => setTae(event.target.value)}
-              error={errors.tae}
-              inputMode="decimal"
-              help="Porcentaje anual. La previsión de intereses se muestra en el detalle."
-              placeholder="2,5"
-            />
-          ) : null}
-          <Switch
-            checked={includeInTotal}
-            onChange={setIncludeInTotal}
-            label="Incluir en el saldo total"
-            help="Puedes excluir cuentas que no quieras sumar en el resumen."
+        </div>
+        <SelectField
+          label="Banco"
+          value={bankId}
+          onValueChange={(value) => setBankId(value as BankId)}
+          options={bankOptions.map((option) => ({
+            ...option,
+            icon: <BankIcon bankId={option.value as BankId} size={20} />,
+          }))}
+          help="El icono del banco aparecerá en los movimientos de esta cuenta."
+        />
+        <AmountField
+          label="Saldo inicial"
+          value={balance}
+          currency={currency}
+          onChange={(event) => setBalance(event.target.value)}
+          placeholder="0,00"
+          error={errors.balance}
+          help="Obligatorio y mayor que cero. Se usa como punto de partida del saldo."
+          required
+        />
+        {type === 'deposit' ? (
+          <TextField
+            label="TAE anual"
+            value={tae}
+            onChange={(event) => setTae(event.target.value)}
+            error={errors.tae}
+            inputMode="decimal"
+            help="Porcentaje anual. La previsión de intereses se muestra en el detalle."
+            placeholder="2,5"
           />
+        ) : null}
+        <Switch
+          checked={includeInTotal}
+          onChange={setIncludeInTotal}
+          label="Incluir en el saldo total"
+          help="Puedes excluir cuentas que no quieras sumar en el resumen."
+        />
+        {showActions ? (
           <div className="flex flex-wrap justify-end gap-2 pt-2">
             {showCancel ? (
-              <Button variant="tertiary" onClick={() => router.back()}>
+              <Button variant="tertiary" onClick={onCancel ?? (() => router.back())}>
                 Cancelar
               </Button>
             ) : null}
@@ -170,8 +178,10 @@ export function AccountForm({
               {submitLabel ?? (account ? 'Guardar cambios' : 'Guardar cuenta')}
             </Button>
           </div>
-        </Stack>
-      </form>
-    </Card>
+        ) : null}
+      </Stack>
+    </form>
   );
+
+  return framed ? <Card padding="lg">{form}</Card> : form;
 }

@@ -43,6 +43,8 @@ import type {
   MemberRole,
   Movement,
   MovementInput,
+  MovementType,
+  Recurrence,
   Settings,
   Transfer,
 } from './types.js';
@@ -121,6 +123,12 @@ function validateDate(value: string): void {
 function validateCurrency(currency: string): void {
   if (!/^[A-Z]{3}$/.test(currency.toUpperCase())) {
     throw new ValidationError('La divisa debe ser un código ISO de tres letras', 'currency');
+  }
+}
+
+function validateFrequency(frequency: Frequency): void {
+  if (!['weekly', 'monthly', 'yearly'].includes(frequency)) {
+    throw new ValidationError('La frecuencia no es válida', 'frequency');
   }
 }
 
@@ -311,6 +319,108 @@ export async function deleteMovement(
   movementId: string,
 ): Promise<void> {
   await repositories.movements.delete(movementId);
+}
+
+export type InstallmentPlanInput = {
+  accountId: string;
+  concept: string;
+  totalMinor: number;
+  installments: number;
+  firstDueDate: string;
+  frequency: Frequency;
+};
+
+export async function createInstallmentPlan(
+  repositories: Repositories,
+  input: InstallmentPlanInput,
+): Promise<InstallmentPlan> {
+  const account = await repositories.accounts.get(input.accountId);
+  if (!account) throw new ValidationError('La cuenta seleccionada no existe', 'accountId');
+  if (!input.concept.trim()) {
+    throw new ValidationError('El concepto es obligatorio', 'concept');
+  }
+  if (!Number.isInteger(input.totalMinor) || input.totalMinor <= 0) {
+    throw new ValidationError('El importe total debe ser mayor que cero', 'totalMinor');
+  }
+  if (!Number.isInteger(input.installments) || input.installments < 2) {
+    throw new ValidationError('El plan debe tener al menos dos cuotas', 'installments');
+  }
+  validateDate(input.firstDueDate);
+  validateFrequency(input.frequency);
+
+  const plan: InstallmentPlan = {
+    id: createId('plan'),
+    accountId: account.id,
+    concept: input.concept.trim(),
+    totalMinor: input.totalMinor,
+    currency: account.currency,
+    installments: input.installments,
+    paidInstallments: 0,
+    firstDueDate: input.firstDueDate,
+    frequency: input.frequency,
+    createdAt: nowIso(),
+  };
+  await repositories.installments.put(plan);
+  return plan;
+}
+
+export type RecurrenceInput = {
+  accountId: string;
+  type: MovementType;
+  amountMinor: number;
+  concept: string;
+  category: string;
+  frequency: Frequency;
+  nextDate: string;
+  endDate?: string | null;
+};
+
+export async function createRecurrence(
+  repositories: Repositories,
+  input: RecurrenceInput,
+): Promise<Recurrence> {
+  const account = await repositories.accounts.get(input.accountId);
+  if (!account) throw new ValidationError('La cuenta seleccionada no existe', 'accountId');
+  if (input.type !== 'expense' && input.type !== 'income') {
+    throw new ValidationError('El tipo de movimiento no es válido', 'type');
+  }
+  if (!Number.isInteger(input.amountMinor) || input.amountMinor <= 0) {
+    throw new ValidationError('El importe debe ser mayor que cero', 'amountMinor');
+  }
+  if (!input.concept.trim()) {
+    throw new ValidationError('El concepto es obligatorio', 'concept');
+  }
+  if (!input.category.trim()) {
+    throw new ValidationError('La categoría es obligatoria', 'category');
+  }
+  validateDate(input.nextDate);
+  validateFrequency(input.frequency);
+  const endDate = input.endDate?.trim() ? input.endDate : null;
+  if (endDate) {
+    validateDate(endDate);
+    if (endDate < input.nextDate) {
+      throw new ValidationError(
+        'La fecha de fin no puede ser anterior a la próxima fecha',
+        'endDate',
+      );
+    }
+  }
+
+  const recurrence: Recurrence = {
+    id: createId('rec'),
+    accountId: account.id,
+    type: input.type,
+    amountMinor: input.amountMinor,
+    currency: account.currency,
+    concept: input.concept.trim(),
+    category: input.category,
+    frequency: input.frequency,
+    nextDate: input.nextDate,
+    endDate,
+    createdAt: nowIso(),
+  };
+  await repositories.recurrences.put(recurrence);
+  return recurrence;
 }
 
 export async function registerInstallment(

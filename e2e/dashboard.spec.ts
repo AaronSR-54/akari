@@ -3,6 +3,7 @@ import {
   chooseOption,
   expectGreetingForViewport,
   expectHeadingForViewport,
+  openNewAccount,
   seedDemo,
   startEmpty,
 } from './helpers';
@@ -62,10 +63,7 @@ test.describe('dashboard hero', () => {
     } else {
       await expect(nuevoQuick).toBeHidden();
     }
-    await expect(quick.getByRole('link', { name: 'Nueva cuenta' })).toHaveAttribute(
-      'href',
-      '/cuentas/nueva',
-    );
+    await expect(quick.getByRole('button', { name: 'Nueva cuenta' })).toBeVisible();
     await expect(quick.getByRole('link', { name: 'Preguntas rápidas' })).toHaveAttribute(
       'href',
       '/preguntas',
@@ -80,7 +78,7 @@ test.describe('dashboard hero', () => {
       await expect(addNav).toBeHidden();
       const deskPills = [
         nuevoQuick,
-        quick.getByRole('link', { name: 'Nueva cuenta' }),
+        quick.getByRole('button', { name: 'Nueva cuenta' }),
         quick.getByRole('link', { name: 'Preguntas rápidas' }),
         quick.getByRole('link', { name: 'Exportar' }),
       ];
@@ -92,7 +90,7 @@ test.describe('dashboard hero', () => {
     } else {
       await expect(addNav).toBeVisible();
       const pills = [
-        quick.getByRole('link', { name: 'Nueva cuenta' }),
+        quick.getByRole('button', { name: 'Nueva cuenta' }),
         quick.getByRole('link', { name: 'Preguntas rápidas' }),
         quick.getByRole('link', { name: 'Exportar' }),
       ];
@@ -356,7 +354,7 @@ test.describe('dashboard hero', () => {
     await expect(panel).toHaveCount(1);
     await expect(panel.getByRole('heading', { name: 'Cuentas · 3 cuentas en este dispositivo' })).toBeVisible();
     const manage = panel.getByRole('link', { name: 'Gestionar cuentas' });
-    await expect(manage).toHaveAttribute('href', '/cuentas/nueva');
+    await expect(manage).toHaveCount(0);
     const blocks = accounts.locator('a[data-account]');
     await expect(blocks).toHaveCount(3);
 
@@ -493,7 +491,7 @@ test.describe('dashboard hero', () => {
     await expect(page.locator('[data-panel="installments"]')).toHaveCount(0);
 
     const addAccount = async (name: string) => {
-      await page.goto('/cuentas/nueva');
+      await openNewAccount(page);
       await page.getByLabel('Nombre de la cuenta').fill(name);
       await page.getByLabel('Saldo inicial').fill('100');
       await page.getByRole('button', { name: 'Guardar cuenta' }).click();
@@ -503,7 +501,7 @@ test.describe('dashboard hero', () => {
     await addAccount('Única');
     await page.goto('/');
     const accounts = page.locator('section[aria-labelledby="cuentas"]');
-    await expect(accounts.locator('a[href="/cuentas/nueva"]')).toHaveCount(1);
+    await expect(accounts.locator('a[href="/cuentas/nueva"]')).toHaveCount(0);
     await expect(accounts.locator('a[data-account]')).toHaveCount(1);
     await expect(accounts.getByText('Única')).toBeVisible();
 

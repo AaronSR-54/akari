@@ -10,11 +10,12 @@ vi.mock('./hooks', () => ({
 }));
 
 function TitleReader() {
-  const { title, meta } = usePageTitle();
+  const { title, meta, titleAction } = usePageTitle();
   return (
     <>
       <span data-testid="context-title">{title}</span>
       <span data-testid="context-meta">{meta}</span>
+      <span data-testid="context-action">{titleAction}</span>
     </>
   );
 }
@@ -49,6 +50,18 @@ describe('page-title', () => {
       expect(screen.getByTestId('context-meta').textContent).toBe(
         'domingo, 29 de noviembre · 3 cuentas en este dispositivo',
       );
+    });
+  });
+
+  it('publica la acción junto al título', async () => {
+    render(
+      <PageTitleProvider>
+        <PageHeaderResponsive title="Cuenta diaria" titleAction={<button>Cambiar</button>} />
+        <TitleReader />
+      </PageTitleProvider>,
+    );
+    await waitFor(() => {
+      expect(screen.getByTestId('context-action').textContent).toBe('Cambiar');
     });
   });
 });

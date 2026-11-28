@@ -11,11 +11,11 @@ Este documento relaciona el diseño aprobado, las specs `producto/*` y la implem
 | `M03` | Desbloqueo | — | Diferida con el cifrado |
 | `M04` | Sincronización | `/onboarding` (nota informativa) | Diferida: sin nube |
 | `M05` | Resumen | `/` (`DashboardScreen`) | Implementada |
-| `M06` | Alta de cuenta | `/cuentas/nueva`, `/cuentas/[id]/editar` | Implementada en shell web |
-| `M07` | Detalle de cuenta | `/cuentas/[id]` | Implementada |
+| `M06` | Alta de cuenta | Modal `AccountDialog` desde el resumen y el selector; edición en `/cuentas/[id]/editar` | Implementada (alta en modal) |
+| `M07` | Detalle de cuenta | `/cuentas/[id]` | Implementada (panel con selector de cuentas) |
 | `M08` | Movimientos | `/movimientos` con alta en modal y detalle/edición del movimiento | Implementada |
 | `M09` | Nuevo movimiento | `/movimientos/nuevo` | Implementada en shell web |
-| `M10` | Plazos | Sección «Pagos a plazos» en `/cuentas/[id]` | Implementada (consulta y registro de cuota) |
+| `M10` | Plazos | Sección «Próximas cuotas» en `/cuentas/[id]` | Implementada (consulta y enlace al detalle del plan) |
 | `M11` | Gasto grupal | Formulario en `/grupos/[id]` | Implementada |
 | `M12` | Liquidación | Sección «Liquidación» en `/grupos/[id]` | Implementada |
 | `M13` | Pregunta rápida | Tarjetas de `/preguntas` | Implementada |
@@ -26,7 +26,7 @@ Este documento relaciona el diseño aprobado, las specs `producto/*` y la implem
 | `M18` | Movimientos vacío | `StatePage` en `/movimientos` | Implementada |
 | `M19` | Sin conexión | Local-first; estado disponible en `StatePage` | Parcial: sin cola de sincronización |
 | `W01` | Resumen multi-cuenta | `/` | Implementada (saldo y evolución del saldo del mes sin caja, tarjeta de balance con signo, color y saldo total estimado bajo la gráfica, próximo pago, cuentas y movimientos; sin gráfico semanal) |
-| `W02` | Detalle de cuenta | `/cuentas/[id]` | Implementada |
+| `W02` | Detalle de cuenta | `/cuentas/[id]` | Implementada (panel con selector, balance del mes y altas de plazos y recurrentes) |
 | `W03` | Movimientos (tabla) | `/movimientos` | Implementada (chips, tabla y paginación) |
 | `W04` | Gasto grupal (web) | `/grupos/[id]` | Implementada (compositor de 3 columnas + liquidación) |
 | `W05` | Preguntas rápidas | `/preguntas` | Implementada |
@@ -80,8 +80,9 @@ Este documento relaciona el diseño aprobado, las specs `producto/*` y la implem
 | Registro de movimientos | `MovementForm`, `recordMovement` | E2E `accounts-movements`, `services.test.ts` |
 | Listado, búsqueda y filtros | `MovementsScreen` | E2E `accounts-movements` |
 | Suscripciones e ingresos periódicos | `recurrence.ts`, detalle de cuenta | `recurrence.test.ts` |
-| Pagos a plazos | `ProgressInstallments`, `registerInstallment` | `recurrence.test.ts`, detalle de cuenta |
-| Detalle de cuenta | `AccountDetailScreen` | E2E `accounts-movements` |
+| Próximas cuotas | `UpcomingInstallments`, `ProgressInstallments` | `recurrence.test.ts`, detalle de cuenta |
+| Detalle de cuenta | `AccountDetailScreen`, `AccountMenu`, `AccountCard` | E2E `accounts-movements`, `account-detail-panel` |
+| Alta de cuenta | `AccountForm`, `AccountDialog` | E2E `accounts-movements`, `account-detail-panel` |
 | Dashboard y preguntas rápidas | `DashboardScreen`, `QuestionsScreen`, `getQuickAnswers` | E2E `questions-settings`, `services.test.ts` |
 
 ### `producto/dashboard-hero`
@@ -123,7 +124,7 @@ Este documento relaciona el diseño aprobado, las specs `producto/*` y la implem
 | Flujo | Recorrido | Prueba |
 | --- | --- | --- |
 | 0 · Onboarding local | `/onboarding → /` | `e2e/onboarding.spec.ts` |
-| A · Alta de cuenta | `/ → /cuentas/nueva → /cuentas/[id]` | `e2e/accounts-movements.spec.ts` |
+| A · Alta de cuenta | `/ → modal «Nueva cuenta» → /cuentas/[id]` | `e2e/accounts-movements.spec.ts` |
 | B · Registro de movimiento | `/cuentas/[id] → /movimientos/nuevo → /movimientos` y alta/edición en modal desde `/movimientos` | `e2e/accounts-movements.spec.ts`, `e2e/movement-dialog.spec.ts` |
 | C · Gasto grupal y liquidación | `/grupos → /grupos/[id]` | `e2e/groups.spec.ts` |
 | D · Preguntas y detalle | `/ → /preguntas`, `/cuentas/[id]` | `e2e/questions-settings.spec.ts`, `e2e/shell.spec.ts` |

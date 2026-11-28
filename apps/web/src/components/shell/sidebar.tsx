@@ -135,7 +135,7 @@ export function Sidebar({
         <div
           data-sidebar-scrim
           aria-hidden="true"
-          className="pointer-events-none fixed inset-0 z-30 bg-overlay-scrim/20"
+          className="pointer-events-none fixed inset-0 z-[35] bg-overlay-scrim/20"
         />
       ) : null}
       <aside
@@ -207,6 +207,8 @@ export function Sidebar({
 export function DesktopHeader({
   title,
   meta,
+  titleAction,
+  pinned = false,
   onOpenSearch,
   onToggleNotifications,
   notificationCount,
@@ -215,6 +217,8 @@ export function DesktopHeader({
 }: {
   title: string;
   meta: string;
+  titleAction?: ReactNode;
+  pinned?: boolean;
   onOpenSearch: () => void;
   onToggleNotifications: () => void;
   notificationCount: number;
@@ -222,9 +226,17 @@ export function DesktopHeader({
   notificationsPanel?: ReactNode;
 }) {
   return (
-    <header className="sticky top-0 z-20 hidden h-[72px] shrink-0 items-center justify-between gap-6 bg-surface-canvas px-8 lg:-mt-4 lg:flex">
+    <header
+      className={cn(
+        'fixed right-0 top-0 z-30 hidden h-[72px] items-center justify-between gap-6 bg-surface-canvas/70 px-8 backdrop-blur-xl lg:flex',
+        pinned ? 'left-[272px]' : 'left-[108px]',
+      )}
+    >
       <div className="flex min-w-0 flex-1 flex-col justify-center gap-0.5">
-        <h1 className="truncate text-ui-28-bold text-text-primary">{title}</h1>
+        <div className="flex min-w-0 items-center gap-1.5">
+          <h1 className="truncate text-ui-28-bold text-text-primary">{title}</h1>
+          {titleAction ? <span className="inline-flex shrink-0">{titleAction}</span> : null}
+        </div>
         {meta ? <p className="truncate text-ui-11 text-text-secondary">{meta}</p> : null}
       </div>
       <div className="flex shrink-0 items-center gap-2.5">

@@ -99,6 +99,7 @@ export function PageHeader({
   meta,
   actions,
   breadcrumbs,
+  titleAction,
   hideTitleAtLg = false,
 }: {
   title: string;
@@ -106,6 +107,8 @@ export function PageHeader({
   meta?: string;
   actions?: ReactNode;
   breadcrumbs?: ReactNode;
+  /** Elemento junto al título, como el selector de cuenta. Se oculta con el título en `lg`. */
+  titleAction?: ReactNode;
   hideTitleAtLg?: boolean;
 }) {
   return (
@@ -113,7 +116,16 @@ export function PageHeader({
       <div className="flex min-w-0 flex-col gap-2.5">
         {breadcrumbs ? <div className="text-ui-10 text-text-secondary">{breadcrumbs}</div> : null}
         <div className="flex flex-col gap-0.5">
-          <h1 className={cn('text-ui-28-bold text-text-primary', hideTitleAtLg && 'lg:hidden')}>{title}</h1>
+          <div className="flex min-w-0 items-center gap-1.5">
+            <h1 className={cn('truncate text-ui-28-bold text-text-primary', hideTitleAtLg && 'lg:hidden')}>
+              {title}
+            </h1>
+            {titleAction ? (
+              <span className={cn('inline-flex shrink-0', hideTitleAtLg && 'lg:hidden')}>
+                {titleAction}
+              </span>
+            ) : null}
+          </div>
           {meta || description ? (
             <p
               className={cn(

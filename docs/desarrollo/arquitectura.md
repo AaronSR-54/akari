@@ -81,9 +81,8 @@ Supabase replica las entidades en tablas PostgreSQL con `user_id`, `updated_at` 
 | `/onboarding` | `M01`–`M04` adaptadas | 0 · Asistente de nombre, divisa, ingreso, bancos y nube |
 | `/entrar` | formulario de acceso | 0/F · Cuenta en la nube (acceso y alta) |
 | `/` | `W01` | E · Resumen |
-| `/cuentas/nueva` | `M06` en shell web | A · Alta de cuenta |
-| `/cuentas/[id]` | `W02` | E · Detalle |
-| `/cuentas/[id]/editar` | `M06` edición | A · Edición |
+| `/cuentas/[id]` | `W02` · panel de cuentas con selector | E · Detalle y cambio de cuenta |
+| `/cuentas/[id]/editar` | `M06` edición | A · Edición y borrado |
 | `/cuotas/[id]` | Detalle de pago a plazos | E · Progreso y registro |
 | `/movimientos` | `W03` + modal de alta y edición | B/E · Movimientos |
 | `/movimientos/nuevo` | `M09` en shell web (enlace directo) | B · Registro |
@@ -92,7 +91,9 @@ Supabase replica las entidades en tablas PostgreSQL con `user_id`, `updated_at` 
 | `/preguntas` | `W05` | D · Preguntas |
 | `/ajustes` | `W06` | F · Datos |
 
-El alta desde `/movimientos` y la edición de un movimiento comparten un modal que reutiliza el formulario de `M09`; la ruta `/movimientos/nuevo` sigue disponible como enlace directo. El detalle de `/cuotas/[id]` y el bloque de plazos del detalle de cuenta comparten los cálculos de `installmentProgress`, `installmentStatus` y `nextInstallment`, y registran con `registerInstallment`.
+El alta de cuenta (`M06`) no tiene ruta propia: se abre en un modal desde el resumen, el selector de cuentas y los avisos de «sin cuentas». El alta desde `/movimientos` y la edición de un movimiento comparten un modal que reutiliza el formulario de `M09`; la ruta `/movimientos/nuevo` sigue disponible como enlace directo. El detalle de `/cuotas/[id]` y el bloque de plazos del detalle de cuenta comparten los cálculos de `installmentProgress`, `installmentStatus` y `nextInstallment`; el detalle de cuenta enlaza cada plan a `/cuotas/[id]`, donde se registra la cuota con `registerInstallment`.
+
+El detalle de cuenta ocupa la pantalla bajo la cabecera, sin padding superior ni scroll propio en la columna derecha, y usa el scroll de la raíz de la aplicación (`main`): el saldo y la columna izquierda (gráfica, balance y detalles) quedan siempre fijos con `position: sticky` y solo avanza la columna derecha (movimientos, próximas cuotas y recurrentes), que empieza debajo del saldo y sube hasta el borde superior pasando difuminada por detrás de la cabecera fija (translúcida con `backdrop-blur`); su borde inferior se funde con una máscara de degradado de 20 px como la del panel de avisos. Al final del scroll, el último panel de la derecha queda a la altura del último de la izquierda. La gráfica se ajusta al alto disponible sin superar su máximo y reserva margen arriba para que el punto de hover del valor máximo no se recorte. El nombre de la cuenta de la cabecera lleva un chevron que abre `AccountMenu`, que reutiliza `AccountCard` del resumen en una versión reducida (con el tipo en la esquina superior), en un panel de una columna en escritorio y en una hoja inferior en móvil; no hay breadcrumb ni barra de tipo, divisa o actualización.
 
 `W07` se verifica como comportamiento responsive y `W08` con el modo `header` del mismo shell.
 

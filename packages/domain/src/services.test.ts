@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import {
   createAccount,
   createGroup,
+  createInstallmentPlan,
+  createRecurrence,
   addGroupExpense,
   getGroupSummary,
   getOverview,
@@ -584,5 +586,131 @@ describe('nombre del perfil', () => {
     const settings = await repositories.settings.get();
     expect(settings.primaryCurrency).toBeUndefined();
     expect(settings.primaryIncomeDay).toBeUndefined();
+  });
+});
+
+describe('altas de plazos y recurrencias', () => {
+  async function account(repositories: Repositories, currency = 'EUR') {
+    return createAccount(repositories, {
+      name: 'Cuenta',
+      type: 'personal',
+      currency,
+      initialBalanceMinor: 100000,
+    });
+  }
+
+  it('crea un plan de plazos con la divisa de la cuenta y sin movimientos', async () => {
+    const repositories = memoryRepositories();
+    const created = await account(repositories, 'USD');
+
+    const plan = await createInstallmentPlan(repositories, {
+      accountId: created.id,
+      concept: ' Portátil ',
+      totalMinor: 30000,
+      installments: 3,
+      firstDueDate: '2026-12-01',
+      frequency: 'monthly',
+    });
+
+    expect(plan.concept).toBe('Portátil');
+    expect(plan.currency).toBe('USD');
+    expect(plan.paidInstallments).toBe(0);
+    expect(plan.installments).toBe(3);
+    expect(await repositories.installments.list()).toHaveLength(1);
+    expect(await repositories.movements.list()).toHaveLength(0);
+    expect(nextInstallment(plan)?.dueDate).toBe('2026-12-01');
+  });
+
+  it('rechaza planes de plazos inválidos', async () => {
+    const repositories = memoryRepositories();
+    const created = await account(repositories);
+    const base = {
+      accountId: created.id,
+      concept: 'Portátil',
+      totalMinor: 30000,
+      installments: 3,
+      firstDueDate: '2026-12-01',
+      frequency: 'monthly' as const,
+    };
+
+    await expect(createInstallmentPlan(repositories, { ...base, concept: ' ' })).rejects.toThrow(
+      /concepto/,
+    );
+    await expect(createInstallmentPlan(repositories, { ...base, totalMinor: 0 })).rejects.toThrow(
+      /importe total/,
+    );
+    await expect(createInstallmentPlan(repositories, { ...base, installments: 1 })).rejects.toThrow(
+      /dos cuotas/,
+    );
+    await expect(
+      createInstallmentPlan(repositories, { ...base, firstDueDate: '2026-13-01' }),
+    ).rejects.toThrow(/fecha/);
+    await expect(
+      createInstallmentPlan(repositories, { ...base, accountId: 'acc_missing' }),
+    ).rejects.toThrow(/cuenta/);
+    expect(await repositories.installments.list()).toHaveLength(0);
+  });
+
+  it('crea una recurrencia sin movimiento y con fin opcional', async () => {
+    const repositories = memoryRepositories();
+    const created = await account(repositories, 'USD');
+
+    const recurrence = await createRecurrence(repositories, {
+      accountId: created.id,
+      type: 'expense',
+      amountMinor: 1299,
+      concept: 'Suscripción vídeo',
+      category: 'Suscripciones',
+      frequency: 'monthly',
+      nextDate: '2026-12-15',
+    });
+
+    expect(recurrence.currency).toBe('USD');
+    expect(recurrence.endDate).toBeNull();
+    expect(await repositories.recurrences.list()).toHaveLength(1);
+    expect(await repositories.movements.list()).toHaveLength(0);
+
+    const withEnd = await createRecurrence(repositories, {
+      accountId: created.id,
+      type: 'income',
+      amountMinor: 240000,
+      concept: 'Nómina',
+      category: 'Ingresos',
+      frequency: 'monthly',
+      nextDate: '2026-12-25',
+      endDate: '2027-12-25',
+    });
+    expect(withEnd.endDate).toBe('2027-12-25');
+  });
+
+  it('rechaza recurrencias inválidas', async () => {
+    const repositories = memoryRepositories();
+    const created = await account(repositories);
+    const base = {
+      accountId: created.id,
+      type: 'expense' as const,
+      amountMinor: 1299,
+      concept: 'Suscripción',
+      category: 'Suscripciones',
+      frequency: 'monthly' as const,
+      nextDate: '2026-12-15',
+    };
+
+    await expect(createRecurrence(repositories, { ...base, amountMinor: 0 })).rejects.toThrow(
+      /importe/,
+    );
+    await expect(createRecurrence(repositories, { ...base, concept: ' ' })).rejects.toThrow(
+      /concepto/,
+    );
+    await expect(
+      createRecurrence(repositories, { ...base, endDate: '2026-12-01' }),
+    ).rejects.toThrow(/fecha de fin/);
+    await expect(
+      createRecurrence(repositories, { ...base, nextDate: '15/12/2026' }),
+    ).rejects.toThrow(/fecha/);
+    await expect(
+      createRecurrence(repositories, { ...base, accountId: 'acc_missing' }),
+    ).rejects.toThrow(/cuenta/);
+    expect(await repositories.recurrences.list()).toHaveLength(0);
   });
 });

@@ -237,7 +237,7 @@ test.describe('shell web', () => {
     await page.goto('/cuentas/demo-acc-day');
     await expect(page.getByRole('heading', { name: 'Cuenta diaria' })).toBeVisible();
     await expect(page).toHaveTitle('Cuenta diaria · akari', { timeout: 30_000 });
-    await expect(page.getByText(/Resumen.*Cuentas.*Cuenta diaria/)).toBeVisible();
+    await expect(page.locator('[data-hero="balance"]')).toBeVisible();
 
     await page.goto('/movimientos?cuenta=demo-acc-day');
     await expect(page.getByLabel('Cuenta', { exact: true })).toHaveAttribute('data-value', 'demo-acc-day');

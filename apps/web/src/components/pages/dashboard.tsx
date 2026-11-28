@@ -2,11 +2,11 @@
 
 import Link from 'next/link';
 import { useLayoutEffect, useRef, useState } from 'react';
-import { formatMinor, type AccountType, type Overview } from '@akari/domain';
+import { formatMinor, type Overview } from '@akari/domain';
 import {
   Amount,
-  Badge,
   Banner,
+  Button,
   Card,
   Icon,
   MonthBalance,
@@ -16,12 +16,14 @@ import {
   StatePage,
 } from '@akari/ui';
 import { useOverview, useSettings } from '../hooks';
+import { AccountCard } from '../account-card';
 import { BankIcon } from '../bank-icon';
 import { PageTitle } from '../page-title';
 import { PageHeaderResponsive } from '../page-header-responsive';
 import { ActionLink } from '../action-link';
 import { PageSkeleton } from '../page-skeleton';
 import { MovementDetailDialog } from '../movement-detail-dialog';
+import { AccountDialog } from '../account-dialog';
 import { UpcomingInstallments } from '../upcoming-installments';
 import { appNow } from '../../lib/clock';
 import { defaultProfile } from '../../lib/profile';
@@ -29,7 +31,6 @@ import {
   formatDayMonth,
   formatFullDate,
   formatShortDate,
-  formatUpdated,
   formatWeekdayDate,
   formatWeekdayFullDate,
 } from '../../lib/format';
@@ -41,13 +42,13 @@ function greeting() {
   return 'Buenas noches';
 }
 
-const accountTypeLabel: Record<AccountType, string> = {
-  personal: 'Personal',
-  joint: 'Conjunta',
-  deposit: 'Depósito',
-};
-
-function OverviewBody({ overview }: { overview: Overview }) {
+function OverviewBody({
+  overview,
+  onCreateAccount,
+}: {
+  overview: Overview;
+  onCreateAccount: () => void;
+}) {
   const [detailId, setDetailId] = useState<string | null>(null);
   const bankIdFor = (accountId: string) =>
     overview.accounts.find((account) => account.id === accountId)?.bankId;
@@ -254,14 +255,15 @@ function OverviewBody({ overview }: { overview: Overview }) {
                 <Icon name="add" size={20} />
                 <span>Nuevo movimiento</span>
               </Link>
-              <Link
-                href="/cuentas/nueva"
+              <button
+                type="button"
+                onClick={onCreateAccount}
                 aria-label="Nueva cuenta"
                 className="border-border-strong bg-surface-default text-text-primary inline-flex h-11 flex-auto items-center justify-center gap-1.5 whitespace-nowrap rounded-full border px-2 text-ui-12-strong transition-colors duration-fast focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
               >
                 <Icon name="wallet" size={20} />
                 <span>Nueva cuenta</span>
-              </Link>
+              </button>
               <Link
                 href="/ajustes"
                 aria-label="Exportar"
@@ -289,46 +291,15 @@ function OverviewBody({ overview }: { overview: Overview }) {
           <SectionHeader
             id="cuentas"
             title={accountsTitle}
-            action={
-              <Link
-                href="/cuentas/nueva"
-                className="text-ui-11-strong text-accent-strong underline-offset-4 hover:underline"
-              >
-                Gestionar cuentas
-              </Link>
-            }
             className="mb-4"
           />
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3 lg:gap-3">
             {overview.accounts.map((account) => (
-              <Link
+              <AccountCard
                 key={account.id}
-                href={`/cuentas/${account.id}`}
-                data-account={account.id}
-                className="flex h-full min-w-0 flex-col gap-2.5 rounded-xl bg-surface-sunken p-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <span className="flex min-w-0 items-center gap-2">
-                    <BankIcon bankId={account.bankId} size={20} />
-                    <p className="min-w-0 truncate text-ui-13-strong text-text-primary">
-                      {account.name}
-                    </p>
-                  </span>
-                  <Badge tone={account.includeInTotal ? 'positive' : 'neutral'}>
-                    {account.includeInTotal ? 'Al día' : 'Excluida'}
-                  </Badge>
-                </div>
-                <Amount
-                  minor={overview.balancesByAccount[account.id]?.minor ?? 0}
-                  currency={account.currency}
-                  className="text-ui-28-bold"
-                />
-                <p className="text-ui-11 text-text-secondary">Saldo disponible</p>
-                <div className="mt-auto flex items-center justify-between gap-2 text-ui-10 text-text-secondary">
-                  <span className="truncate">{formatUpdated(account.updatedAt)}</span>
-                  <span className="shrink-0">{accountTypeLabel[account.type]}</span>
-                </div>
-              </Link>
+                account={account}
+                balanceMinor={overview.balancesByAccount[account.id]?.minor ?? 0}
+              />
             ))}
           </div>
         </Card>
@@ -367,7 +338,9 @@ function OverviewBody({ overview }: { overview: Overview }) {
 export function DashboardScreen() {
   const overview = useOverview();
   const settings = useSettings();
+  const [creatingAccount, setCreatingAccount] = useState(false);
   const profileName = settings?.displayName ?? defaultProfile.displayName;
+  const openAccountDialog = () => setCreatingAccount(true);
 
   if (!overview) {
     return <PageSkeleton variant="cards" />;
@@ -376,7 +349,7 @@ export function DashboardScreen() {
   if (overview.accounts.length === 0) {
     const actions = (
       <>
-        <ActionLink href="/cuentas/nueva">Añadir cuenta</ActionLink>
+        <Button onClick={openAccountDialog}>Añadir cuenta</Button>
         <ActionLink href="/movimientos/nuevo" variant="secondary">
           Añadir movimiento
         </ActionLink>
@@ -392,7 +365,7 @@ export function DashboardScreen() {
           type="empty"
           title="Tu resumen empieza con una cuenta"
           description="Crea una cuenta personal, conjunta o de depósito y registra su saldo inicial. Después te guiaremos para añadir tu primer movimiento."
-          primaryAction={<ActionLink href="/cuentas/nueva">Añadir cuenta</ActionLink>}
+          primaryAction={<Button onClick={openAccountDialog}>Añadir cuenta</Button>}
         />
         <Card padding="md" data-first-steps>
           <SectionHeader title="Primeros pasos" />
@@ -407,9 +380,9 @@ export function DashboardScreen() {
                   Indica su saldo inicial y, si quieres, su banco.
                 </p>
               </div>
-              <ActionLink href="/cuentas/nueva" variant="secondary">
+              <Button variant="secondary" size="sm" onClick={openAccountDialog}>
                 Crear
-              </ActionLink>
+              </Button>
             </li>
             <li className="flex items-center gap-3 opacity-60">
               <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-surface-sunken text-ui-11-strong text-text-tertiary">
@@ -422,6 +395,7 @@ export function DashboardScreen() {
             </li>
           </ol>
         </Card>
+        <AccountDialog open={creatingAccount} onClose={() => setCreatingAccount(false)} />
       </Stack>
     );
   }
@@ -465,7 +439,8 @@ export function DashboardScreen() {
           </div>
         </Card>
       ) : null}
-      <OverviewBody overview={overview} />
+      <OverviewBody overview={overview} onCreateAccount={openAccountDialog} />
+      <AccountDialog open={creatingAccount} onClose={() => setCreatingAccount(false)} />
     </Stack>
   );
 }

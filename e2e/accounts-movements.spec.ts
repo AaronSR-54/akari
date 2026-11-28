@@ -1,5 +1,11 @@
 import { expect, test, type Page } from '@playwright/test';
-import { chooseOption, expectHeadingForViewport, seedDemo, startEmpty } from './helpers';
+import {
+  chooseOption,
+  expectHeadingForViewport,
+  openNewAccount,
+  seedDemo,
+  startEmpty,
+} from './helpers';
 
 function visible(page: Page, text: string | RegExp) {
   return page.getByText(text).filter({ visible: true }).first();
@@ -8,8 +14,8 @@ function visible(page: Page, text: string | RegExp) {
 test.describe('cuentas y movimientos', () => {
   test('crea una cuenta, la edita y registra un movimiento', async ({ page }) => {
     await startEmpty(page);
-    await page.getByRole('link', { name: 'Añadir cuenta' }).first().click();
-    await expect(page.getByRole('heading', { name: 'Nueva cuenta' })).toBeVisible();
+    await openNewAccount(page);
+    await expect(page.getByRole('dialog', { name: 'Nueva cuenta' })).toBeVisible();
 
     await page.getByLabel('Nombre de la cuenta').fill('Ahorro');
     await page.getByLabel('Saldo inicial').fill('500');
@@ -24,8 +30,11 @@ test.describe('cuentas y movimientos', () => {
     await expect(page).toHaveURL(/\/cuentas\/acc_/);
     await expect(page.getByText(/600,00/).first()).toBeVisible();
 
-    await page.getByRole('link', { name: 'Añadir movimiento' }).first().click();
-    await expect(page).toHaveURL(/\/movimientos\/nuevo\?cuenta=/);
+    await page
+      .getByRole('button', { name: 'Añadir movimiento' })
+      .filter({ visible: true })
+      .first()
+      .click();
     await page.getByLabel('Importe').fill('50');
     await page.getByLabel('Concepto').fill('Cine');
     await chooseOption(page, 'Categoría', 'Ocio');
@@ -36,7 +45,9 @@ test.describe('cuentas y movimientos', () => {
     const shortDate = pickedDate.split(' ').slice(0, 2).join(' ');
     await expect(dateTrigger).toHaveAttribute('aria-expanded', 'false');
     await page.getByRole('button', { name: 'Guardar movimiento' }).click();
-    await expect(page).toHaveURL(/\/movimientos/);
+    await expect(page.getByText('Movimiento guardado')).toBeVisible();
+    await page.getByRole('link', { name: 'Ver todos' }).click();
+    await expect(page).toHaveURL(/\/movimientos\?cuenta=/);
     await expect(visible(page, 'Cine')).toBeVisible();
     await expect(visible(page, shortDate)).toBeVisible();
 
@@ -47,7 +58,7 @@ test.describe('cuentas y movimientos', () => {
 
   test('asocia un banco a la cuenta y conserva la elección al editar', async ({ page }) => {
     await startEmpty(page);
-    await page.goto('/cuentas/nueva');
+    await openNewAccount(page);
     await page.getByLabel('Nombre de la cuenta').fill('Cuenta BBVA');
     await page.getByLabel('Saldo inicial').fill('500');
     const bankTrigger = page.getByLabel('Banco');
@@ -76,7 +87,7 @@ test.describe('cuentas y movimientos', () => {
 
   test('guarda una cuenta sin banco y mantiene el icono genérico', async ({ page }) => {
     await startEmpty(page);
-    await page.goto('/cuentas/nueva');
+    await openNewAccount(page);
     await page.getByLabel('Nombre de la cuenta').fill('Cuenta sin banco');
     await page.getByLabel('Saldo inicial').fill('500');
     await chooseOption(page, 'Banco', 'Sin banco / Otro');
@@ -89,23 +100,29 @@ test.describe('cuentas y movimientos', () => {
     await expect(page.getByLabel('Banco')).toHaveAttribute('data-value', 'other');
 
     await page.goto(accountUrl);
-    await page.getByRole('link', { name: 'Añadir movimiento' }).first().click();
+    await page
+      .getByRole('button', { name: 'Añadir movimiento' })
+      .filter({ visible: true })
+      .first()
+      .click();
     await page.getByLabel('Importe').fill('20');
     await page.getByLabel('Concepto').fill('Café');
     await chooseOption(page, 'Categoría', 'Alimentación');
     await page.getByRole('button', { name: 'Guardar movimiento' }).click();
-    await expect(page).toHaveURL(/\/movimientos$/);
+    await expect(page.getByText('Movimiento guardado')).toBeVisible();
     const row = page.getByRole('button', { name: /Café/ }).first();
     await expect(row.locator('[data-bank="other"] svg')).toBeVisible();
   });
 
   test('valida el saldo inicial obligatorio', async ({ page }) => {
     await startEmpty(page);
-    await page.goto('/cuentas/nueva');
+    await openNewAccount(page);
     await page.getByLabel('Nombre de la cuenta').fill('Sin saldo');
     await page.getByRole('button', { name: 'Guardar cuenta' }).click();
-    await expect(page).toHaveURL(/\/cuentas\/nueva/);
-    await expect(page.getByText('El saldo inicial es obligatorio', { exact: true })).toBeVisible();
+    await expect(page.getByRole('dialog', { name: 'Nueva cuenta' })).toBeVisible();
+    await expect(
+      page.getByText('El saldo inicial es obligatorio', { exact: true }).first(),
+    ).toBeVisible();
   });
 
   test('filtra, ordena y edita movimientos', async ({ page }) => {
@@ -269,21 +286,24 @@ test.describe('cuentas y movimientos', () => {
 
   test('muestra saldo estimado negativo y registra una recurrencia', async ({ page }) => {
     await startEmpty(page);
-    await page.goto('/cuentas/nueva');
+    await openNewAccount(page);
     await page.getByLabel('Nombre de la cuenta').fill('Alquiler');
     await page.getByLabel('Saldo inicial').fill('500');
     await page.getByRole('button', { name: 'Guardar cuenta' }).click();
     await expect(page).toHaveURL(/\/cuentas\/acc_/);
     const accountUrl = page.url();
 
-    await page.getByRole('link', { name: 'Añadir movimiento' }).first().click();
+    await page
+      .getByRole('button', { name: 'Añadir movimiento' })
+      .filter({ visible: true })
+      .first()
+      .click();
     await page.getByLabel('Importe').fill('700');
     await page.getByLabel('Concepto').fill('Alquiler extra');
     await page.getByRole('switch', { name: 'Repetir este movimiento' }).click();
     await chooseOption(page, 'Frecuencia', 'Mensual');
     await page.getByRole('button', { name: 'Guardar movimiento' }).click();
-    await expect(page).toHaveURL(/\/movimientos/);
-    await expect(visible(page, 'Alquiler extra')).toBeVisible();
+    await expect(page.getByText('Movimiento guardado')).toBeVisible();
 
     await page.goto(accountUrl);
     await expect(page.getByText('El saldo estimado a fin de mes es negativo')).toBeVisible();
@@ -327,12 +347,15 @@ test.describe('cuentas y movimientos', () => {
     await expect(cena.locator('svg')).toHaveCount(0);
   });
 
-  test('muestra plazos y registra una cuota vencida', async ({ page }) => {
+  test('muestra las próximas cuotas y abre el detalle del plan', async ({ page }) => {
     await seedDemo(page);
     await page.goto('/cuentas/demo-acc-day');
-    await expect(page.getByText('Plazos').first()).toBeVisible();
-    await page.getByRole('button', { name: 'Registrar cuota' }).first().click();
-    await expect(page.getByText('Cuota registrada')).toBeVisible();
-    await expect(page.getByText(/3 de 6/).first()).toBeVisible();
+    await expect(page.getByText('Próximas cuotas').first()).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Registrar cuota' })).toHaveCount(0);
+    await page.locator('[data-installment-plan="demo-plan-laptop"]').click();
+    await expect(page).toHaveURL(/\/cuotas\/demo-plan-laptop$/);
+    await expect(
+      page.getByRole('heading', { name: 'Portátil', exact: true }).first(),
+    ).toBeVisible();
   });
 });

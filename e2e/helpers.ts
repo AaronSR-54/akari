@@ -31,6 +31,17 @@ export async function startEmpty(page: Page) {
   await page.waitForURL(/\/$/);
 }
 
+export async function openNewAccount(page: Page) {
+  await page.goto('/');
+  const pill = page.getByRole('button', { name: 'Nueva cuenta' });
+  if (await pill.count()) {
+    await pill.first().click();
+  } else {
+    await page.getByRole('button', { name: 'Añadir cuenta' }).first().click();
+  }
+  await expect(page.getByRole('dialog', { name: 'Nueva cuenta' })).toBeVisible();
+}
+
 export async function openNav(page: Page, name: string) {
   await page.getByRole('link', { name, exact: true }).first().click();
   await expect(page.getByRole('heading', { name, exact: true }).first()).toBeVisible();

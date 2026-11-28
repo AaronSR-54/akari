@@ -38,7 +38,8 @@ function AppShellInner({ children }: { children: ReactNode }) {
   const { pay, busyId } = useNotificationPayments();
   const router = useRouter();
   const pathname = usePathname();
-  const { title, meta } = usePageTitle();
+  const flushContent = /^\/cuentas\/[^/]+$/.test(pathname ?? '');
+  const { title, meta, titleAction } = usePageTitle();
   const [searchOpen, setSearchOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [sidebarPinned, setSidebarPinned] = useState(false);
@@ -121,6 +122,8 @@ function AppShellInner({ children }: { children: ReactNode }) {
             <DesktopHeader
               title={headerTitle}
               meta={meta}
+              titleAction={titleAction}
+              pinned={sidebarPinned}
               onOpenSearch={() => setSearchOpen(true)}
               onToggleNotifications={toggleNotifications}
               notificationCount={notificationCount}
@@ -131,7 +134,17 @@ function AppShellInner({ children }: { children: ReactNode }) {
           <main
             id="contenido"
             data-shell-scroll
-            className="flex-1 px-5 pb-24 pt-6 md:px-6 md:pb-8 lg:min-h-0 lg:overflow-y-auto lg:px-8"
+            className={cn(
+              'flex-1 px-5 pb-24 pt-6 md:px-6 md:pb-8 lg:min-h-0 lg:overflow-y-auto lg:px-8',
+              sidebarMode
+                ? flushContent
+                  ? 'lg:pt-[56px]'
+                  : 'lg:pt-[80px]'
+                : flushContent
+                  ? 'lg:pt-0'
+                  : null,
+              flushContent && 'lg:pb-0',
+            )}
           >
             {error ? (
               <StatePage

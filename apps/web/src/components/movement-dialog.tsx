@@ -5,7 +5,7 @@ import { deleteMovement, type Account, type Movement } from '@akari/domain';
 import { Button, Modal, useToast } from '@akari/ui';
 import { MovementForm } from './forms/movement-form';
 import { useData } from './providers';
-import { ActionLink } from './action-link';
+import { AccountDialog } from './account-dialog';
 
 const FORM_ID = 'movement-dialog-form';
 
@@ -26,6 +26,7 @@ export function MovementDialog({
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [creatingAccount, setCreatingAccount] = useState(false);
 
   const close = () => {
     setSaving(false);
@@ -84,7 +85,11 @@ export function MovementDialog({
       {accounts.length === 0 ? (
         <div className="flex flex-col gap-3">
           <p>Antes de registrar un movimiento, crea la cuenta donde se guardará.</p>
-          <ActionLink href="/cuentas/nueva">Crear cuenta</ActionLink>
+          <Button onClick={() => setCreatingAccount(true)}>Crear cuenta</Button>
+          <AccountDialog
+            open={creatingAccount}
+            onClose={() => setCreatingAccount(false)}
+          />
         </div>
       ) : (
         <MovementForm

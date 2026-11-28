@@ -2,18 +2,20 @@
 
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { Stack, StatePage } from '@akari/ui';
+import { useState } from 'react';
+import { Button, Stack, StatePage } from '@akari/ui';
 import { useAccounts } from '../../components/hooks';
 import { MovementForm } from '../../components/forms/movement-form';
 import { PageTitle } from '../../components/page-title';
 import { PageHeaderResponsive } from '../../components/page-header-responsive';
 import { HeadingMeta } from '../../components/heading-meta';
-import { ActionLink } from '../../components/action-link';
+import { AccountDialog } from '../../components/account-dialog';
 import { PageSkeleton } from '../../components/page-skeleton';
 
 export function NewMovementScreen() {
   const accounts = useAccounts();
   const searchParams = useSearchParams();
+  const [creatingAccount, setCreatingAccount] = useState(false);
   const defaultAccountId = searchParams.get('cuenta') ?? undefined;
 
   if (!accounts) {
@@ -22,14 +24,15 @@ export function NewMovementScreen() {
 
   if (accounts.length === 0) {
     return (
-      <StatePage
-        type="empty"
-        title="Necesitas una cuenta"
-        description="Antes de registrar un movimiento, crea la cuenta donde se guardará."
-        primaryAction={
-          <ActionLink href="/cuentas/nueva">Crear cuenta</ActionLink>
-        }
-      />
+      <>
+        <StatePage
+          type="empty"
+          title="Necesitas una cuenta"
+          description="Antes de registrar un movimiento, crea la cuenta donde se guardará."
+          primaryAction={<Button onClick={() => setCreatingAccount(true)}>Crear cuenta</Button>}
+        />
+        <AccountDialog open={creatingAccount} onClose={() => setCreatingAccount(false)} />
+      </>
     );
   }
 
