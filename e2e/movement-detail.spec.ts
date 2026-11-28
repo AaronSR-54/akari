@@ -9,10 +9,18 @@ test.describe('detalle de movimiento', () => {
     await page.getByRole('button', { name: /Cena con amigos/ }).click();
     const detail = page.getByRole('dialog', { name: 'Cena con amigos' });
     await expect(detail).toBeVisible();
-    await expect(detail.getByText('Datos del movimiento')).toBeVisible();
-    await expect(detail.getByText('Ocio', { exact: true })).toBeVisible();
-    await expect(detail.getByText('Cuenta diaria')).toBeVisible();
-    await expect(detail.getByText(/45,00/).first()).toBeVisible();
+    await expect(detail.getByRole('button', { name: 'Gasto' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    await expect(detail.getByLabel('Importe')).toHaveValue('45,00');
+    await expect(detail.getByLabel('Concepto')).toHaveValue('Cena con amigos');
+    await expect(detail.getByLabel('Cuenta')).toContainText('Cuenta diaria');
+    await expect(detail.getByLabel('Categoría')).toContainText('Ocio');
+    await expect(detail.getByLabel('Nota')).toBeDisabled();
+    const detailDate = detail.getByRole('button', { name: 'Fecha' });
+    await expect(detailDate).toBeDisabled();
+    await expect(detailDate).not.toHaveText('');
 
     await detail.getByRole('button', { name: 'Editar' }).click();
     const dialog = page.getByRole('dialog', { name: 'Editar movimiento' });
@@ -22,6 +30,7 @@ test.describe('detalle de movimiento', () => {
 
     const updated = page.getByRole('dialog', { name: 'Cena de equipo' });
     await expect(updated).toBeVisible();
+    await expect(updated.getByLabel('Concepto')).toHaveValue('Cena de equipo');
     await updated.getByRole('button', { name: 'Cerrar' }).click();
     await expect(page.getByRole('button', { name: /Cena de equipo/ })).toBeVisible();
   });

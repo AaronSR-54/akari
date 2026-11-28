@@ -1,0 +1,16 @@
+{
+  "changeId": "entry-points",
+  "branch": "entry-points",
+  "cards": [
+    {
+      "publicId": "lf64rgq1yf5s",
+      "title": "fix: redirección de nuevos movimientos en dashboard"
+    },
+    {
+      "publicId": "etex5ugidnuq",
+      "title": "feat: creación de ruta de login"
+    }
+  ],
+  "prUrl": "https://github.com/AaronSR-54/akari/pull/29",
+  "claimedAt": "2026-11-28T10:38:46.680Z"
+}

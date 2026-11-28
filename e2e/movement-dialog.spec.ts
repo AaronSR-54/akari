@@ -6,6 +6,29 @@ function visible(page: Page, text: string | RegExp) {
 }
 
 test.describe('modal de movimiento', () => {
+  test('muestra el detalle como formulario en modo lectura y permite editarlo', async ({ page }) => {
+    await seedDemo(page);
+    await page.goto('/movimientos');
+    await page.getByRole('searchbox', { name: 'Buscar movimientos' }).fill('Cena con amigos');
+    await page.getByRole('button', { name: /Cena con amigos/ }).first().click();
+
+    const detail = page.getByRole('dialog', { name: 'Cena con amigos' });
+    await expect(detail).toBeVisible();
+    await expect(detail.getByLabel('Concepto')).toHaveValue('Cena con amigos');
+    await expect(detail.getByLabel('Importe')).toBeDisabled();
+    await expect(detail.getByLabel('Categoría')).toBeDisabled();
+    await expect(detail.getByRole('button', { name: 'Fecha' })).toBeDisabled();
+    await expect(
+      detail.getByRole('group', { name: 'Tipo de movimiento' }).getByRole('button').first(),
+    ).toBeDisabled();
+
+    await detail.getByRole('button', { name: 'Editar' }).click();
+    const edit = page.getByRole('dialog', { name: 'Editar movimiento' });
+    await expect(edit).toBeVisible();
+    await expect(edit.getByLabel('Concepto')).toBeEnabled();
+    await expect(edit.getByLabel('Categoría')).toBeEnabled();
+  });
+
   test('crea un movimiento sin salir del listado', async ({ page }) => {
     await seedDemo(page);
     await page.goto('/movimientos');

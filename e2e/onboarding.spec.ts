@@ -10,7 +10,7 @@ test.describe('onboarding', () => {
     await expect(page).toHaveURL(/\/$/);
     await expectGreetingForViewport(page);
     await expect(page.getByText('Tu resumen empieza con una cuenta')).toBeVisible();
-    await expect(page.getByRole('link', { name: 'Añadir movimiento' }).first()).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Añadir movimiento' }).first()).toBeVisible();
 
     await page.reload();
     await expect(page).toHaveURL(/\/$/);

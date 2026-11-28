@@ -2,7 +2,6 @@ import { expect, test } from '@playwright/test';
 import {
   chooseOption,
   expectGreetingForViewport,
-  expectHeadingForViewport,
   seedDemo,
   startEmpty,
 } from './helpers';
@@ -55,9 +54,8 @@ test.describe('dashboard hero', () => {
     await expect(quick).toBeVisible();
     await expect(quick).toHaveAttribute('aria-label', 'Accesos rápidos');
     const isDesktopWidth = (page.viewportSize()?.width ?? 1280) >= 768;
-    const nuevoQuick = quick.getByRole('link', { name: 'Nuevo movimiento' });
+    const nuevoQuick = quick.getByRole('button', { name: 'Nuevo movimiento' });
     if (isDesktopWidth) {
-      await expect(nuevoQuick).toHaveAttribute('href', '/movimientos/nuevo');
       await expect(nuevoQuick).toBeVisible();
     } else {
       await expect(nuevoQuick).toBeHidden();
@@ -74,8 +72,7 @@ test.describe('dashboard hero', () => {
       'href',
       '/ajustes',
     );
-    const addNav = page.locator('nav[aria-label="Navegación principal"] a[aria-label="Añadir movimiento"]');
-    await expect(addNav).toHaveAttribute('href', '/movimientos/nuevo');
+    const addNav = page.locator('nav[aria-label="Navegación principal"] button[aria-label="Añadir movimiento"]');
     if (isDesktopWidth) {
       await expect(addNav).toBeHidden();
       const deskPills = [
@@ -299,20 +296,22 @@ test.describe('dashboard hero', () => {
     const total = summary.locator('p.font-tabular').first();
     const before = await total.textContent();
 
-    const addNavLink = page.locator('nav[aria-label="Navegación principal"] a[aria-label="Añadir movimiento"]');
-    if (await addNavLink.isVisible()) {
-      await addNavLink.click();
+    const addNavButton = page.locator('nav[aria-label="Navegación principal"] button[aria-label="Añadir movimiento"]');
+    if (await addNavButton.isVisible()) {
+      await addNavButton.click();
     } else {
-      await page.getByRole('link', { name: 'Nuevo movimiento' }).first().click();
+      await page.getByRole('button', { name: 'Nuevo movimiento' }).first().click();
     }
-    await page.getByLabel('Importe').fill('25');
-    await page.getByLabel('Concepto').fill('Entradas');
+    const dialog = page.getByRole('dialog', { name: 'Nuevo movimiento' });
+    await expect(dialog).toBeVisible();
+    await expect(page).toHaveURL(/\/$/);
+    await dialog.getByLabel('Importe').fill('25');
+    await dialog.getByLabel('Concepto').fill('Entradas');
     await chooseOption(page, 'Categoría', 'Ocio');
-    await page.getByRole('button', { name: 'Guardar movimiento' }).click();
-    await expect(page).toHaveURL(/\/movimientos$/);
-    await expectHeadingForViewport(page, 'Movimientos');
+    await dialog.getByRole('button', { name: 'Guardar movimiento' }).click();
+    await expect(dialog).toBeHidden();
+    await expect(page).toHaveURL(/\/$/);
 
-    await page.goto('/');
     await expect(total).toBeVisible();
     expect(toNumber(await total.textContent())).toBeCloseTo(toNumber(before) - 25, 2);
 

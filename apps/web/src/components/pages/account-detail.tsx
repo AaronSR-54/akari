@@ -36,7 +36,8 @@ import { PageTitle } from '../../components/page-title';
 import { PageHeaderResponsive } from '../../components/page-header-responsive';
 import { HeadingMeta } from '../../components/heading-meta';
 import { useData } from '../../components/providers';
-import { ActionLink } from '../../components/action-link';
+import { ActionButton, ActionLink } from '../../components/action-link';
+import { useMovementComposer } from '../../components/movement-composer';
 import { PageSkeleton } from '../../components/page-skeleton';
 import { MovementDetailDialog } from '../../components/movement-detail-dialog';
 import { BankIcon } from '../../components/bank-icon';
@@ -59,6 +60,7 @@ export function AccountDetailScreen({ accountId }: { accountId: string }) {
   const { repositories } = useData();
   const { toast } = useToast();
   const router = useRouter();
+  const openMovement = useMovementComposer();
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [detailId, setDetailId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -135,9 +137,9 @@ export function AccountDetailScreen({ accountId }: { accountId: string }) {
               <ActionLink href={`/cuentas/${account.id}/editar`} variant="secondary">
                 Editar
               </ActionLink>
-              <ActionLink href={`/movimientos/nuevo?cuenta=${account.id}`}>
+              <ActionButton onClick={() => openMovement({ accountId: account.id })}>
                 Añadir movimiento
-              </ActionLink>
+              </ActionButton>
               <Button variant="tertiary" size="sm" onClick={() => setConfirmDelete(true)}>
                 Eliminar
               </Button>
@@ -152,7 +154,7 @@ export function AccountDetailScreen({ accountId }: { accountId: string }) {
           <Banner
             tone="info"
             title="Primer paso completado"
-            action={<ActionLink href={`/movimientos/nuevo?cuenta=${account.id}`}>Añadir primer movimiento</ActionLink>}
+            action={<ActionButton onClick={() => openMovement({ accountId: account.id })}>Añadir primer movimiento</ActionButton>}
           >
             Tu cuenta ya está creada. Registra tu primer gasto o ingreso para empezar a ver el
             resumen en movimiento.
@@ -228,9 +230,9 @@ export function AccountDetailScreen({ accountId }: { accountId: string }) {
                   title="Esta cuenta no tiene movimientos"
                   description="Añade el primero para empezar a seguir su saldo."
                   primaryAction={
-                    <ActionLink href={`/movimientos/nuevo?cuenta=${account.id}`}>
+                    <ActionButton onClick={() => openMovement({ accountId: account.id })}>
                       Añadir movimiento
-                    </ActionLink>
+                    </ActionButton>
                   }
                   className="border-0 bg-transparent py-6"
                 />

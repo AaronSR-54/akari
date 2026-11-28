@@ -25,6 +25,7 @@ import { CloudAccountCard } from '../account-panel';
 import { useCloud } from '../cloud-provider';
 import { BankIcon } from '../bank-icon';
 import { appNow } from '../../lib/clock';
+import { clearSignupOnboarding, hasSignupOnboarding } from '../../lib/access-intent';
 import { defaultProfile } from '../../lib/profile';
 import { currencyOptions } from '../../lib/options';
 
@@ -162,8 +163,15 @@ export function OnboardingScreen() {
   const initialised = useRef(false);
   const nameTouched = useRef(false);
   const redirected = useRef(false);
+  const fromSignup = useRef(false);
   const contentRef = useRef<HTMLDivElement>(null);
   const asideRef = useRef<HTMLParagraphElement>(null);
+
+  useEffect(() => {
+    // Si el asistente viene de crear la cuenta en la ruta de acceso, la sesión
+    // activa no debe saltárselo: es parte del alta.
+    fromSignup.current = hasSignupOnboarding();
+  }, []);
 
   useEffect(() => {
     if (initialised.current || !settings) return;
@@ -181,10 +189,12 @@ export function OnboardingScreen() {
     if (!settings || redirected.current) return;
     if (settings.onboardingCompleted) {
       redirected.current = true;
+      clearSignupOnboarding();
       router.replace('/');
       return;
     }
     if (!cloud.user) return;
+    if (fromSignup.current) return;
     // Con una sesión de nube activa, el asistente ya no aporta nada: la cuenta
     // existe y sus datos vienen de Supabase. Lo damos por completado y vamos al
     // resumen para no rebotar entre ambas pantallas.
@@ -238,6 +248,7 @@ export function OnboardingScreen() {
       if (markCompleted) {
         await repositories.settings.update({ onboardingCompleted: true });
       }
+      clearSignupOnboarding();
       router.replace('/');
     } catch (finishError) {
       toast({

@@ -19,8 +19,9 @@ import { useOverview, useSettings } from '../hooks';
 import { BankIcon } from '../bank-icon';
 import { PageTitle } from '../page-title';
 import { PageHeaderResponsive } from '../page-header-responsive';
-import { ActionLink } from '../action-link';
+import { ActionButton, ActionLink } from '../action-link';
 import { PageSkeleton } from '../page-skeleton';
+import { useMovementComposer } from '../movement-composer';
 import { MovementDetailDialog } from '../movement-detail-dialog';
 import { UpcomingInstallments } from '../upcoming-installments';
 import { appNow } from '../../lib/clock';
@@ -49,6 +50,7 @@ const accountTypeLabel: Record<AccountType, string> = {
 
 function OverviewBody({ overview }: { overview: Overview }) {
   const [detailId, setDetailId] = useState<string | null>(null);
+  const openMovement = useMovementComposer();
   const bankIdFor = (accountId: string) =>
     overview.accounts.find((account) => account.id === accountId)?.bankId;
   const leftRef = useRef<HTMLDivElement>(null);
@@ -182,7 +184,7 @@ function OverviewBody({ overview }: { overview: Overview }) {
                 type="empty"
                 title="Todavía no hay movimientos"
                 description="Registra el primero para ver tu resumen cobrar vida."
-                primaryAction={<ActionLink href="/movimientos/nuevo">Añadir movimiento</ActionLink>}
+                primaryAction={<ActionButton onClick={() => openMovement()}>Añadir movimiento</ActionButton>}
                 className="border-0 bg-transparent py-6"
               />
             ) : (
@@ -246,14 +248,15 @@ function OverviewBody({ overview }: { overview: Overview }) {
           className="order-5 mt-5 lg:order-none lg:mt-4"
         >
             <div className="flex items-center gap-2">
-              <Link
-                href="/movimientos/nuevo"
+              <button
+                type="button"
+                onClick={() => openMovement()}
                 aria-label="Nuevo movimiento"
                 className="bg-accent-default text-accent-ink hidden h-11 flex-auto items-center justify-center gap-1.5 whitespace-nowrap rounded-full px-2 text-ui-12-strong transition-colors duration-fast focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring md:inline-flex"
               >
                 <Icon name="add" size={20} />
                 <span>Nuevo movimiento</span>
-              </Link>
+              </button>
               <Link
                 href="/cuentas/nueva"
                 aria-label="Nueva cuenta"
@@ -343,12 +346,13 @@ function OverviewBody({ overview }: { overview: Overview }) {
             nextRecurrence.overdue ? 'El pago está vencido' : 'El próximo pago vence pronto'
           }
           action={
-            <Link
-              href={`/movimientos/nuevo?cuenta=${nextRecurrence.accountId}`}
+            <button
+              type="button"
+              onClick={() => openMovement({ accountId: nextRecurrence.accountId })}
               className="text-ui-12-strong underline underline-offset-4"
             >
               Pagar ahora
-            </Link>
+            </button>
           }
         >
           {formatMinor(nextRecurrence.amountMinor, nextRecurrence.currency)} de{' '}
@@ -367,6 +371,7 @@ function OverviewBody({ overview }: { overview: Overview }) {
 export function DashboardScreen() {
   const overview = useOverview();
   const settings = useSettings();
+  const openMovement = useMovementComposer();
   const profileName = settings?.displayName ?? defaultProfile.displayName;
 
   if (!overview) {
@@ -377,9 +382,9 @@ export function DashboardScreen() {
     const actions = (
       <>
         <ActionLink href="/cuentas/nueva">Añadir cuenta</ActionLink>
-        <ActionLink href="/movimientos/nuevo" variant="secondary">
+        <ActionButton variant="secondary" onClick={() => openMovement()}>
           Añadir movimiento
-        </ActionLink>
+        </ActionButton>
       </>
     );
     return (
@@ -455,12 +460,12 @@ export function DashboardScreen() {
                   Un gasto o un ingreso para empezar a ver el resumen.
                 </p>
               </div>
-              <ActionLink
-                href={`/movimientos/nuevo?cuenta=${overview.accounts[0]?.id ?? ''}`}
+              <ActionButton
                 variant="secondary"
+                onClick={() => openMovement({ accountId: overview.accounts[0]?.id })}
               >
                 Añadir
-              </ActionLink>
+              </ActionButton>
             </div>
           </div>
         </Card>

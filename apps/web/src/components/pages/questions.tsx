@@ -13,6 +13,8 @@ import {
   cn,
 } from '@akari/ui';
 import { useQuickAnswers } from '../../components/hooks';
+import { ActionButton } from '../../components/action-link';
+import { useMovementComposer } from '../../components/movement-composer';
 import { PageTitle } from '../../components/page-title';
 import { PageHeaderResponsive } from '../../components/page-header-responsive';
 import { HeadingMeta } from '../../components/heading-meta';
@@ -34,6 +36,7 @@ const questionOptions = [
 
 export function QuestionsScreen() {
   const answers = useQuickAnswers();
+  const openMovement = useMovementComposer();
   const [question, setQuestion] = useState<QuestionKey>('biggest');
 
   if (!answers) {
@@ -203,7 +206,7 @@ export function QuestionsScreen() {
             type="insufficient"
             title="Aún no hay datos suficientes"
             description="Registra algunos movimientos del mes y vuelve a estas preguntas."
-            primaryAction={<Link href="/movimientos/nuevo">Añadir movimiento</Link>}
+            primaryAction={<ActionButton onClick={() => openMovement()}>Añadir movimiento</ActionButton>}
           />
         ) : null}
       </Stack>

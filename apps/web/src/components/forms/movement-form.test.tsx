@@ -2,7 +2,7 @@
 
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import type { Account } from '@akari/domain';
+import type { Account, Movement } from '@akari/domain';
 
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: vi.fn(), back: vi.fn() }),
@@ -43,6 +43,18 @@ const personal: Account = {
   type: 'personal',
 };
 
+const movement: Movement = {
+  id: 'mov-1',
+  accountId: 'acc-personal',
+  type: 'expense',
+  amountMinor: 4250,
+  currency: 'EUR',
+  date: '2026-11-15',
+  concept: 'Cena',
+  category: 'Ocio',
+  createdAt: '2026-11-15T20:00:00.000Z',
+};
+
 describe('MovementForm', () => {
   it('pide el autor y usa el primer miembro cuando el perfil no pertenece a la cuenta', () => {
     render(<MovementForm accounts={[joint]} />);
@@ -53,5 +65,24 @@ describe('MovementForm', () => {
   it('no pide autor en cuentas sin miembros', () => {
     render(<MovementForm accounts={[personal]} />);
     expect(screen.queryByText('Registrado por')).toBeNull();
+  });
+
+  it('bloquea los campos en modo lectura', () => {
+    render(
+      <MovementForm
+        accounts={[personal]}
+        movement={movement}
+        readOnly
+        showActions={false}
+        formId="detail-form"
+      />,
+    );
+    expect(screen.getByRole('textbox', { name: /Importe/ })).toBeDisabled();
+    expect(screen.getByRole('combobox', { name: /Cuenta/ })).toBeDisabled();
+    expect(screen.getByRole('textbox', { name: /Concepto/ })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /Fecha/ })).toBeDisabled();
+    expect(screen.getByRole('combobox', { name: /Categoría/ })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Gasto' })).toBeDisabled();
+    expect(screen.queryByRole('button', { name: 'Guardar cambios' })).toBeNull();
   });
 });

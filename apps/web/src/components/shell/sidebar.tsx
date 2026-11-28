@@ -6,6 +6,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Avatar, Icon, IconBell, IconButton, IconSearch, Logo, cn, type IconSize } from '@akari/ui';
 import { defaultProfile, initialsFromName } from '../../lib/profile';
 import { isActivePath, navItems, type NavItem } from '../nav';
+import { useMovementComposer } from '../movement-composer';
 
 export function NotificationsMenu({
   open,
@@ -398,6 +399,7 @@ export function MobileTopBar({
 
 export function MobileNav() {
   const pathname = usePathname();
+  const openMovement = useMovementComposer();
   const renderTab = (item: NavItem) => {
     const active = isActivePath(pathname, item.href);
     return (
@@ -423,7 +425,6 @@ export function MobileNav() {
       </li>
     );
   };
-  const addActive = isActivePath(pathname, '/movimientos/nuevo');
   return (
     <nav
       aria-label="Navegación principal"
@@ -432,14 +433,14 @@ export function MobileNav() {
       <ul className="mx-auto flex max-w-md items-center justify-around px-2 py-1.5">
         {navItems.slice(0, 2).map(renderTab)}
         <li className="flex flex-1 justify-center">
-          <Link
-            href="/movimientos/nuevo"
+          <button
+            type="button"
+            onClick={() => openMovement()}
             aria-label="Añadir movimiento"
-            aria-current={addActive ? 'page' : undefined}
             className="bg-accent-default text-accent-ink flex h-14 w-14 -translate-y-3 items-center justify-center rounded-full elevation-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
           >
             <Icon name="add" size={24} />
-          </Link>
+          </button>
         </li>
         {navItems.slice(2).map(renderTab)}
       </ul>

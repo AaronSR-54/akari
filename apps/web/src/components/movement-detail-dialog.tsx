@@ -3,14 +3,13 @@
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { deleteMovement } from '@akari/domain';
-import { Amount, Button, InfoRow, Modal, useToast } from '@akari/ui';
-import { useAccount, useGroupExpense, useMovement } from './hooks';
+import { Button, InfoRow, Modal, useToast } from '@akari/ui';
+import { useAccount, useAccounts, useGroupExpense, useMovement } from './hooks';
 import { useData } from './providers';
 import { MovementEditDialog } from './movement-edit-dialog';
+import { MovementForm } from './forms/movement-form';
 import { errorMessage, formatLongDate } from '../lib/format';
 import { BankIcon } from './bank-icon';
-
-const typeLabel = { expense: 'Gasto', income: 'Ingreso' } as const;
 
 const linkClass = 'text-accent-strong underline-offset-4 hover:underline';
 
@@ -26,6 +25,7 @@ export function MovementDetailDialog({
   showBankIcon?: boolean;
 }) {
   const movement = useMovement(movementId ?? '');
+  const accounts = useAccounts();
   const account = useAccount(movement?.accountId ?? '');
   const groupExpense = useGroupExpense(movement?.groupExpenseId ?? '');
   const { repositories } = useData();
@@ -80,6 +80,21 @@ export function MovementDetailDialog({
 
   if (!open) return null;
 
+  const movementKey = movement
+    ? [
+        movement.id,
+        movement.accountId,
+        movement.type,
+        movement.amountMinor,
+        movement.currency,
+        movement.date,
+        movement.concept,
+        movement.category,
+        movement.note ?? '',
+        movement.memberId ?? '',
+      ].join('|')
+    : 'detail';
+
   if (editing && movement) {
     return <MovementEditDialog movement={movement} open onClose={() => setEditing(false)} />;
   }
@@ -123,45 +138,32 @@ export function MovementDetailDialog({
         </>
       }
     >
-      {movement ? (
-        <div className="flex flex-col gap-2.5">
-          <h3 className="text-ui-13-strong text-text-primary">Datos del movimiento</h3>
-          <InfoRow label="Tipo" value={typeLabel[movement.type]} />
-          <InfoRow
-            label="Importe"
-            value={
-              <Amount
-                minor={movement.amountMinor}
-                currency={movement.currency}
-                type={movement.type}
-                signed
-                className="text-ui-10-strong"
-              />
-            }
+      {movement && accounts ? (
+        <div className="flex flex-col gap-3">
+          <MovementForm
+            key={movementKey}
+            accounts={accounts}
+            movement={movement}
+            formId="movement-detail-form"
+            framed={false}
+            showActions={false}
+            readOnly
           />
-          <InfoRow label="Divisa" value={movement.currency} />
-          <InfoRow label="Fecha" value={formatLongDate(movement.date)} />
-          <InfoRow label="Categoría" value={movement.category} />
-          <InfoRow
-            label="Cuenta"
-            value={
-              account ? (
-                <span className="inline-flex items-center gap-2">
-                  {showBankIcon ? <BankIcon bankId={account.bankId} /> : null}
-                  <Link href={`/cuentas/${account.id}`} className={linkClass}>
-                    {account.name}
-                  </Link>
-                </span>
-              ) : (
-                '—'
-              )
-            }
-          />
-          {movement.note ? <InfoRow label="Nota" value={movement.note} /> : null}
-          <InfoRow label="Creado" value={formatLongDate(movement.createdAt.slice(0, 10))} />
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-ui-10 text-text-secondary">
+            {account ? (
+              <span className="inline-flex items-center gap-2">
+                {showBankIcon ? <BankIcon bankId={account.bankId} /> : null}
+                <Link href={`/cuentas/${account.id}`} className={linkClass}>
+                  {account.name}
+                </Link>
+              </span>
+            ) : null}
+            <span>{movement.currency}</span>
+            <span>Creado el {formatLongDate(movement.createdAt.slice(0, 10))}</span>
+          </div>
 
           {movement.recurrenceId || movement.installmentPlanId || movement.groupExpenseId ? (
-            <>
+            <div className="flex flex-col gap-2">
               <h3 className="mt-2 text-ui-13-strong text-text-primary">Vínculos</h3>
               {movement.recurrenceId ? (
                 <InfoRow
@@ -197,7 +199,7 @@ export function MovementDetailDialog({
                   }
                 />
               ) : null}
-            </>
+            </div>
           ) : null}
         </div>
       ) : (

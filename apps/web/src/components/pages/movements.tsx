@@ -25,7 +25,7 @@ import { PageHeaderResponsive } from '../../components/page-header-responsive';
 import { HeadingMeta } from '../../components/heading-meta';
 import { MovementDetailDialog } from '../../components/movement-detail-dialog';
 import { BankIcon } from '../../components/bank-icon';
-import { MovementDialog } from '../../components/movement-dialog';
+import { useMovementComposer } from '../../components/movement-composer';
 import { PageSkeleton } from '../../components/page-skeleton';
 import { appNow } from '../../lib/clock';
 import { downloadCsv, movementsToCsv } from '../../lib/csv';
@@ -62,7 +62,7 @@ export function MovementsScreen() {
   const [page, setPage] = useState(1);
   const [visible, setVisible] = useState(10);
   const [detailId, setDetailId] = useState<string | null>(null);
-  const [creating, setCreating] = useState(false);
+  const openMovement = useMovementComposer();
 
   const periodPresets = useMemo<DateRangePreset[]>(() => {
     const today = appNow();
@@ -164,7 +164,7 @@ export function MovementsScreen() {
                 <Button variant="secondary" onClick={exportCsv}>
                   Exportar CSV
                 </Button>
-                <Button onClick={() => setCreating(true)}>Añadir movimiento</Button>
+                <Button onClick={() => openMovement()}>Añadir movimiento</Button>
               </>
             }
           />
@@ -173,7 +173,7 @@ export function MovementsScreen() {
           <Button variant="secondary" onClick={exportCsv}>
             Exportar CSV
           </Button>
-          <Button onClick={() => setCreating(true)}>Añadir movimiento</Button>
+          <Button onClick={() => openMovement()}>Añadir movimiento</Button>
         </div>
         <div className="flex w-full items-center justify-between gap-2 md:w-72">
           <HeadingMeta label={`${filtered.length} movimientos`} />
@@ -262,7 +262,7 @@ export function MovementsScreen() {
               hasFilters ? (
                 <Button onClick={clearFilters}>Limpiar filtros</Button>
               ) : (
-                <Button onClick={() => setCreating(true)}>Añadir movimiento</Button>
+                <Button onClick={() => openMovement()}>Añadir movimiento</Button>
               )
             }
           />
@@ -395,7 +395,6 @@ export function MovementsScreen() {
           </>
         )}
       </Stack>
-      <MovementDialog accounts={accounts} open={creating} onClose={() => setCreating(false)} />
       <MovementDetailDialog
         movementId={detailId}
         open={Boolean(detailId)}
