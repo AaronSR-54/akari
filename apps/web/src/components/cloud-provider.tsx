@@ -42,6 +42,9 @@ export type CloudUser = { id: string; email: string | null };
 
 export type AuthResult = { needsConfirmation: boolean };
 
+/** Qué hacer con los datos locales cuando la cuenta remota aún no los conoce. */
+export type LocalDataChoice = 'sync' | 'discard';
+
 type CloudContextValue = {
   enabled: boolean;
   status: CloudStatus;
@@ -50,12 +53,17 @@ type CloudContextValue = {
   pendingChanges: number;
   error: string | null;
   hasLocalData: boolean;
+  hasUnlinkedLocalData: boolean;
   signUp: (email: string, password: string, displayName: string) => Promise<AuthResult>;
   signIn: (
     email: string,
     password: string,
-    options?: { replaceLocal?: boolean },
+    options?: { localData?: LocalDataChoice },
   ) => Promise<AuthResult>;
+  signInWithGoogle: (
+    mode: 'signin' | 'signup',
+    options?: { localData?: LocalDataChoice },
+  ) => Promise<void>;
   signOut: () => Promise<void>;
   syncNow: () => Promise<void>;
 };
@@ -105,6 +113,9 @@ function authMessage(error: { message: string }, action: 'signin' | 'signup'): s
   if (message.includes('rate limit') || message.includes('too many')) {
     return 'Demasiados intentos seguidos. Espera un momento y vuelve a probar.';
   }
+  if (message.includes('provider is not enabled') || message.includes('unsupported provider')) {
+    return 'El acceso con Google no está disponible en esta instalación.';
+  }
   return action === 'signin'
     ? 'No se ha podido iniciar sesión. Revisa tus datos.'
     : 'No se ha podido crear la cuenta. Inténtalo de nuevo.';
@@ -141,6 +152,7 @@ export function CloudProvider({
   const [pendingChanges, setPendingChanges] = useState(0);
   const [lastSyncedAt, setLastSyncedAt] = useState<string | null>(null);
   const [localData, setLocalData] = useState(false);
+  const [unlinkedLocalData, setUnlinkedLocalData] = useState(false);
 
   const engineRef = useRef<SyncEngine | null>(null);
   const connectedUserRef = useRef<string | null>(null);
@@ -157,14 +169,16 @@ export function CloudProvider({
 
   const refreshCounters = useCallback(async () => {
     if (!ready) return;
-    const [pending, hasData, last] = await Promise.all([
+    const [pending, hasData, owner, last] = await Promise.all([
       countPendingChanges(db),
       hasLocalData(db),
+      getSyncOwner(db),
       getLastSyncedAt(db),
     ]);
     pendingRef.current = pending;
     setPendingChanges(pending);
     setLocalData(hasData);
+    setUnlinkedLocalData(hasData && owner === null);
     setLastSyncedAt(last);
   }, [db, ready]);
 
@@ -455,32 +469,68 @@ export function CloudProvider({
     async (
       email: string,
       password: string,
-      options?: { replaceLocal?: boolean },
+      options?: { localData?: LocalDataChoice },
     ): Promise<AuthResult> => {
       if (!client) throw new Error('La nube no está configurada en esta instalación.');
       setError(null);
 
       const owner = await getSyncOwner(db);
-      if (!owner && !options?.replaceLocal && (await hasLocalData(db))) {
+      if (!owner && !options?.localData && (await hasLocalData(db))) {
         throw new Error(
-          'Este dispositivo ya tiene datos. Confirma que quieres sustituirlos por los de tu cuenta.',
+          'Este dispositivo tiene datos sin sincronizar. Elige si quieres subirlos a tu cuenta o empezar con los de la cuenta.',
         );
       }
 
-      rememberIntent('download');
+      const mode = options?.localData === 'sync' ? 'upload' : 'download';
+      rememberIntent(mode);
       const { data, error: authError } = await client.auth.signInWithPassword({ email, password });
       if (authError) throw new Error(authMessage(authError, 'signin'));
       if (!data.session?.user) throw new Error('No se ha podido abrir la sesión.');
 
       const account = { id: data.session.user.id, email: data.session.user.email ?? null };
       setUser(account);
-      await handleSession(account, 'download');
+      await handleSession(account, mode);
       if (connectedUserRef.current !== account.id) {
         throw new Error(OWNERSHIP_MESSAGE);
       }
       return { needsConfirmation: false };
     },
     [client, db, handleSession],
+  );
+
+  const signInWithGoogle = useCallback(
+    async (
+      mode: 'signin' | 'signup',
+      options?: { localData?: LocalDataChoice },
+    ): Promise<void> => {
+      if (!client) throw new Error('La nube no está configurada en esta instalación.');
+      setError(null);
+
+      const owner = await getSyncOwner(db);
+      if (mode === 'signup') {
+        if (owner) throw new Error(OWNERSHIP_MESSAGE);
+        rememberIntent('upload');
+      } else {
+        if (!owner && !options?.localData && (await hasLocalData(db))) {
+          throw new Error(
+            'Este dispositivo tiene datos sin sincronizar. Elige si quieres subirlos a tu cuenta o empezar con los de la cuenta.',
+          );
+        }
+        rememberIntent(options?.localData === 'sync' ? 'upload' : 'download');
+      }
+
+      const redirectTo =
+        typeof window !== 'undefined' ? `${window.location.origin}/entrar` : undefined;
+      const { error: authError } = await client.auth.signInWithOAuth({
+        provider: 'google',
+        options: { redirectTo },
+      });
+      if (authError) {
+        clearIntent();
+        throw new Error(authMessage(authError, mode === 'signup' ? 'signup' : 'signin'));
+      }
+    },
+    [client, db],
   );
 
   const signOut = useCallback(async () => {
@@ -509,8 +559,10 @@ export function CloudProvider({
         pendingChanges,
         error,
         hasLocalData: localData,
+        hasUnlinkedLocalData: unlinkedLocalData,
         signUp,
         signIn,
+        signInWithGoogle,
         signOut,
         syncNow,
       }}

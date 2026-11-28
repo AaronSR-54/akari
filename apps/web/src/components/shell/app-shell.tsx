@@ -20,11 +20,14 @@ import { SearchDialog } from './search-dialog';
 import { NotificationsPanel } from './notifications-panel';
 import { useNotificationPayments } from './use-notification-payments';
 import { PageSkeleton } from '../page-skeleton';
+import { MovementComposerProvider } from '../movement-composer';
 
 export function AppShell({ children }: { children: ReactNode }) {
   return (
     <PageTitleProvider>
-      <AppShellInner>{children}</AppShellInner>
+      <MovementComposerProvider>
+        <AppShellInner>{children}</AppShellInner>
+      </MovementComposerProvider>
     </PageTitleProvider>
   );
 }

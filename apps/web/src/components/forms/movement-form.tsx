@@ -46,6 +46,7 @@ export function MovementForm({
   formId = 'movement-form',
   showActions = true,
   framed = true,
+  readOnly = false,
   onSaved,
   onCancel,
   onSavingChange,
@@ -57,6 +58,7 @@ export function MovementForm({
   formId?: string;
   showActions?: boolean;
   framed?: boolean;
+  readOnly?: boolean;
   onSaved?: () => void;
   onCancel?: () => void;
   onSavingChange?: (saving: boolean) => void;
@@ -148,7 +150,12 @@ export function MovementForm({
   };
 
   const content = (
-    <form id={formId} onSubmit={submit} noValidate>
+    <form
+      id={formId}
+      onSubmit={readOnly ? (event) => event.preventDefault() : submit}
+      noValidate
+      data-readonly={readOnly || undefined}
+    >
       <Stack gap={4}>
         <SegmentedControl
           ariaLabel="Tipo de movimiento"
@@ -160,6 +167,7 @@ export function MovementForm({
           onChange={setType}
           size="lg"
           fill
+          disabled={readOnly}
         />
         <AmountField
           label="Importe"
@@ -170,6 +178,7 @@ export function MovementForm({
           error={errors.amount}
           help={type === 'expense' ? 'Se restará del saldo de la cuenta.' : 'Se sumará al saldo de la cuenta.'}
           required
+          disabled={readOnly}
         />
         <SelectField
           label="Cuenta"
@@ -178,6 +187,7 @@ export function MovementForm({
           options={accounts.map((item) => ({ value: item.id, label: item.name }))}
           error={errors.accountId}
           required
+          disabled={readOnly}
         />
         {members.length > 0 ? (
           <SelectField
@@ -187,6 +197,7 @@ export function MovementForm({
             options={members.map((member) => ({ value: member.id, label: member.name }))}
             error={errors.memberId}
             required
+            disabled={readOnly}
           />
         ) : null}
         <TextField
@@ -195,14 +206,22 @@ export function MovementForm({
           onChange={(event) => setConcept(event.target.value)}
           error={errors.concept}
           required
+          disabled={readOnly}
         />
         <div className="grid gap-4 md:grid-cols-2">
-          <DateField label="Fecha" value={date} onValueChange={setDate} required />
+          <DateField
+            label="Fecha"
+            value={date}
+            onValueChange={setDate}
+            required
+            disabled={readOnly}
+          />
           <SelectField
             label="Categoría"
             value={category}
             onValueChange={setCategory}
             options={movementCategoryOptions}
+            disabled={readOnly}
           />
         </div>
         <TextareaField
@@ -210,6 +229,7 @@ export function MovementForm({
           value={note}
           onChange={(event) => setNote(event.target.value)}
           help="Opcional. No se muestra en las listas."
+          disabled={readOnly}
         />
         {movement ? null : (
           <>
@@ -218,6 +238,7 @@ export function MovementForm({
               onChange={setRepeat}
               label="Repetir este movimiento"
               help="Crea una suscripción o un ingreso periódico."
+              disabled={readOnly}
             />
             {repeat ? (
               <SelectField
@@ -225,6 +246,7 @@ export function MovementForm({
                 value={frequency}
                 onValueChange={(value) => setFrequency(value as typeof frequency)}
                 options={frequencyOptions}
+                disabled={readOnly}
               />
             ) : null}
           </>

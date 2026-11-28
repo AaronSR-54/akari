@@ -356,12 +356,15 @@ test.describe('shell web', () => {
     await page.keyboard.press('Escape');
     await expect(page.getByRole('dialog', { name: 'Avisos' })).toBeHidden();
 
-    await page.goto('/movimientos/nuevo?cuenta=demo-acc-joint');
-    await page.getByText('Registrado por').waitFor();
-    await page.getByLabel('Importe').fill('10');
-    await page.getByLabel('Concepto').fill('Cena nueva');
-    await page.getByRole('button', { name: 'Guardar movimiento' }).click();
-    await page.waitForURL(/\/movimientos$/);
+    await page.goto('/cuentas/demo-acc-joint');
+    await page.getByRole('button', { name: 'Añadir movimiento' }).first().click();
+    const movementDialog = page.getByRole('dialog', { name: 'Nuevo movimiento' });
+    await expect(movementDialog).toBeVisible();
+    await expect(movementDialog.getByText('Registrado por')).toBeVisible();
+    await movementDialog.getByLabel('Importe').fill('10');
+    await movementDialog.getByLabel('Concepto').fill('Cena nueva');
+    await movementDialog.getByRole('button', { name: 'Guardar movimiento' }).click();
+    await expect(movementDialog).toBeHidden();
 
     await expect(page.getByRole('button', { name: 'Avisos, 1 pendiente' })).toBeVisible();
   });

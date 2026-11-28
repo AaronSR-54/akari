@@ -136,7 +136,7 @@ Quedan fuera, además de las superficies nativas: la creación de planes de plaz
 ## 19. Alta y edición de movimientos en modal (change `modal-nuevo-movimiento`)
 
 - **Diseño:** `M09` plantea el alta como pantalla propia y `W03` describe la edición en línea desde la tabla de movimientos.
-- **Implementación:** el alta desde `/movimientos` y la edición de un movimiento abren un modal con el formulario completo de `M09` (tipo, importe, cuenta, concepto, fecha, categoría y nota, y repetición al crear) en un panel ancho de 672 px, mayor que el token de 440 px. La ruta `/movimientos/nuevo` sigue existiendo como enlace directo para resumen, cuentas y preguntas. La edición conserva el borrado con deshacer.
+- **Implementación:** el alta de movimientos se abre en un modal global desde el resumen, `/movimientos`, el detalle de cuenta, las preguntas rápidas y la barra móvil, sin cambiar de URL; el detalle de un movimiento reutiliza el formulario completo en modo lectura y ofrece «Editar» para activarlo. La antigua ruta de alta ya no existe. La edición conserva el borrado con deshacer.
 - **Motivo:** evitar salir del listado y unificar alta y edición en una sola superficie; el diálogo anterior no permitía cambiar cuenta, tipo ni nota.
 - **Consecuencia:** la composición no coincide con `M09`/`W03` aprobados. El diseño está congelado: no se han modificado FigCraft, `design/` ni `docs/diseno/`.
 - **Cierre:** solo si la persona usuaria reabre la fase de diseño; hasta entonces la implementación se mantiene y la trazabilidad vive en `producto/finanzas-personales`.

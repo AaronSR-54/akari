@@ -24,19 +24,24 @@ test.describe('cuentas y movimientos', () => {
     await expect(page).toHaveURL(/\/cuentas\/acc_/);
     await expect(page.getByText(/600,00/).first()).toBeVisible();
 
-    await page.getByRole('link', { name: 'Añadir movimiento' }).first().click();
-    await expect(page).toHaveURL(/\/movimientos\/nuevo\?cuenta=/);
-    await page.getByLabel('Importe').fill('50');
-    await page.getByLabel('Concepto').fill('Cine');
+    const accountUrl = page.url();
+    await page.getByRole('button', { name: 'Añadir movimiento' }).first().click();
+    const dialog = page.getByRole('dialog', { name: 'Nuevo movimiento' });
+    await expect(dialog).toBeVisible();
+    await expect(page).toHaveURL(accountUrl);
+    await expect(dialog.getByLabel('Cuenta')).toContainText('Ahorro');
+    await dialog.getByLabel('Importe').fill('50');
+    await dialog.getByLabel('Concepto').fill('Cine');
     await chooseOption(page, 'Categoría', 'Ocio');
-    const dateTrigger = page.getByRole('button', { name: 'Fecha' });
+    const dateTrigger = dialog.getByRole('button', { name: 'Fecha' });
     await dateTrigger.click();
     await page.getByRole('dialog', { name: 'Fecha' }).getByRole('button', { name: /^15 / }).click();
     const pickedDate = ((await dateTrigger.textContent()) ?? '').trim();
     const shortDate = pickedDate.split(' ').slice(0, 2).join(' ');
     await expect(dateTrigger).toHaveAttribute('aria-expanded', 'false');
-    await page.getByRole('button', { name: 'Guardar movimiento' }).click();
-    await expect(page).toHaveURL(/\/movimientos/);
+    await dialog.getByRole('button', { name: 'Guardar movimiento' }).click();
+    await expect(dialog).toBeHidden();
+    await expect(page).toHaveURL(accountUrl);
     await expect(visible(page, 'Cine')).toBeVisible();
     await expect(visible(page, shortDate)).toBeVisible();
 
@@ -89,12 +94,15 @@ test.describe('cuentas y movimientos', () => {
     await expect(page.getByLabel('Banco')).toHaveAttribute('data-value', 'other');
 
     await page.goto(accountUrl);
-    await page.getByRole('link', { name: 'Añadir movimiento' }).first().click();
-    await page.getByLabel('Importe').fill('20');
-    await page.getByLabel('Concepto').fill('Café');
+    await page.getByRole('button', { name: 'Añadir movimiento' }).first().click();
+    const dialog = page.getByRole('dialog', { name: 'Nuevo movimiento' });
+    await expect(dialog).toBeVisible();
+    await dialog.getByLabel('Importe').fill('20');
+    await dialog.getByLabel('Concepto').fill('Café');
     await chooseOption(page, 'Categoría', 'Alimentación');
-    await page.getByRole('button', { name: 'Guardar movimiento' }).click();
-    await expect(page).toHaveURL(/\/movimientos$/);
+    await dialog.getByRole('button', { name: 'Guardar movimiento' }).click();
+    await expect(dialog).toBeHidden();
+    await expect(page).toHaveURL(accountUrl);
     const row = page.getByRole('button', { name: /Café/ }).first();
     await expect(row.locator('[data-bank="other"] svg')).toBeVisible();
   });
@@ -276,13 +284,16 @@ test.describe('cuentas y movimientos', () => {
     await expect(page).toHaveURL(/\/cuentas\/acc_/);
     const accountUrl = page.url();
 
-    await page.getByRole('link', { name: 'Añadir movimiento' }).first().click();
-    await page.getByLabel('Importe').fill('700');
-    await page.getByLabel('Concepto').fill('Alquiler extra');
-    await page.getByRole('switch', { name: 'Repetir este movimiento' }).click();
+    await page.getByRole('button', { name: 'Añadir movimiento' }).first().click();
+    const dialog = page.getByRole('dialog', { name: 'Nuevo movimiento' });
+    await expect(dialog).toBeVisible();
+    await dialog.getByLabel('Importe').fill('700');
+    await dialog.getByLabel('Concepto').fill('Alquiler extra');
+    await dialog.getByRole('switch', { name: 'Repetir este movimiento' }).click();
     await chooseOption(page, 'Frecuencia', 'Mensual');
-    await page.getByRole('button', { name: 'Guardar movimiento' }).click();
-    await expect(page).toHaveURL(/\/movimientos/);
+    await dialog.getByRole('button', { name: 'Guardar movimiento' }).click();
+    await expect(dialog).toBeHidden();
+    await expect(page).toHaveURL(accountUrl);
     await expect(visible(page, 'Alquiler extra')).toBeVisible();
 
     await page.goto(accountUrl);

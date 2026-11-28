@@ -24,13 +24,17 @@ test.describe('calendario de fecha en móvil', () => {
   test('elige la fecha con la hoja inferior en el alta de movimiento', async ({ page }) => {
     mobileOnly();
     await seedDemo(page);
-    await page.goto('/movimientos/nuevo');
-    await page.getByLabel('Importe').fill('25');
-    await page.getByLabel('Concepto').fill('Cena móvil');
+    await page.goto('/movimientos');
+    await page.getByRole('button', { name: 'Añadir movimiento' }).first().click();
+    const dialog = page.getByRole('dialog', { name: 'Nuevo movimiento' });
+    await expect(dialog).toBeVisible();
+    await dialog.getByLabel('Importe').fill('25');
+    await dialog.getByLabel('Concepto').fill('Cena móvil');
 
     const { pickedDate } = await pickDay(page, 10);
-    await page.getByRole('button', { name: 'Guardar movimiento' }).click();
-    await expect(page).toHaveURL(/\/movimientos/);
+    await dialog.getByRole('button', { name: 'Guardar movimiento' }).click();
+    await expect(dialog).toBeHidden();
+    await expect(page).toHaveURL(/\/movimientos$/);
     await expect(visible(page, 'Cena móvil')).toBeVisible();
 
     await visible(page, 'Cena móvil').click();

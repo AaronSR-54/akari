@@ -14,7 +14,7 @@ Este documento relaciona el diseño aprobado, las specs `producto/*` y la implem
 | `M06` | Alta de cuenta | `/cuentas/nueva`, `/cuentas/[id]/editar` | Implementada en shell web |
 | `M07` | Detalle de cuenta | `/cuentas/[id]` | Implementada |
 | `M08` | Movimientos | `/movimientos` con alta en modal y detalle/edición del movimiento | Implementada |
-| `M09` | Nuevo movimiento | `/movimientos/nuevo` | Implementada en shell web |
+| `M09` | Nuevo movimiento | Modal global del shell (resumen, movimientos, cuentas, preguntas y barra móvil) | Implementada en modal |
 | `M10` | Plazos | Sección «Pagos a plazos» en `/cuentas/[id]` | Implementada (consulta y registro de cuota) |
 | `M11` | Gasto grupal | Formulario en `/grupos/[id]` | Implementada |
 | `M12` | Liquidación | Sección «Liquidación» en `/grupos/[id]` | Implementada |
@@ -124,7 +124,7 @@ Este documento relaciona el diseño aprobado, las specs `producto/*` y la implem
 | --- | --- | --- |
 | 0 · Onboarding local | `/onboarding → /` | `e2e/onboarding.spec.ts` |
 | A · Alta de cuenta | `/ → /cuentas/nueva → /cuentas/[id]` | `e2e/accounts-movements.spec.ts` |
-| B · Registro de movimiento | `/cuentas/[id] → /movimientos/nuevo → /movimientos` y alta/edición en modal desde `/movimientos` | `e2e/accounts-movements.spec.ts`, `e2e/movement-dialog.spec.ts` |
+| B · Registro de movimiento | `/cuentas/[id]` o `/movimientos` → modal de alta → misma pantalla; detalle en modo lectura → «Editar» | `e2e/accounts-movements.spec.ts`, `e2e/movement-dialog.spec.ts` |
 | C · Gasto grupal y liquidación | `/grupos → /grupos/[id]` | `e2e/groups.spec.ts` |
 | D · Preguntas y detalle | `/ → /preguntas`, `/cuentas/[id]` | `e2e/questions-settings.spec.ts`, `e2e/shell.spec.ts` |
 | E · Resumen y cuentas | `/ → /cuentas/[id] → /movimientos` | `e2e/dashboard.spec.ts`, `e2e/shell.spec.ts`, `e2e/accounts-movements.spec.ts` |

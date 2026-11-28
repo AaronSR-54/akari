@@ -14,6 +14,7 @@ export function SegmentedControl<T extends string>({
   className,
   scrollable = false,
   fill = false,
+  disabled = false,
 }: {
   options: Array<SegmentedOption<T>>;
   value: T;
@@ -24,6 +25,7 @@ export function SegmentedControl<T extends string>({
   className?: string;
   scrollable?: boolean;
   fill?: boolean;
+  disabled?: boolean;
 }) {
   const sizeClass = {
     sm: 'h-8 px-3 text-ui-10-strong',
@@ -48,11 +50,13 @@ export function SegmentedControl<T extends string>({
             key={option.value}
             type="button"
             aria-pressed={active}
+            disabled={disabled}
             onClick={() => onChange(option.value)}
             className={cn(
               'inline-flex items-center justify-center rounded-full transition-colors duration-fast',
               fill ? 'flex-1' : 'shrink-0',
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2 focus-visible:ring-offset-surface-canvas',
+              'disabled:cursor-not-allowed disabled:opacity-60',
               sizeClass,
               active
                 ? 'bg-text-primary text-text-inverse'

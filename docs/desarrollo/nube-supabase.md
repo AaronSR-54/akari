@@ -58,6 +58,7 @@ Todas las tablas de datos llevan `user_id`, `created_at`, `updated_at` y `delete
 
 - RLS activo en todas las tablas con políticas por `auth.uid()`.
 - El cliente usa solo la clave anónima; la sesión la gestiona Supabase Auth.
+- El acceso con Google usa OAuth de Supabase: el proveedor debe estar habilitado en el proyecto y `${origin}/entrar` debe estar autorizado como URL de redirección.
 - `user_id` tiene `default auth.uid()` y las políticas comprueban el propietario en lectura, alta, actualización y borrado.
 - Verificación manual con dos usuarios en [`supabase/README.md`](../../supabase/README.md).
 
@@ -68,11 +69,15 @@ No hay cifrado de extremo a extremo: Supabase cifra en tránsito y en reposo seg
 - `/onboarding` es un asistente de cinco pasos: nombre, divisa principal, día de ingreso opcional, bancos compatibles (paso informativo de CSV) y cuenta en la nube. Hay un atajo para omitir todo el asistente.
 - La primera cuenta y el primer movimiento se crean ya dentro de la app: el resumen muestra una tarjeta de «Primeros pasos» mientras falten, y el detalle de una cuenta sin movimientos invita a añadir el primero.
 - El paso de bancos muestra los iconos circulares de los bancos soportados y explica que la importación CSV llegará próximamente; todavía no procesa archivos. La copia de privacidad indica que el archivo se procesará en el navegador, que no se usa para nada más y que Supabase cifra en tránsito y en reposo, sin prometer cifrado de extremo a extremo.
-- Al crear cuenta se suben los datos locales existentes (bootstrap).
-- Al iniciar sesión se descargan los de la cuenta; si el dispositivo ya tiene datos, se pide confirmación antes de sustituirlos.
+- Al crear cuenta se suben los datos locales existentes (bootstrap). Si el alta viene de `/entrar` y el asistente no estaba completado, se continúa en `/onboarding`; al terminar u omitir se abre el resumen.
+- Al iniciar sesión se descargan los de la cuenta. Si el dispositivo tiene datos locales que aún no pertenecen a ninguna cuenta, al pulsar «Entrar» la misma caja muestra el paso para subirlos a la cuenta o empezar solo con los de la cuenta. Un inicio de sesión normal abre el resumen sin repetir el asistente.
+- «Continuar sin registrarte» abre el resumen si el dispositivo ya tiene datos locales (el asistente queda completado); si está vacío, abre el onboarding.
 - Si el correo requiere confirmación, se muestra el aviso y la sesión se reanuda al volver desde el enlace.
 - `/ajustes` permite editar nombre, divisa principal y día de ingreso, y muestra el estado, el último sync, los cambios pendientes, «Sincronizar ahora» y «Cerrar sesión».
-- `/entrar` es la página de acceso dedicada: reutiliza el formulario de la modal de cuenta, muestra la marca de Akari y abre en «Iniciar sesión»; si ya hay una sesión activa redirige al resumen. `/onboarding` también redirige al resumen cuando la persona ya tiene sesión.
+- La modal de cuenta en la nube reutiliza el formulario de acceso y alta, muestra el logo de Akari en la parte superior y conserva las pestañas de iniciar sesión y crear cuenta. El cambio de pestaña, el paso entre opciones y la altura del contenedor se animan y respetan `prefers-reduced-motion`.
+- El acceso con Google está disponible como atajo en iniciar sesión y como opción de alta; guarda la intención de subida o descarga antes de salir y la recupera al volver a `/entrar`.
+- La pestaña de alta pide solo email y «Continuar»; después pide la contraseña dos veces antes de crear la cuenta y oculta Google. El nombre se recoge en el onboarding. «Continuar sin registrarte» está siempre visible debajo del formulario, en ambas pestañas. La ruta `/entrar` no muestra redirección inferior, aviso de cifrado ni menciones internas a Supabase.
+- `/entrar` es la página de acceso dedicada: reutiliza el mismo formulario de la modal, muestra la marca de Akari y abre en «Iniciar sesión»; si ya hay una sesión activa redirige al resumen. `/onboarding` también redirige al resumen cuando la persona ya tiene sesión, salvo que llegue de crear la cuenta desde `/entrar`.
 - Mientras hay una cuenta conectada, importar una copia, cargar ejemplos y borrar la base local están deshabilitados para no sustituir la nube por accidente. Exportar sigue disponible.
 
 ## Cambios de esquema
