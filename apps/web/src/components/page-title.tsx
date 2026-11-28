@@ -32,7 +32,15 @@ export function usePageTitle(): PageTitleContextValue {
 
 export function PageTitle({ title }: { title: string }) {
   useEffect(() => {
-    document.title = `${title} · akari`;
+    const expected = `${title} · akari`;
+    const apply = () => {
+      // Next puede reaplicar el título por defecto al hidratar; lo corregimos.
+      if (document.title !== expected) document.title = expected;
+    };
+    apply();
+    const observer = new MutationObserver(apply);
+    observer.observe(document.head, { childList: true, subtree: true, characterData: true });
+    return () => observer.disconnect();
   }, [title]);
   return null;
 }

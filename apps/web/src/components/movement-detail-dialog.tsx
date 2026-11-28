@@ -80,6 +80,21 @@ export function MovementDetailDialog({
 
   if (!open) return null;
 
+  const movementKey = movement
+    ? [
+        movement.id,
+        movement.accountId,
+        movement.type,
+        movement.amountMinor,
+        movement.currency,
+        movement.date,
+        movement.concept,
+        movement.category,
+        movement.note ?? '',
+        movement.memberId ?? '',
+      ].join('|')
+    : 'detail';
+
   if (editing && movement) {
     return <MovementEditDialog movement={movement} open onClose={() => setEditing(false)} />;
   }
@@ -126,6 +141,7 @@ export function MovementDetailDialog({
       {movement && accounts ? (
         <div className="flex flex-col gap-3">
           <MovementForm
+            key={movementKey}
             accounts={accounts}
             movement={movement}
             formId="movement-detail-form"

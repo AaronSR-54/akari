@@ -9,10 +9,10 @@
 
 ## 2. Accesos migrados y ruta retirada
 
-- [ ] 2.1 Cambiar los accesos del resumen (estado vacío, primeros pasos, píldora «Nuevo movimiento», pago recurrente) a `ActionButton` + `openMovement`; verificar en E2E que la URL no cambia y que el diálogo «Nuevo movimiento» aparece.
-- [ ] 2.2 Cambiar la acción central de `MobileNav` y los accesos del detalle de cuenta y de preguntas rápidas al compositor; verificar que abren el modal y, cuando corresponde, con la cuenta preseleccionada.
+- [x] 2.1 Cambiar los accesos del resumen (estado vacío, primeros pasos, píldora «Nuevo movimiento», pago recurrente) a `ActionButton` + `openMovement`; verificar en E2E que la URL no cambia y que el diálogo «Nuevo movimiento» aparece.
+- [x] 2.2 Cambiar la acción central de `MobileNav` y los accesos del detalle de cuenta y de preguntas rápidas al compositor; verificar que abren el modal y, cuando corresponde, con la cuenta preseleccionada.
 - [x] 2.3 Eliminar `apps/web/app/(app)/movimientos/nuevo/page.tsx` y `apps/web/src/components/pages/new-movement.tsx`; verificar que `grep -rn "movimientos/nuevo" apps e2e` no devuelve referencias y que la URL muestra la página de no encontrado.
-- [ ] 2.4 Actualizar `e2e/dashboard.spec.ts`, `e2e/shell.spec.ts` y `e2e/date-picker.spec.ts` para abrir el modal en lugar de navegar a la ruta; verificar que las pruebas afectadas pasan.
+- [x] 2.4 Actualizar `e2e/dashboard.spec.ts`, `e2e/shell.spec.ts` y `e2e/date-picker.spec.ts` para abrir el modal en lugar de navegar a la ruta; verificar que las pruebas afectadas pasan.
 - [x] 2.5 Actualizar `docs/desarrollo/arquitectura.md`, `docs/desarrollo/mapa-diseno-codigo.md` y `docs/desarrollo/desviaciones.md` para reflejar el modal global y la retirada de la ruta; verificar que no quedan enlaces a `/movimientos/nuevo` en la documentación de desarrollo.
 
 ## 3. Marca en la modal de acceso
@@ -25,8 +25,8 @@
 
 - [x] 4.1 Añadir `disabled` a `SegmentedControl` en `packages/ui/src/segmented.tsx` y pasarlo desde `MovementForm`; verificar con una prueba de componente o E2E que el tipo no cambia en modo lectura.
 - [x] 4.2 Añadir la prop `readOnly` a `MovementForm` y deshabilitar tipo, importe, cuenta, miembro, concepto, fecha, categoría, nota y repetición; verificar que no se puede guardar desde el modo lectura.
-- [ ] 4.3 Sustituir la ficha de `MovementDetailDialog` por `MovementForm` en modo lectura, manteniendo «Eliminar» y «Editar» en el pie; verificar que Editar abre el formulario editable y que al guardar vuelve al detalle.
-- [ ] 4.4 Actualizar las pruebas E2E de detalle y edición de movimiento para comprobar el modo lectura, el paso a edición y la persistencia; verificar que las pruebas afectadas pasan.
+- [x] 4.3 Sustituir la ficha de `MovementDetailDialog` por `MovementForm` en modo lectura, manteniendo «Eliminar» y «Editar» en el pie; verificar que Editar abre el formulario editable y que al guardar vuelve al detalle.
+- [x] 4.4 Actualizar las pruebas E2E de detalle y edición de movimiento para comprobar el modo lectura, el paso a edición y la persistencia; verificar que las pruebas afectadas pasan.
 
 ## 5. Acceso animado y Google
 
@@ -37,7 +37,7 @@
 - [x] 5.5 Quitar «Creando cuenta para…» del paso de contraseña del alta y bloquear el scroll de `/entrar` con `100dvh` y limpieza del `overflow` al desmontar; verificar que la tarjeta completa queda visible.
 - [x] 5.6 Enrutar el alta desde `/entrar` a `/onboarding` y el inicio de sesión normal al resumen, con marcador persistente para el retorno de Google y excepción en el asistente; verificar con pruebas unitarias de `routeAfterAccess`.
 - [x] 5.7 Hacer que «Continuar sin registrarte» compruebe IndexedDB y salte el onboarding cuando ya hay datos locales, marcándolo como completado; verificar con pruebas de `routeAfterSkip`.
-- [ ] 5.8 Actualizar las pruebas E2E de acceso para cubrir Google, las opciones de alta, el selector de datos locales, el destino tras el alta y la salida sin cuenta con y sin datos; verificar que las pruebas afectadas pasan.
+- [x] 5.8 Actualizar las pruebas E2E de acceso para cubrir Google, las opciones de alta, el selector de datos locales, el destino tras el alta y la salida sin cuenta con y sin datos; verificar que las pruebas afectadas pasan.
 
 ## 6. Verificación de integración
 

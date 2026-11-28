@@ -26,7 +26,7 @@ test.describe('acceso', () => {
     await expect(page.getByLabel(/Repite la contraseña/)).toHaveCount(0);
 
     await page.getByRole('textbox', { name: /Email/ }).fill('ana@example.com');
-    await page.getByRole('button', { name: 'Continuar' }).click();
+    await page.getByRole('button', { name: 'Continuar', exact: true }).click();
 
     await expect(page.getByLabel(/^Contraseña/)).toBeVisible();
     await expect(page.getByLabel(/Repite la contraseña/)).toBeVisible();
