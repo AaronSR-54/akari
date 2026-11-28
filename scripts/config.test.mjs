@@ -78,6 +78,31 @@ describe('resolveMainRoot y readEnv', () => {
       readEnv({ envFile: join(dir, '.env'), env: { kan_API_KEY: 'entorno' } }).kan_API_KEY
     ).toBe('entorno');
   });
+
+  it('falla con mensaje accionable si git no resuelve el directorio común', () => {
+    const runGit = () => {
+      throw new Error('git roto');
+    };
+    expect(() => resolveMainRoot({ cwd: tmpdir(), runGit })).toThrow(/directorio común de Git/);
+    expect(() => resolveMainRoot({ cwd: tmpdir(), runGit })).toThrow(/kan_API_KEY/);
+    expect(() => resolveMainRoot({ cwd: tmpdir(), runGit: () => ({ status: 0, stderr: '' }) })).toThrow(
+      /checkout principal/
+    );
+  });
+
+  it('no filtra secretos del error de git en el mensaje', () => {
+    const runGit = () => {
+      throw new Error('kan_API_KEY=secreto-filtrado');
+    };
+    let message = '';
+    try {
+      resolveMainRoot({ cwd: tmpdir(), runGit });
+    } catch (error) {
+      message = error.message;
+    }
+    expect(message).not.toContain('secreto-filtrado');
+    expect(typeof message).toBe('string');
+  });
 });
 
 describe('parseConfig con revisión opcional', () => {

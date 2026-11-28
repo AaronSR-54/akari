@@ -118,7 +118,7 @@ Reglas:
 - Para otra tarea, reclama otra tarjeta y abre otra sesión en su worktree.
 - Si usas el worktree integrado de OpenCode, asegúrate de que apunta a la rama del claim; el flujo canónico usa la ruta que imprime `claim`.
 
-El worktree no contiene `.env`: `kan-sync` lee el del checkout principal a través del directorio común de Git. `node_modules` se enlaza desde el checkout principal; si cambias dependencias, ejecuta `rm -rf node_modules && npm ci` en ese worktree.
+El worktree no contiene `.env`: `kan-sync` lee el del checkout principal a través del directorio común de Git y falla con un mensaje claro si no puede resolverlo; nunca busca secretos en el worktree. `claim` crea un `node_modules` propio en el worktree: las dependencias de terceros se enlazan desde el checkout principal y los paquetes `@akari/*` se enlazan a `packages/*` y `apps/web` del propio worktree, de modo que desarrollo, tipos, build, pruebas y E2E usan siempre el código del worktree. Instala o actualiza dependencias en el checkout principal (`npm install` / `npm ci` allí): ejecutar `npm ci` dentro de un worktree reescribiría esos enlaces. Los worktrees creados antes de este flujo se reparan al repetir `claim` sobre el mismo change.
 
 ## Proponer, aplicar y archivar
 

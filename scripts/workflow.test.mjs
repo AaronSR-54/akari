@@ -12,6 +12,7 @@ import {
   claimTag,
   defaultWorktreeRoot,
   deriveChangeId,
+  GIT_SUBPROCESS_TIMEOUT_MS,
   hotFilesChanged,
   isArchivedChange,
   isValidChangeId,
@@ -31,7 +32,12 @@ function tempDir(prefix) {
 }
 
 function git(cwd, args, options = {}) {
-  return execFileSync('git', args, { cwd, encoding: 'utf8', ...options }).trim();
+  return execFileSync('git', args, {
+    cwd,
+    encoding: 'utf8',
+    timeout: GIT_SUBPROCESS_TIMEOUT_MS,
+    ...options,
+  }).trim();
 }
 
 afterAll(() => {
@@ -128,7 +134,7 @@ describe('ids, manifiesto y rutas', () => {
 });
 
 describe('publicación atómica del claim', () => {
-  it('solo permite que un claim gane y no deja restos si el segundo falla', () => {
+  it('solo permite que un claim gane y no deja restos si el segundo falla', { timeout: 30_000 }, () => {
     const root = tempDir('akari-claim-');
     const remote = join(root, 'remote.git');
     const work = join(root, 'work');
@@ -168,5 +174,25 @@ describe('publicación atómica del claim', () => {
     const heads = git(second, ['ls-remote', '--heads', 'origin']);
     expect(heads).toContain('refs/heads/feat/primera');
     expect(heads).not.toContain('refs/heads/feat/segunda');
+  });
+
+  it('aplica un timeout por subprocesso al push atómico', () => {
+    const calls = [];
+    const runGit = (args, options) => {
+      calls.push({ args, options });
+      return { status: 0, stdout: '', stderr: '' };
+    };
+
+    pushAtomicClaim({ runGit, cwd: '/tmp', branch: 'un-change', tags: ['claims/card-1/un-change'] });
+
+    expect(calls).toHaveLength(1);
+    expect(calls[0].options.timeout).toBe(GIT_SUBPROCESS_TIMEOUT_MS);
+    expect(calls[0].args).toEqual([
+      'push',
+      '--atomic',
+      'origin',
+      'HEAD:refs/heads/un-change',
+      'refs/tags/claims/card-1/un-change',
+    ]);
   });
 });

@@ -270,12 +270,15 @@ ${cards}
 `;
 }
 
-export function execGit(args, { cwd, input, allowFailure = false, env = process.env } = {}) {
+export const GIT_SUBPROCESS_TIMEOUT_MS = 15_000;
+
+export function execGit(args, { cwd, input, allowFailure = false, env = process.env, timeout = GIT_SUBPROCESS_TIMEOUT_MS } = {}) {
   const result = spawnSync('git', args, {
     cwd,
     input,
     encoding: 'utf8',
     env,
+    timeout,
   });
   const stdout = result.stdout ?? '';
   const stderr = result.stderr ?? '';
@@ -296,9 +299,9 @@ export function commitPaths({ runGit = execGit, cwd, paths, message }) {
   runGit(['commit', '-m', message], { cwd });
 }
 
-export function pushAtomicClaim({ runGit = execGit, cwd, branch, tags, remote = 'origin' }) {
+export function pushAtomicClaim({ runGit = execGit, cwd, branch, tags, remote = 'origin', timeout = GIT_SUBPROCESS_TIMEOUT_MS }) {
   const refs = [`HEAD:refs/heads/${branch}`, ...tags.map((tag) => `refs/tags/${tag}`)];
-  return runGit(['push', '--atomic', remote, ...refs], { cwd });
+  return runGit(['push', '--atomic', remote, ...refs], { cwd, timeout });
 }
 
 export function pushAtomicTags({ runGit = execGit, cwd, tags, remote = 'origin' }) {
