@@ -15,6 +15,6 @@
       "title": "fix: el test de publicación atómica del claim agota el timeout de 5 s bajo carga"
     }
   ],
-  "prUrl": null,
+  "prUrl": "https://github.com/AaronSR-54/akari/pull/28",
   "claimedAt": "2026-11-27T15:28:50.932Z"
 }
