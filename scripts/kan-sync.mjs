@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, readFileSync, symlinkSync } from 'node:fs';
+import { existsSync, lstatSync, mkdirSync, readFileSync, readdirSync, realpathSync, rmSync, symlinkSync } from 'node:fs';
 import { dirname, join, resolve, sep } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { parseArgs } from 'node:util';
@@ -196,12 +196,54 @@ function createWorktree({ runGit = execGit, mainRoot, worktree, branch, base = '
   }
 }
 
-function linkNodeModules({ mainRoot, worktree }) {
+const WORKSPACE_PACKAGES = {
+  domain: 'packages/domain',
+  data: 'packages/data',
+  tokens: 'packages/tokens',
+  ui: 'packages/ui',
+  web: 'apps/web',
+};
+
+function hasEntry(path) {
+  try {
+    lstatSync(path);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export function linkNodeModules({ mainRoot, worktree }) {
   const source = join(mainRoot, 'node_modules');
   const target = join(worktree, 'node_modules');
-  if (!existsSync(source) || existsSync(target)) return;
+  if (!existsSync(source) || !existsSync(worktree)) return;
   try {
-    symlinkSync(source, target, 'dir');
+    if (hasEntry(target) && lstatSync(target).isSymbolicLink()) {
+      if (realpathSync(target) !== realpathSync(source)) return;
+      rmSync(target);
+    }
+    if (!hasEntry(target)) {
+      mkdirSync(target, { recursive: true });
+      for (const entry of readdirSync(source, { withFileTypes: true })) {
+        if (entry.name === '@akari') continue;
+        const link = join(target, entry.name);
+        if (!hasEntry(link)) {
+          symlinkSync(join(source, entry.name), link, entry.isDirectory() ? 'dir' : 'file');
+        }
+      }
+    }
+    const scope = join(target, '@akari');
+    if (!hasEntry(scope)) mkdirSync(scope, { recursive: true });
+    for (const [name, relative] of Object.entries(WORKSPACE_PACKAGES)) {
+      const packageRoot = join(worktree, relative);
+      if (!existsSync(packageRoot)) continue;
+      const link = join(scope, name);
+      if (hasEntry(link)) {
+        if (realpathSync(link) === realpathSync(packageRoot)) continue;
+        rmSync(link, { recursive: true, force: true });
+      }
+      symlinkSync(packageRoot, link, 'dir');
+    }
   } catch {
     // Sin enlace, el worktree puede instalar sus propias dependencias.
   }
@@ -410,6 +452,7 @@ export async function claimCommand({
           'WORKTREE_BRANCH_MISMATCH'
         );
       }
+      linkNodeModules({ mainRoot, worktree });
       manifest = readManifest(worktree, resolvedChangeId);
       if (!manifest) {
         throw new KanSyncError(
@@ -998,6 +1041,11 @@ function resolveBaseUrl({ configFile, baseUrl, env }) {
   );
 }
 
+export function resolveRunEnvFile({ envPath, cwd = process.cwd(), runGit = execGit }) {
+  if (!envPath) return undefined;
+  return resolve(resolveMainRoot({ cwd, runGit }), envPath);
+}
+
 export async function run(argv, { env = process.env, log = console.log, logError = console.error, cwd = process.cwd(), runGit = execGit } = {}) {
   let parsed;
   try {
@@ -1050,11 +1098,13 @@ export async function run(argv, { env = process.env, log = console.log, logError
     return 1;
   }
 
-  const envFile = values.env ? resolve(values.env) : undefined;
   const configFile = values.config ? resolve(values.config) : DEFAULT_CONFIG_FILE;
-  const mergedEnv = readEnv({ envFile, env, cwd, runGit });
+  let mergedEnv;
 
   try {
+    const envFile = resolveRunEnvFile({ envPath: values.env, cwd, runGit });
+    mergedEnv = readEnv({ envFile, env, cwd, runGit });
+
     if (command === 'discover') {
       await discover({
         baseUrl: resolveBaseUrl({ configFile, baseUrl: values['base-url'], env: mergedEnv }),

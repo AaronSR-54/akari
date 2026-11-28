@@ -1,0 +1,20 @@
+{
+  "changeId": "worktree-env-fix",
+  "branch": "worktree-env-fix",
+  "cards": [
+    {
+      "publicId": "91tl0k5183r1",
+      "title": "fix: kan-sync no lee el .env del checkout principal desde un worktree"
+    },
+    {
+      "publicId": "n2o41aqe20y8",
+      "title": "fix: los worktrees resuelven @akari/* contra el checkout principal"
+    },
+    {
+      "publicId": "l4sfpw3rv9df",
+      "title": "fix: el test de publicación atómica del claim agota el timeout de 5 s bajo carga"
+    }
+  ],
+  "prUrl": "https://github.com/AaronSR-54/akari/pull/28",
+  "claimedAt": "2026-11-27T15:28:50.932Z"
+}

@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, lstatSync, mkdirSync, mkdtempSync, readdirSync, realpathSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
@@ -15,14 +15,17 @@ import {
   appendChangeMarker,
   removeChangeMarker,
   extractChangeId,
+  linkNodeModules,
   loadEnvText,
   matchCards,
   parseConfig,
   readConfig,
   readEnv,
   resolveAssignee,
+  resolveRunEnvFile,
   resolveList,
   reviewChange,
+  run,
   startChange,
   validateClaimCards,
   whoamiCommand,
@@ -900,5 +903,115 @@ describe('cleanupCommand', () => {
       cleanupCommand({ changeId: fixture.changeId, cwd: fixture.mainRoot, runGit: fixture.runGit, runGh: ghMerged() })
     ).rejects.toMatchObject({ code: 'MAIN_CHECKOUT_PROTECTED' });
     expect(existsSync(fixture.mainRoot)).toBe(true);
+  });
+});
+
+describe('linkNodeModules', () => {
+  const moduleTemps = [];
+  afterEach(() => {
+    for (const dir of moduleTemps.splice(0)) rmSync(dir, { recursive: true, force: true });
+  });
+
+  function fixture() {
+    const base = realpathSync(mkdtempSync(join(tmpdir(), 'akari-modules-')));
+    moduleTemps.push(base);
+    const mainRoot = join(base, 'main');
+    const worktree = join(base, 'worktree');
+    mkdirSync(join(mainRoot, 'node_modules', 'react'), { recursive: true });
+    writeFileSync(join(mainRoot, 'node_modules', 'package.json'), '{}');
+    mkdirSync(join(mainRoot, 'node_modules', '@akari'), { recursive: true });
+    symlinkSync('../../packages/domain', join(mainRoot, 'node_modules', '@akari', 'domain'), 'dir');
+    for (const pkg of ['domain', 'data', 'tokens', 'ui']) {
+      mkdirSync(join(worktree, 'packages', pkg), { recursive: true });
+    }
+    mkdirSync(join(worktree, 'apps', 'web'), { recursive: true });
+    return { mainRoot, worktree };
+  }
+
+  it('crea un node_modules propio con externos del principal y @akari del worktree', () => {
+    const { mainRoot, worktree } = fixture();
+    linkNodeModules({ mainRoot, worktree });
+
+    expect(lstatSync(join(worktree, 'node_modules')).isSymbolicLink()).toBe(false);
+    expect(realpathSync(join(worktree, 'node_modules', 'react'))).toBe(
+      join(mainRoot, 'node_modules', 'react')
+    );
+    expect(realpathSync(join(worktree, 'node_modules', 'package.json'))).toBe(
+      join(mainRoot, 'node_modules', 'package.json')
+    );
+    for (const pkg of ['domain', 'data', 'tokens', 'ui']) {
+      expect(realpathSync(join(worktree, 'node_modules', '@akari', pkg))).toBe(
+        join(worktree, 'packages', pkg)
+      );
+    }
+    expect(realpathSync(join(worktree, 'node_modules', '@akari', 'web'))).toBe(
+      join(worktree, 'apps', 'web')
+    );
+  });
+
+  it('sustituye un node_modules heredado que apuntaba al checkout principal', () => {
+    const { mainRoot, worktree } = fixture();
+    symlinkSync(join(mainRoot, 'node_modules'), join(worktree, 'node_modules'), 'dir');
+
+    linkNodeModules({ mainRoot, worktree });
+
+    expect(lstatSync(join(worktree, 'node_modules')).isSymbolicLink()).toBe(false);
+    expect(realpathSync(join(worktree, 'node_modules', '@akari', 'domain'))).toBe(
+      join(worktree, 'packages', 'domain')
+    );
+  });
+
+  it('es idempotente sobre un worktree ya enlazado', () => {
+    const { mainRoot, worktree } = fixture();
+    linkNodeModules({ mainRoot, worktree });
+    const scope = join(worktree, 'node_modules', '@akari');
+    const before = readdirSync(scope).sort();
+    const targets = before.map((name) => realpathSync(join(scope, name)));
+
+    linkNodeModules({ mainRoot, worktree });
+
+    expect(readdirSync(scope).sort()).toEqual(before);
+    expect(before.map((name) => realpathSync(join(scope, name)))).toEqual(targets);
+    expect(lstatSync(join(worktree, 'node_modules')).isSymbolicLink()).toBe(false);
+  });
+});
+
+describe('entorno del checkout principal', () => {
+  const envTemps = [];
+  afterEach(() => {
+    for (const dir of envTemps.splice(0)) rmSync(dir, { recursive: true, force: true });
+  });
+
+  it('resuelve --env relativo contra el checkout principal y no contra el worktree', () => {
+    const base = realpathSync(mkdtempSync(join(tmpdir(), 'akari-envpath-')));
+    envTemps.push(base);
+    const mainRoot = join(base, 'main');
+    const worktree = join(base, 'worktree');
+    mkdirSync(join(mainRoot, 'config'), { recursive: true });
+    mkdirSync(join(worktree, 'config'), { recursive: true });
+    writeFileSync(join(mainRoot, 'config', 'dev.env'), 'kan_API_KEY=del-principal\n');
+    writeFileSync(join(worktree, 'config', 'dev.env'), 'kan_API_KEY=del-worktree\n');
+    const runGit = () => ({ status: 0, stdout: `${join(mainRoot, '.git')}\n`, stderr: '' });
+
+    const envFile = resolveRunEnvFile({ envPath: 'config/dev.env', cwd: worktree, runGit });
+
+    expect(envFile).toBe(join(mainRoot, 'config', 'dev.env'));
+    expect(readEnv({ envFile, env: {} }).kan_API_KEY).toBe('del-principal');
+  });
+
+  it('run falla sin filtrar secretos si no puede resolver el checkout principal', async () => {
+    const errors = [];
+    const code = await run(['whoami'], {
+      env: {},
+      cwd: tmpdir(),
+      log: () => {},
+      logError: (line) => errors.push(line),
+      runGit: () => {
+        throw new Error('kan_API_KEY=secreto-filtrado');
+      },
+    });
+    expect(code).toBe(1);
+    expect(errors.join('\n')).toMatch(/directorio común de Git/);
+    expect(errors.join('\n')).not.toContain('secreto-filtrado');
   });
 });

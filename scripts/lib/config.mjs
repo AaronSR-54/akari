@@ -36,15 +36,20 @@ function defaultRunGit(args, { cwd } = {}) {
  * `--git-common-dir` apunta al `.git` del checkout principal.
  */
 export function resolveMainRoot({ cwd = process.cwd(), runGit = defaultRunGit } = {}) {
+  const message =
+    'No se pudo resolver el directorio común de Git para leer la configuración. ' +
+    'Define kan_API_KEY y kan_CURRENT_USER en el entorno o ejecuta la herramienta desde el checkout principal con .env.';
+  let commonDir;
   try {
     const result = runGit(['rev-parse', '--path-format=absolute', '--git-common-dir'], { cwd });
-    const commonDir = typeof result === 'string' ? result : result?.stdout;
-    if (!commonDir || typeof commonDir !== 'string') return ROOT;
-    const absolute = resolve(cwd, commonDir);
-    return dirname(absolute);
+    commonDir = typeof result === 'string' ? result : result?.stdout;
   } catch {
-    return ROOT;
+    throw new KanSyncError(message, 'MAIN_ROOT_UNRESOLVED');
   }
+  if (!commonDir || typeof commonDir !== 'string' || !commonDir.trim()) {
+    throw new KanSyncError(message, 'MAIN_ROOT_UNRESOLVED');
+  }
+  return dirname(resolve(cwd, commonDir.trim()));
 }
 
 export function resolveEnvFile({ cwd = process.cwd(), runGit = defaultRunGit } = {}) {
